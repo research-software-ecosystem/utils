@@ -41,7 +41,7 @@ def retrieve(filters=None):
         for tool in entry["list"]:
             tool_id = tool["biotoolsID"]
             tpe_id = tool_id.lower()
-            directory = os.path.join("..", "..", "data", tpe_id)
+            directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
             if not os.path.isdir(directory):
                 os.mkdir(directory)
             with open(os.path.join(directory, tpe_id + ".biotools.json"), "w") as write_file:
