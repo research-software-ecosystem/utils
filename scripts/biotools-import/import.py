@@ -8,10 +8,8 @@ import requests
 from boltons.iterutils import remap
 
 def clean():
-    for data_file in glob.glob(r"../../../content/data/*/*.json"):
-        filename_ext = os.path.basename(data_file).split(".")
-        if len(filename_ext) == 2 and filename_ext[1] == "json":
-            os.remove(data_file)
+    for data_file in glob.glob(r"../../../content/data/*/*.biotools.json"):
+        os.remove(data_file)
 
 
 def retrieve(filters=None):
