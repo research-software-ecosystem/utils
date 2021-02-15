@@ -1,7 +1,8 @@
-import yaml
-import requests
-import os
 import argparse
+import os
+
+import requests
+import yaml
 
 
 def import_biocontainers_annotations(url, content_data_path):
@@ -11,12 +12,25 @@ def import_biocontainers_annotations(url, content_data_path):
         r.encoding = 'utf-8'
 
     annotations = yaml.safe_load(r.text)
-
+    valid_tools = []
     for key, value in annotations.items():
         tool_annotation_yaml = f'{content_data_path}/{key}/{key}.biocontainers.yaml'
         os.makedirs(os.path.dirname(tool_annotation_yaml), exist_ok=True)
+        valid_tools.append(key)
         with open(tool_annotation_yaml, "w") as f:
             yaml.dump(value, f)
+    return valid_tools
+
+
+def clean_biocontainers_tools(valid_tools, content_data_path):
+    for root, dirs, files in os.walk(content_data_path):
+        for file in files:
+            #  traverse directories and find `.biocontainers.yaml` files
+            if file.endswith(".biocontainers.yaml"):
+                existing_tool = file.replace(".biocontainers.yaml", "")
+                if existing_tool not in valid_tools:
+                    # delete files that are not defined in biocontainers url
+                    os.remove(os.path.join(root, file))
 
 
 class readable_dir(argparse.Action):
@@ -37,4 +51,5 @@ parser.add_argument("url", help="url to biocontainers annotations", type=str)
 args = parser.parse_args()
 print(args)
 
-import_biocontainers_annotations(args.url, args.biotools)
+valid_tools = import_biocontainers_annotations(args.url, args.biotools)
+clean_biocontainers_tools(valid_tools, args.biotools)
