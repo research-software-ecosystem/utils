@@ -4,7 +4,7 @@ import os
 import json
 import urllib.request
 
-TOOLS_CONTENT_PATH = "../../../data/"
+TOOLS_CONTENT_PATH = "../../../content/data/"
 OPENEBENCH_METRICS_ENDPOINT = "https://openebench.bsc.es/monitor/metrics/"
 
 def main():
