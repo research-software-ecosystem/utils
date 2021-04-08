@@ -30,7 +30,7 @@ def main():
 
   for tool_dir, m in git_metrics.items():
     with open(tool_dir + '/' + os.path.basename(tool_dir) + '.oeb.metrics.json', 'w') as f:
-      json.dump(m, f)
+      json.dump(m, f, indent=4, sort_keys=True)
 
 # Get OpenEBench metrics
 def get_metrics():
