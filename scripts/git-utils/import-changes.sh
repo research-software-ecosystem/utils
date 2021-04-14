@@ -2,6 +2,7 @@
 # Please note, all the changes should be done BEFORE this script
 # if the importing PR already exists, the $1 argument has to be true
 # PR and Commit name should be specified the 2nd argument
+set -e
 git config --local user.email "tpe-bot@github.com"
 git config --local user.name "Tools Platform Ecosystem bot"
 git add .
