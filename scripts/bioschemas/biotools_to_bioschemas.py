@@ -328,11 +328,8 @@ def rdfize(json_entry):
 
 def get_biotools_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../data/*/*.biotools.json"):
+    for data_file in glob.glob("../../../content/data/*/*.biotools.json"):
         tools.append(data_file)
-        # filename_ext = os.path.basename(data_file).split(".")
-        # print(filename_ext)
-        # if len(filename_ext) == 3 and filename_ext[2] == "json":
     return tools
 
 
@@ -350,7 +347,7 @@ def process_tools_by_id(id="SPROUT"):
                 tpe_id = tool_id.lower()
                 # print(tool_id)
                 # print(tpe_id)
-                directory = os.path.join("..", "..", "data", tpe_id)
+                directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
                 dest = os.path.join(directory, tpe_id + ".bioschemas.jsonld")
 
                 jsonld = rdfize(tool)
@@ -374,7 +371,7 @@ def process_tools():
         print(tool_file)
         tool_id = tool["biotoolsID"]
         tpe_id = tool_id.lower()
-        directory = os.path.join("..", "..", "data", tpe_id)
+        directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
 
         jsonld = rdfize(tool)
         temp_graph = ConjunctiveGraph()
