@@ -84,7 +84,6 @@ def main():
 
             tpe_id = s['title'].lower().replace('/', '').replace(' ', '-')
             directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
-            print(f"os.path.abspath('.')={os.path.abspath('.')}")
             if not os.path.isdir(directory):
                 os.mkdir(directory)
 
@@ -119,8 +118,7 @@ def main():
 
             tpe_id = s['title'].lower().replace('/', '').replace(' ', '-')
             directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
-            print(f"os.path.abspath('.')={os.path.abspath('.')}")
-            
+
             if not os.path.isdir(directory):
                 os.mkdir(directory)
 
