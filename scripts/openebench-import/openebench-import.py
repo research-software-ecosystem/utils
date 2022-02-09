@@ -67,7 +67,7 @@ def main():
 
     with open(path, 'w') as f:
       try:
-        json.dump(m, f)
+        json.dump(m, f, indent=4, sort_keys=True)
       except Exception as ex:
         print('error writing file: ', path, ' ', ex, file = sys.stderr)
       
