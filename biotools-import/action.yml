@@ -19,7 +19,7 @@ runs:
       #shell: bash
     - name: Install dependencies
       run:
-        pip install -r ${{ github.workspace }}/content-ecosystem-utils/scripts/biotools-import/requirements.txt
+        pip install -r ${{ github.action_path }}/../scripts/biotools-import/requirements.txt
       shell: bash
     - name: set up script dependencies
       run: ${{ github.action_path }}/requirements.txt
