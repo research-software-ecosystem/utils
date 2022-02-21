@@ -16,9 +16,11 @@ runs:
       uses: actions/setup-python@v1
       with:
         python-version: "3.7"
+      shell: bash
     - name: Install dependencies
       run:
         pip install -r ${{ github.workspace }}/content-ecosystem-utils/scripts/biotools-import/requirements.txt
+      shell: bash
     - name: set up script dependencies
       run: ${{ github.action_path }}/requirements.txt
       shell: bash
