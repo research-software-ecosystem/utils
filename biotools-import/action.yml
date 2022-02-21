@@ -21,15 +21,6 @@ runs:
       run:
         pip install -r ${{ github.action_path }}/../scripts/biotools-import/requirements.txt
       shell: bash
-    - name: debug with ls
-      run: |
-        ls ${{ github.workspace }}
-      shell: bash
-    - name: debug with cd/pwd
-      run: |
-        cd ${{ github.workspace }}
-        pwd
-      shell: bash
     - name: import bio.tools using the API
       run: |
         if ${{ github.action_path }}/../scripts/git-utils/checkout-pr-if-exist.sh biotools-import; then
@@ -42,8 +33,9 @@ runs:
       shell: bash
     - name: reformat json to a predictable format with jq
       run: |
-        FILES='*/*.biotools.json'
+        FILES='data/*/*.biotools.json'
         for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
 #    - name: commit new data and push to PR
 #      env:
 #        GITHUB_USER: ${{ secrets.GITHUB_USER }}
