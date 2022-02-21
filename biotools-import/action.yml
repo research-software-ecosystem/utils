@@ -21,6 +21,10 @@ runs:
       run:
         pip install -r ${{ github.action_path }}/../scripts/biotools-import/requirements.txt
       shell: bash
+    - name: debug with ls
+      run: |
+        ls ${{ github.workspace }}
+      shell: bash
     - name: import bio.tools using the API
       run: |
         cd ${{ github.workspace }}/content/data
