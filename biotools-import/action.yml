@@ -1,14 +1,12 @@
 name: 'import bio.tools'
 description: 'bio.tools bulk import'
-#inputs:
-#  who-to-greet:  # id of input
-#    description: 'Who to greet'
-#    required: true
-#    default: 'bio.tools'
-#outputs:
-#  random-number:
-#    description: "Random number"
-#    value: ${{ steps.random-number-generator.outputs.random-id }}
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -38,8 +36,8 @@ runs:
       shell: bash
     - name: commit new data and push to PR
       env:
-        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_USER: ${{ inputs.repo-user }}
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
       run: |
         ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
       shell: bash
