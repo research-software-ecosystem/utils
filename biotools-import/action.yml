@@ -25,6 +25,11 @@ runs:
       run: |
         ls ${{ github.workspace }}
       shell: bash
+    - name: debug with cd/pwd
+      run: |
+        cd ${{ github.workspace }}
+        pwd
+      shell: bash
     - name: import bio.tools using the API
       run: |
         cd ${{ github.workspace }}/content/data
