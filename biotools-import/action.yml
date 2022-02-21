@@ -16,7 +16,7 @@ runs:
       uses: actions/setup-python@v1
       with:
         python-version: "3.7"
-      shell: bash
+      #shell: bash
     - name: Install dependencies
       run:
         pip install -r ${{ github.workspace }}/content-ecosystem-utils/scripts/biotools-import/requirements.txt
@@ -36,11 +36,11 @@ runs:
         python import.py
         echo "IS_PR_CREATED=$IS_PR_CREATED" >> $GITHUB_ENV
       shell: bash
-    - name: commit new data and push to PR
-      env:
-        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd ${{ github.workspace }}/content/data
-        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
-      shell: bash
+#    - name: commit new data and push to PR
+#      env:
+#        GITHUB_USER: ${{ secrets.GITHUB_USER }}
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      run: |
+#        cd ${{ github.workspace }}/content/data
+#        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
+#      shell: bash
