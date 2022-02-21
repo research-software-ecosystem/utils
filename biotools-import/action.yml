@@ -31,6 +31,7 @@ runs:
       shell: bash
     - name: reformat json to a predictable format with jq
       run: |
+        apt-get install moreutils
         FILES='data/*/*.biotools.json'
         for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
       shell: bash
