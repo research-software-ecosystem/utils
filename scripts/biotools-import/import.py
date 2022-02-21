@@ -8,7 +8,7 @@ import requests
 from boltons.iterutils import remap
 
 def clean():
-    for data_file in glob.glob(r"../../../content/data/*/*.biotools.json"):
+    for data_file in glob.glob(r"data/*/*.biotools.json"):
         os.remove(data_file)
 
 
@@ -39,7 +39,7 @@ def retrieve(filters=None):
         for tool in entry["list"]:
             tool_id = tool["biotoolsID"]
             tpe_id = tool_id.lower()
-            directory = os.path.join("..", "..", "..", "content", "data", tpe_id)
+            directory = os.path.join("data", tpe_id)
             if not os.path.isdir(directory):
                 os.mkdir(directory)
             with open(os.path.join(directory, tpe_id + ".biotools.json"), "w") as write_file:
@@ -54,7 +54,7 @@ def retrieve(filters=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="biotools to bioschemas bot script")
+    parser = argparse.ArgumentParser(description="biotools import script")
     parser.add_argument(
         "collection", type=str, default="*", nargs="?", help="collection name filter"
     )
