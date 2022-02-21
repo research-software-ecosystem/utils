@@ -36,11 +36,10 @@ runs:
         FILES='data/*/*.biotools.json'
         for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
       shell: bash
-#    - name: commit new data and push to PR
-#      env:
-#        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      run: |
-#        cd ${{ github.workspace }}/content/data
-#        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
-#      shell: bash
+    - name: commit new data and push to PR
+      env:
+        GITHUB_USER: ${{ secrets.GITHUB_USER }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
+      shell: bash
