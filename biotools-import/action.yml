@@ -40,6 +40,10 @@ runs:
         python ${{ github.action_path }}/../scripts/biotools-import/import.py
         echo "IS_PR_CREATED=$IS_PR_CREATED" >> $GITHUB_ENV
       shell: bash
+    - name: reformat json to a predictable format with jq
+      run: |
+        FILES='*/*.biotools.json'
+        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
 #    - name: commit new data and push to PR
 #      env:
 #        GITHUB_USER: ${{ secrets.GITHUB_USER }}
