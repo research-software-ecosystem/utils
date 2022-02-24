@@ -14,22 +14,24 @@ runs:
       uses: actions/setup-python@v1
       with:
         python-version: "3.7"
-      #shell: bash
     - name: Install dependencies
       run:
-        pip install -r ${{ github.action_path }}/../scripts/biotools-import/requirements.txt
+        pip install -r ${{ github.action_path }}/requirements.txt
       shell: bash
-    - name: import bio.tools using the API
+    - name: checkout existing PR if it exists
       run: |
         if ${{ github.action_path }}/../scripts/git-utils/checkout-pr-if-exist.sh biotools-import; then
           IS_PR_CREATED=true
         else
           IS_PR_CREATED=false
         fi
-        python ${{ github.action_path }}/../scripts/biotools-import/import.py
         echo "IS_PR_CREATED=$IS_PR_CREATED" >> $GITHUB_ENV
       shell: bash
-    - name: reformat json to a predictable format with jq
+    - name: import bio.tools using the API
+      run: |
+        python ${{ github.action_path }}/import.py
+      shell: bash
+    - name: reformat json to a predictable format with jq and sponge
       run: |
         sudo apt-get install moreutils
         FILES='data/*/*.biotools.json'
