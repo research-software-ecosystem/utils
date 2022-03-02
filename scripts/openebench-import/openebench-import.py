@@ -70,8 +70,8 @@ def main():
         json.dump(m, f, indent=4, sort_keys=True)
       except Exception as ex:
         print('error writing file: ', path, ' ', ex, file = sys.stderr)
-      
-  print('add:', files_added, '/', obj_added, 'del:', obj_removed, 'dif:', (prop_changed / prop_total))
+
+  print('{"add_files":"', files_added, '", "add_objects":"', obj_added, '", "remove_objects":"', obj_removed, '", "diff":"', (prop_changed / prop_total), '" }')
 
 # Get OpenEBench metrics
 def get_metrics():
