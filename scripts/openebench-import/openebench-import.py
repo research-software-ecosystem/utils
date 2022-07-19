@@ -38,6 +38,7 @@ def main():
   prop_changed = 0
 
   for tool_dir, m in git_metrics.items():
+    fupdate = False
     path = tool_dir + '/' + os.path.basename(tool_dir) + '.oeb.metrics.json'
     if (os.path.isfile(path)):
       with open(path, 'r+') as f:
@@ -55,21 +56,26 @@ def main():
           old_metrics = old.get(_id)
           if (old_metrics != None):
             patch = op_filter(jsonpatch.JsonPatch.from_diff(old_metrics, new_metrics).patch);
-            prop_changed += len(patch);
-            old.pop(_id) 
+            prop_patched = len(patch)
+            prop_changed += prop_patched
+            old.pop(_id)
+            if (prop_patched > 0):
+              fupdate = True
           else:
-            obj_added += 1
+            obj_added += 1 # new array item (i.g. new version) added to metris array
+            fupdate = True
 
         obj_removed += len(old)
     else:
       obj_added += len(m)
       files_added  += 1
 
-    with open(path, 'w') as f:
-      try:
-        json.dump(m, f, indent=4, sort_keys=True)
-      except Exception as ex:
-        print('error writing file: ', path, ' ', ex, file = sys.stderr)
+    if (fupdate):
+      with open(path, 'w') as f:
+        try:
+          json.dump(m, f, indent=4, sort_keys=True)
+        except Exception as ex:
+          print('error writing file: ', path, ' ', ex, file = sys.stderr)
 
   print('{"add_files":"', files_added, '", "add_objects":"', obj_added, '", "remove_objects":"', obj_removed, '", "diff":"', (prop_changed / prop_total), '" }')
 
