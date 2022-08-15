@@ -12,20 +12,26 @@ def clean():
         os.remove(data_file)
 
 
-def retrieve(filters=None):
+def retrieve(filters=None, sandbox=False):
     """
     Go through bio.tools entries using its API and save the JSON files
     in the right folders
     """
+    api_endpoint = 'https://bio.tools/api/tool/'
+
+    if sandbox: 
+        api_endpoint = 'https://ecosystem.bio.tools/api/tool/'
+        print('Using bio.tools sandbox server!')
 
     i = 1
     nb_tools = 1
     has_next_page = True
     filters = filters or {}
+    
     while has_next_page:
         parameters = {**filters, **{"page": i}}
         response = requests.get(
-            "https://bio.tools/api/tool/",
+            api_endpoint,
             params=parameters,
             headers={"Accept": "application/json"},
         )
@@ -54,13 +60,17 @@ def retrieve(filters=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="biotools import script")
+    parser = argparse.ArgumentParser(description="biotools import script", allow_abbrev=False)
     parser.add_argument(
         "collection", type=str, default="*", nargs="?", help="collection name filter"
     )
+
+    # sandbox flag for importing from ecosystem.bio.tools, by default is False
+    parser.add_argument('--sandbox', action='store_true')
+
     args = parser.parse_args()
     clean()
     if args.collection == "*":
-        retrieve()
+        retrieve(sandbox=args.sandbox)
     else:
-        retrieve(filters={"collection": args.collection})
+        retrieve(filters={"collection": args.collection}, sandbox=args.sandbox)
