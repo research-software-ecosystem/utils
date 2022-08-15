@@ -1,0 +1,46 @@
+name: 'import bio.tools sandbox'
+description: 'bio.tools bulk import of tools from ecosystem.bio.tools (sandbox)'
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.7"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: checkout existing PR if it exists
+      run: |
+        if ${{ github.action_path }}/../scripts/git-utils/checkout-pr-if-exist.sh biotools-import; then
+          IS_PR_CREATED=true
+        else
+          IS_PR_CREATED=false
+        fi
+        echo "IS_PR_CREATED=$IS_PR_CREATED" >> $GITHUB_ENV
+      shell: bash
+    - name: import bio.tools using the API
+      run: |
+        python ${{ github.action_path }}/import.py --sandbox
+      shell: bash
+    - name: reformat json to a predictable format with jq and sponge
+      run: |
+        sudo apt-get install moreutils
+        FILES='data/*/*.biotools.json'
+        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
+    - name: commit new data and push to PR
+      env:
+        GITHUB_USER: ${{ inputs.repo-user }}
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
+      run: |
+        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
+      shell: bash
