@@ -24,7 +24,7 @@ def process_tools():
 
     for tool_file in tool_files:
         print(tool_file)
-        rdf_graph.load(tool_file, format="json-ld")
+        rdf_graph.parse(tool_file, format="json-ld")
 
     rdf_graph.serialize(
         format="turtle",
