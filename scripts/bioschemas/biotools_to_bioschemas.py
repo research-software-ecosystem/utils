@@ -361,7 +361,8 @@ def process_tools_by_id(id="SPROUT"):
                 print(f"generated markup at {dest}")
 
 def clean():
-    for data_file in glob.glob(r"data/*/*.bioschemas.jsonld"):
+    for data_file in glob.glob(r"../../../content/data/*/*.bioschemas.jsonld"):
+        print(f"removing file {data_file}")
         os.remove(data_file)
 
 def process_tools():
