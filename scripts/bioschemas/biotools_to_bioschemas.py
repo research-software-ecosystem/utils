@@ -49,6 +49,8 @@ def rdfize(json_entry):
                 "hasGenDoc": "sc:softwareHelp",
                 "hasTermsOfUse": "sc:termsOfService",
                 "conformsTo": "dct:conformsTo",
+                "additionalType": "sc:additionalType",
+                "encodingFormat": "sc:encodingFormat",
             }
         }
         entry.update(ctx)
@@ -263,9 +265,11 @@ def rdfize(json_entry):
                         input_object = {
                             "@type": "bsct:FormalParameter",
                             "name": input["data"]["term"],
-                            "identifier": input["data"]["uri"],
-                            "sameAs": input["data"]["uri"],
+                            "additionalType": input["data"]["uri"],
                         }
+                        if input.get("format"):
+                            for f in input["format"]:
+                                input_object["encodingFormat"] = f["uri"]
                         if not "hasInputData" in entry.keys():
                             entry["hasInputData"] = [input_object]
                         else:
@@ -276,9 +280,11 @@ def rdfize(json_entry):
                         output_object = {
                             "@type": "bsct:FormalParameter",
                             "name": output["data"]["term"],
-                            "identifier": output["data"]["uri"],
-                            "sameAs": output["data"]["uri"],
+                            "additionalType": output["data"]["uri"],
                         }
+                        if output.get("format"):
+                            for f in output["format"]:
+                                output_object["encodingFormat"] = f["uri"]
                         if not "hasOutputData" in entry.keys():
                             entry["hasOutputData"] = [output_object]
                         else:
