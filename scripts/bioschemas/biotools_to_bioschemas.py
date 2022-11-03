@@ -366,6 +366,10 @@ def process_tools_by_id(id="SPROUT"):
                 )
                 print(f"generated markup at {dest}")
 
+def clean():
+    for data_file in glob.glob(r"../../../content/data/*/*.bioschemas.jsonld"):
+        print(f"removing file {data_file}")
+        os.remove(data_file)
 
 def process_tools():
     """
@@ -390,5 +394,6 @@ def process_tools():
 
 
 if __name__ == "__main__":
+    clean()
     process_tools()
     # process_tools_by_id("jaspar")
