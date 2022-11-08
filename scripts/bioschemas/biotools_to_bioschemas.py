@@ -265,11 +265,11 @@ def rdfize(json_entry):
                         input_object = {
                             "@type": "bsct:FormalParameter",
                             "name": input["data"]["term"],
-                            "additionalType": input["data"]["uri"],
+                            "additionalType": {"@id": input["data"]["uri"]},
                         }
                         if input.get("format"):
                             for f in input["format"]:
-                                input_object["encodingFormat"] = f["uri"]
+                                input_object["encodingFormat"] = {"@id": f["uri"]}
                         if not "hasInputData" in entry.keys():
                             entry["hasInputData"] = [input_object]
                         else:
@@ -280,11 +280,11 @@ def rdfize(json_entry):
                         output_object = {
                             "@type": "bsct:FormalParameter",
                             "name": output["data"]["term"],
-                            "additionalType": output["data"]["uri"],
+                            "additionalType": {"@id": output["data"]["uri"]},
                         }
                         if output.get("format"):
                             for f in output["format"]:
-                                output_object["encodingFormat"] = f["uri"]
+                                output_object["encodingFormat"] = {"@id": f["uri"]}
                         if not "hasOutputData" in entry.keys():
                             entry["hasOutputData"] = [output_object]
                         else:
@@ -366,10 +366,12 @@ def process_tools_by_id(id="SPROUT"):
                 )
                 print(f"generated markup at {dest}")
 
+
 def clean():
     for data_file in glob.glob(r"../../../content/data/*/*.bioschemas.jsonld"):
         print(f"removing file {data_file}")
         os.remove(data_file)
+
 
 def process_tools():
     """
