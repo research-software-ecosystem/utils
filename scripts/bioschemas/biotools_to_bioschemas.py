@@ -266,10 +266,11 @@ def rdfize(json_entry):
                             "@type": "bsct:FormalParameter",
                             "name": input["data"]["term"],
                             "additionalType": {"@id": input["data"]["uri"]},
+                            "encodingFormat": [],
                         }
                         if input.get("format"):
                             for f in input["format"]:
-                                input_object["encodingFormat"] = {"@id": f["uri"]}
+                                input_object["encodingFormat"].append({"@id": f["uri"]})
                         if not "hasInputData" in entry.keys():
                             entry["hasInputData"] = [input_object]
                         else:
@@ -281,10 +282,13 @@ def rdfize(json_entry):
                             "@type": "bsct:FormalParameter",
                             "name": output["data"]["term"],
                             "additionalType": {"@id": output["data"]["uri"]},
+                            "encodingFormat": [],
                         }
                         if output.get("format"):
                             for f in output["format"]:
-                                output_object["encodingFormat"] = {"@id": f["uri"]}
+                                output_object["encodingFormat"].append(
+                                    {"@id": f["uri"]}
+                                )
                         if not "hasOutputData" in entry.keys():
                             entry["hasOutputData"] = [output_object]
                         else:
@@ -397,5 +401,5 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    process_tools()
-    # process_tools_by_id("jaspar")
+    # process_tools()
+    process_tools_by_id("jaspar")
