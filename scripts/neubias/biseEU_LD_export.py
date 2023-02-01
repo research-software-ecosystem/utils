@@ -103,8 +103,12 @@ def main():
             with open(os.path.join(directory, tpe_id + ".neubias.raw.json"), "w") as write_file:
                 json.dump(get_raw_node(s['nid'], connection), write_file, indent=4, sort_keys=True, separators=(",", ": "))
 
-            #import_to_graph(graph, node_ld)
+            import_to_graph(graph, node_ld)
             count += 1
+        graph.serialize(
+            format="turtle",
+            destination="bioschemas-biii-dump.ttl"
+        )
 
 
     if args.dump:
@@ -139,8 +143,13 @@ def main():
                 json.dump(get_raw_node(s['nid'], connection), write_file, indent=4, sort_keys=True,
                           separators=(",", ": "))
 
-            #import_to_graph(graph, node_ld)
+            import_to_graph(graph, node_ld)
             count += 1
+
+        graph.serialize(
+            format="turtle",
+            destination="bioschemas-biii-dump.ttl"
+        )
 
 
 def get_web_service(connection):
