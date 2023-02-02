@@ -27,6 +27,7 @@ parser.add_argument('-e', '--extract_only', help='only crawl and dump raw JSON e
 parser.add_argument('-id', '--node_id', metavar='node_id', type=str, help='the ID of the Bise resource to be exported', dest='id', required=False)
 parser.add_argument('-dump', '--dump_all', help='RDF dump all Bise resources in RDF', dest='dump', action='store_true', required=False)
 parser.add_argument('-test', '--test_dump', help='test the RDF dump on the first 10 Bise resources in RDF', dest='test', action='store_true', required=False)
+parser.add_argument('-leg', '--legacy_ontology', help='builds an RDF dump confiming with the Bise core ontology', dest='legacy_ont', action='store_true', required=False)
 
 ns = "http://biii.eu"
 
@@ -57,6 +58,12 @@ def main():
         'url': args.td,
         # 'proxy': args.px
     }
+
+    out_filename = ""
+    if args.legacy_ont:
+        out_filename = "bise-ontology-biii-dump.ttl"
+    else:
+        out_filename = "bioschemas-biii-dump.ttl"
 
     if args.id:
         graph = Graph()
@@ -89,8 +96,10 @@ def main():
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
             if not args.e:
-                # node_ld = get_node_as_linked_data(s['nid'], connection)
-                node_ld = get_node_as_bioschema(s['nid'], connection)
+                if args.legacy_ont:
+                    node_ld = get_node_as_linked_data(s['nid'], connection)
+                else:
+                    node_ld = get_node_as_bioschema(s['nid'], connection)
 
                 temp_graph = ConjunctiveGraph()
                 temp_graph.parse(data=node_ld, format="json-ld")
@@ -107,7 +116,7 @@ def main():
             count += 1
         graph.serialize(
             format="turtle",
-            destination="bioschemas-biii-dump.ttl"
+            destination=out_filename
         )
 
 
@@ -128,8 +137,10 @@ def main():
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
             if not args.e:
-                # node_ld = get_node_as_linked_data(s['nid'], connection)
-                node_ld = get_node_as_bioschema(s['nid'], connection)
+                if args.legacy_ont:
+                    node_ld = get_node_as_linked_data(s['nid'], connection)
+                else:
+                    node_ld = get_node_as_bioschema(s['nid'], connection)
 
                 temp_graph = ConjunctiveGraph()
                 temp_graph.parse(data=node_ld, format="json-ld")
@@ -148,7 +159,7 @@ def main():
 
         graph.serialize(
             format="turtle",
-            destination="bioschemas-biii-dump.ttl"
+            destination=out_filename
         )
 
 
@@ -385,7 +396,7 @@ def rdfize(json_entry):
         }
         #entry["@id"] = str(entry["nid"][0]["value"])
 
-        print(json.dumps(entry, indent=True))
+        #print(json.dumps(entry, indent=True))
 
         entry["@id"] = str(entry["path"][0]["alias"])
         entry["@type"] = str(entry["type"][0]["target_id"])
