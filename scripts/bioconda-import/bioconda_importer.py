@@ -74,8 +74,9 @@ def create_metadata(conda, path, biotools_id):
         if extra.get("identifiers", None):
             data.update({"identifiers": extra["identifiers"]})
     data.update({"biotools_id": biotools_id})
-        print(f"updating {path}...")
-        print(data)
+    print(f"updating {path}...")
+    print(data)
+    with open(path, "w") as out:
         yaml.dump(data, out)
 
 
