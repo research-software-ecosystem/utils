@@ -170,7 +170,7 @@ if __name__ == "__main__":
         description="Generate contents report on the Tools Platform Ecosystem"
     )
     parser.add_argument("path", type=str, help="path to the content repo directory")
+    args = parser.parse_args()
     repo = Repository(args.path)
     repo.load()
-    args = parser.parse_args()
     repo.generate_report(report_path=os.path.join(args.path, "report"))
