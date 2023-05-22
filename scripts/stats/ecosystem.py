@@ -35,11 +35,6 @@ class BioSchemasSource(Source):
     SOURCE_PATH_TEMPLATE = "{biotools_id}.bioschemas.jsonld"
 
 
-class OEBSource(Source):
-    SOURCE = "OEB"
-    SOURCE_PATH_TEMPLATE = "{biotools_id}.oeb.json"
-
-
 class OEBMetricsSource(Source):
     SOURCE = "OEB Metrics"
     SOURCE_PATH_TEMPLATE = "{biotools_id}.oeb.metrics.json"
@@ -68,7 +63,6 @@ class BiiiSource(Source):
 SOURCE_CLASSES = [
     BioToolsSource,
     BioSchemasSource,
-    OEBSource,
     OEBMetricsSource,
     DebianSource,
     BioCondaSource,
@@ -139,30 +133,6 @@ class Repository(object):
             summary_df.reindex(pretty_index)
             summary_df.to_markdown(buf=md_file, tablefmt="github")
         pyplot.savefig(os.path.join(report_path, "global_upset.png"))
-        print(
-            df[
-                (df["biotools"] == False)
-                & (df["bioschemas"] == False)
-                & (df["OEB"] == False)
-                & (df["OEB Metrics"] == False)
-                & (df["Debian"] == False)
-                & (df["BioConda"] == False)
-                & (df["BioContainers"] == False)
-                & (df["Biii"] == False)
-            ]
-        )
-        print(
-            df[
-                (df["biotools"] == True)
-                & (df["bioschemas"] == True)
-                & (df["OEB"] == True)
-                & (df["OEB Metrics"] == True)
-                & (df["Debian"] == True)
-                & (df["BioConda"] == True)
-                & (df["BioContainers"] == True)
-                & (df["Biii"] == False)
-            ]
-        )
 
 
 if __name__ == "__main__":
