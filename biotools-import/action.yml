@@ -14,6 +14,9 @@ runs:
       uses: actions/setup-python@v1
       with:
         python-version: "3.7"
+    - uses: actions/checkout@v2
+      with:
+        path: content
     - name: Install dependencies
       run:
         pip install -r ${{ github.action_path }}/requirements.txt
@@ -30,8 +33,8 @@ runs:
       shell: bash
     - name: commit new data and push to PR
       env:
-        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_USER: ${{ inputs.repo-user }}
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
       run: |  
         cd ${{ github.workspace }}/content
         git config --local user.email "tpe-bot@github.com"
