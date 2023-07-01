@@ -34,7 +34,6 @@ runs:
         GITHUB_USER: ${{ inputs.repo-user }}
         GITHUB_TOKEN: ${{ inputs.repo-token }}
       run: |  
-        cd ${{ github.workspace }}/content
         git config --local user.email "tpe-bot@github.com"
         git config --local user.name "Tools Platform Ecosystem bot"
         cd report
