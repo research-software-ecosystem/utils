@@ -36,7 +36,6 @@ runs:
       run: |  
         git config --local user.email "tpe-bot@github.com"
         git config --local user.name "Tools Platform Ecosystem bot"
-        cd report
         git add .
         if git commit -m "import bio.tools data on $(date)"; then
           git push
