@@ -44,3 +44,4 @@ runs:
         else
           echo "no change in bio.tools to import, exiting"
         fi
+      shell: bash
