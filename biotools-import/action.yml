@@ -15,8 +15,6 @@ runs:
       with:
         python-version: "3.7"
     - uses: actions/checkout@v2
-      with:
-        path: content
     - name: Install dependencies
       run:
         pip install -r ${{ github.action_path }}/requirements.txt
