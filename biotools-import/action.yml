@@ -18,15 +18,6 @@ runs:
       run:
         pip install -r ${{ github.action_path }}/requirements.txt
       shell: bash
-    - name: checkout existing PR if it exists
-      run: |
-        if ${{ github.action_path }}/../scripts/git-utils/checkout-pr-if-exist.sh biotools-import; then
-          IS_PR_CREATED=true
-        else
-          IS_PR_CREATED=false
-        fi
-        echo "IS_PR_CREATED=$IS_PR_CREATED" >> $GITHUB_ENV
-      shell: bash
     - name: import bio.tools using the API
       run: |
         python ${{ github.action_path }}/import.py
@@ -39,8 +30,17 @@ runs:
       shell: bash
     - name: commit new data and push to PR
       env:
-        GITHUB_USER: ${{ inputs.repo-user }}
-        GITHUB_TOKEN: ${{ inputs.repo-token }}
-      run: |
-        ${{ github.action_path }}/../scripts/git-utils/import-changes.sh $IS_PR_CREATED biotools-import
-      shell: bash
+        GITHUB_USER: ${{ secrets.GITHUB_USER }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |  
+        cd ${{ github.workspace }}/content
+        git config --local user.email "tpe-bot@github.com"
+        git config --local user.name "Tools Platform Ecosystem bot"
+        cd report
+        git add .
+        if git commit -m "import bio.tools data on $(date)"; then
+          git push
+          echo "successfully imported new bio.tools data"
+        else
+          echo "no change in bio.tools to import, exiting"
+        fi
