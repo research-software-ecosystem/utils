@@ -44,7 +44,7 @@ runs:
         git config --local user.name "Tools Platform Ecosystem bot"
         git add .
         if git commit -m "import OpenEBench data on $(date)"; then
-          echo "git push should happen"
+          git push
           echo "successfully imported new OpenEBench data"
         else
           echo "no change in OpenEBench to import, exiting"
