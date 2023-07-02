@@ -28,6 +28,7 @@ runs:
         sudo apt-get install moreutils
         FILES='data/*/*.oeb.metrics.json'
         for f in $FILES; do jq 'map(del(.["project"]["website"]["last_check", "access_time", "last_month_access", "half_year_stat"]))|map(del(.["@timestamp"]))' $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
     - name: reformat json to a predictable format with jq and sponge
       run: |
         sudo apt-get install moreutils
