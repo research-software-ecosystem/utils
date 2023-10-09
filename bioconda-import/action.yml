@@ -1,0 +1,49 @@
+name: 'import bioconda'
+description: 'bioconda bulk import'
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.7"
+    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        repository: bioconda/bioconda-recipes
+        path: /tmp/bioconda
+    - uses: actions/checkout@v2
+      with:
+        path: content
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: import bioconda tools
+      env:
+        GITHUB_USER: ${{ secrets.GITHUB_USER }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda/recipes/
+    - name: commit new data and push
+      env:
+        GITHUB_USER: ${{ inputs.repo-user }}
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
+      run: |  
+        git config --local user.email "tpe-bot@github.com"
+        git config --local user.name "Tools Platform Ecosystem bot"
+        git add .
+        if git commit -m "import bioconda data on $(date)"; then
+          git push
+          echo "successfully imported new bioconda data"
+        else
+          echo "no change in bioconda to import, exiting"
+        fi
+      shell: bash
