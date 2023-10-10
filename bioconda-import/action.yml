@@ -29,6 +29,7 @@ runs:
     - name: import bioconda tools
       run: |
         python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda/recipes/
+      shell: bash
     - name: commit new data and push
       env:
         GITHUB_USER: ${{ inputs.repo-user }}
