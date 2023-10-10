@@ -27,9 +27,6 @@ runs:
         pip install -r ${{ github.action_path }}/requirements.txt
       shell: bash
     - name: import bioconda tools
-      env:
-        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda/recipes/
     - name: commit new data and push
