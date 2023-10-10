@@ -18,7 +18,7 @@ runs:
     - uses: actions/checkout@v2
       with:
         repository: bioconda/bioconda-recipes
-        path: /tmp/bioconda
+        path: bioconda
     - uses: actions/checkout@v2
       with:
         path: content
@@ -28,13 +28,14 @@ runs:
       shell: bash
     - name: import bioconda tools
       run: |
-        python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda/recipes/
+        python3 ${{ github.action_path }}/bioconda_importer.py data/ bioconda/recipes/
       shell: bash
     - name: commit new data and push
       env:
         GITHUB_USER: ${{ inputs.repo-user }}
         GITHUB_TOKEN: ${{ inputs.repo-token }}
-      run: |  
+      run: |
+        cd bioconda
         git config --local user.email "tpe-bot@github.com"
         git config --local user.name "Tools Platform Ecosystem bot"
         git add .
