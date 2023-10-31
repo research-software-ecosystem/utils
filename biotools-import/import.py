@@ -7,8 +7,8 @@ import argparse
 import requests
 from boltons.iterutils import remap
 
-BIOTOOLS_DOMAIN = "https://bio.tools"
-SSL_VERIFY = True
+BIOTOOLS_DOMAIN = "https://130.226.25.21"
+SSL_VERIFY = False
 
 def clean():
     for data_file in glob.glob(r"data/*/*.biotools.json"):
