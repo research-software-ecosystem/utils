@@ -7,6 +7,9 @@ import argparse
 import requests
 from boltons.iterutils import remap
 
+BIOTOOLS_DOMAIN = "https://bio.tools"
+SSL_VERIFY = True
+
 def clean():
     for data_file in glob.glob(r"data/*/*.biotools.json"):
         os.remove(data_file)
@@ -25,9 +28,10 @@ def retrieve(filters=None):
     while has_next_page:
         parameters = {**filters, **{"page": i}}
         response = requests.get(
-            "https://bio.tools/api/tool/",
+            f"{BIOTOOLS_DOMAIN}/api/tool/",
             params=parameters,
             headers={"Accept": "application/json"},
+            verify=SSL_VERIFY
         )
         try:
             entry = response.json()
