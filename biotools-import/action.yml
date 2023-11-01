@@ -30,18 +30,3 @@ runs:
         FILES='data/*/*.biotools.json'
         for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
       shell: bash
-    - name: commit new data and push to PR
-      env:
-        GITHUB_USER: ${{ inputs.repo-user }}
-        GITHUB_TOKEN: ${{ inputs.repo-token }}
-      run: |  
-        git config --local user.email "tpe-bot@github.com"
-        git config --local user.name "Tools Platform Ecosystem bot"
-        git add .
-        if git commit -m "import bio.tools data on $(date)"; then
-          git push
-          echo "successfully imported new bio.tools data"
-        else
-          echo "no change in bio.tools to import, exiting"
-        fi
-      shell: bash
