@@ -30,19 +30,3 @@ runs:
       run: |
         python3 ${{ github.action_path }}/bioconda_importer.py data/ bioconda/recipes/
       shell: bash
-    - name: commit new data and push
-      env:
-        GITHUB_USER: ${{ inputs.repo-user }}
-        GITHUB_TOKEN: ${{ inputs.repo-token }}
-      run: |
-        cd bioconda
-        git config --local user.email "tpe-bot@github.com"
-        git config --local user.name "Tools Platform Ecosystem bot"
-        git add .
-        if git commit -m "import bioconda data on $(date)"; then
-          git push
-          echo "successfully imported new bioconda data"
-        else
-          echo "no change in bioconda to import, exiting"
-        fi
-      shell: bash
