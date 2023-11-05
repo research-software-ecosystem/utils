@@ -1,5 +1,6 @@
 import os
 import urllib3
+import glob
 import json
 import argparse
 from argparse import RawTextHelpFormatter
@@ -30,6 +31,12 @@ parser.add_argument('-test', '--test_dump', help='test the RDF dump on the first
 parser.add_argument('-leg', '--legacy_ontology', help='builds an RDF dump confiming with the Bise core ontology', dest='legacy_ont', action='store_true', required=False)
 
 ns = "http://biii.eu"
+
+def clean():
+    for data_file in glob.glob("data/*/*/*.neubias.raw.json"):
+        os.remove(data_file)
+    for data_file in glob.glob("data/*/*/*.neubias.bioschemas.jsonld"):
+        os.remove(data_file)
 
 def main():
     #print('NeuBIAS LD export tool - v0.1a')
@@ -114,6 +121,7 @@ def main():
 
             import_to_graph(graph, node_ld)
             count += 1
+        os.remove(out_filename)
         graph.serialize(
             format="turtle",
             destination=out_filename
@@ -121,6 +129,7 @@ def main():
 
 
     if args.dump:
+        clean()
         softwares = get_software_list(connection)
         total = len(softwares)
         graph = Graph()
@@ -156,7 +165,7 @@ def main():
 
             import_to_graph(graph, node_ld)
             count += 1
-
+        os.remove(out_filename)
         graph.serialize(
             format="turtle",
             destination=out_filename
