@@ -61,9 +61,9 @@ def main():
 
     out_filename = ""
     if args.legacy_ont:
-        out_filename = "bise-ontology-biii-dump.ttl"
+        out_filename = "datasets/bise-ontology-biii-dump.ttl"
     else:
-        out_filename = "bioschemas-biii-dump.ttl"
+        out_filename = "datasets/bioschemas-biii-dump.ttl"
 
     if args.id:
         graph = Graph()
