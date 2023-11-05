@@ -326,12 +326,12 @@ def rdfize_bioschema_tool(json_entry):
 
         for item in entry['created']:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = datetime.datetime.fromisoformat(item["value"])
                 out["dateCreated"] = str(date.isoformat())
 
         for item in entry['changed']:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = datetime.datetime.fromisoformat(item["value"])
                 out["dateModified"] = str(date.isoformat())
 
         for item in entry['field_is_dependent_of']:
