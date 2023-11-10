@@ -14,18 +14,15 @@ runs:
       uses: actions/setup-python@v1
       with:
         python-version: "3.7"
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         repository: bioconda/bioconda-recipes
-        path: bioconda
-    - uses: actions/checkout@v2
-      with:
-        path: content
+        path: /tmp/bioconda
     - name: Install dependencies
       run:
         pip install -r ${{ github.action_path }}/requirements.txt
       shell: bash
     - name: import bioconda tools
       run: |
-        python3 ${{ github.action_path }}/bioconda_importer.py data/ bioconda/recipes/
+        python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda/recipes/
       shell: bash
