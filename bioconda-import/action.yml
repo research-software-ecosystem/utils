@@ -21,10 +21,6 @@ runs:
         unzip bioconda-recipes.zip
         rm bioconda-recipes.zip
       shell: bash
-    - uses: actions/checkout@v3
-      with:
-        repository: bioconda/bioconda-recipes
-        path: /tmp/bioconda
     - name: Install dependencies
       run:
         pip install -r ${{ github.action_path }}/requirements.txt
