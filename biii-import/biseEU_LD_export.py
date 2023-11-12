@@ -225,6 +225,10 @@ def get_raw_node(node_id, connection):
         print("Connection error")
         print(e)
         return None
+    except json.decoder.JSONDecodeError as e:
+        print(f"Contents are not propertly formatted in {req.geturl()}")
+        print("Response contents:",req.data)
+        return None
 
 def get_node_as_bioschema(node_id, connection):
     """
@@ -617,6 +621,10 @@ def get_software_list(connection):
     except urllib3.exceptions.HTTPError as e:
         print("Connection error")
         print(e)
+    except json.decoder.JSONDecodeError as e:
+        print(f"Contents are not propertly formatted in {req.geturl()}")
+        print("Response contents:",req.data)
+        return None
 
 if __name__ == '__main__':
     main()
