@@ -20,7 +20,7 @@ runs:
       shell: bash
     - name: import biocontainers using the API
       run: |
-        python3 ${{ github.action_path }}/biocontainers-importer.py ${{ github.workspace }}/data/ $BIOCONTAINERS_URL
+        python3 ${{ github.action_path }}/biocontainers-importer.py ${{ github.workspace }}/data/ "https://raw.githubusercontent.com/BioContainers/tools-metadata/master/annotations.yaml"
       shell: bash
     - name: reformat json to a predictable format with jq and sponge
       run: |
