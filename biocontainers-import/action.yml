@@ -1,0 +1,31 @@
+name: 'import biocontainers'
+description: 'biocontainers bulk import'
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.7"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: import biocontainers using the API
+      run: |
+        python3 ${{ github.action_path }}/biocontainers-importer.py ${{ github.workspace }}/data/ $BIOCONTAINERS_URL
+      shell: bash
+    - name: reformat json to a predictable format with jq and sponge
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install moreutils
+        FILES='data/*/*.biotools.json'
+        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
