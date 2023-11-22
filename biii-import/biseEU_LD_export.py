@@ -99,7 +99,7 @@ def main():
             tpe_id = s['title'].lower().replace('/', '').replace(' ', '-')
             directory = os.path.join("data", tpe_id)
             if not os.path.isdir(directory):
-                os.mkdir(directory)
+                os.makedirs(directory)
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
             if not args.e:
@@ -121,11 +121,12 @@ def main():
 
             import_to_graph(graph, node_ld)
             count += 1
-        os.remove(out_filename)
-        graph.serialize(
-            format="turtle",
-            destination=out_filename
-        )
+        if os.path.exists(out_filename):
+            os.remove(out_filename)
+            graph.serialize(
+                format="turtle",
+                destination=out_filename
+            )
 
 
     if args.dump:
