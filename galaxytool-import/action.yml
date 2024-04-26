@@ -1,7 +1,7 @@
 name: "import galaxy tool"
 description: "galaxy tool bulk import"
 
-:
+inputs:
   repo-user:
     description: "User that commits modifications"
     required: true
