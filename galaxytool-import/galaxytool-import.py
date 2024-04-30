@@ -31,6 +31,7 @@ def retrieve():
         drop_false = lambda path, key, value: bool(value)
         tool_cleaned = remap(tool, visit=drop_false)
         if not os.path.isdir(directory):
+            print(f"No folder found for tool with bio.tool id: {tool_id}")
             continue
         with open(os.path.join(directory, tpe_id + ".galaxy.json"), "w") as write_file:
             json.dump(
