@@ -1,8 +1,8 @@
+import glob
 import json
 import os
-import glob
-import pandas as pd
 
+import pandas as pd
 from boltons.iterutils import remap
 
 GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_tool_metadata_extractor/main/results/all_tools.tsv"
@@ -23,16 +23,26 @@ def retrieve():
     entry = json.loads(entry.to_json(orient="records"))
     nb_tools = 1
     for tool in entry:
-        tool_id = tool["bio.tool id"]
-        if not tool_id:
+        tool_id = tool.get("bio.tool id")
+        galaxy_tool_id = tool.get("Galaxy wrapper id")
+
+        if not tool_id and not galaxy_tool_id:
+            print("No tool id found")
             continue
-        tpe_id = tool_id.lower()
-        directory = os.path.join("data", tpe_id)
+
+        tool_dir_exist = False
+        if tool_id:
+            tpe_id = tool_id.lower()
+            directory = os.path.join("data", tpe_id)
+            tool_dir_exist = os.path.isdir(directory)
+
+        if not tool_dir_exist and galaxy_tool_id:
+            tpe_id = galaxy_tool_id.lower()
+            directory = os.path.join("datasets", "galaxy-tools", tpe_id)
+            os.makedirs(directory, exist_ok=True)
+
         drop_false = lambda path, key, value: bool(value)
         tool_cleaned = remap(tool, visit=drop_false)
-        if not os.path.isdir(directory):
-            print(f"No folder found for tool with bio.tool id: {tool_id}")
-            continue
         with open(os.path.join(directory, tpe_id + ".galaxy.json"), "w") as write_file:
             json.dump(
                 tool_cleaned,
@@ -41,7 +51,7 @@ def retrieve():
                 indent=4,
                 separators=(",", ": "),
             )
-        print(f"import tool #{nb_tools}: {tool_id}")
+        print(f"import tool #{nb_tools}: {directory}")
         nb_tools += 1
 
 
