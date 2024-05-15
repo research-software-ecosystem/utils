@@ -38,7 +38,7 @@ def retrieve():
 
         if not tool_dir_exist and galaxy_tool_id:
             tpe_id = galaxy_tool_id.lower()
-            directory = os.path.join("datasets", "galaxy-tools", tpe_id)
+            directory = os.path.join("imports", "galaxy", tpe_id)
             os.makedirs(directory, exist_ok=True)
 
         drop_false = lambda path, key, value: bool(value)
