@@ -11,6 +11,8 @@ GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/gal
 def clean():
     for data_file in glob.glob(r"data/*/*.galaxy.json"):
         os.remove(data_file)
+    for import_file in glob.glob(r"imports/galaxy/*/*.galaxy.json"):
+        os.remove(import_file)
 
 
 def retrieve():
@@ -23,27 +25,20 @@ def retrieve():
     entry = json.loads(entry.to_json(orient="records"))
     nb_tools = 1
     for tool in entry:
-        tool_id = tool.get("bio.tool id")
         galaxy_tool_id = tool.get("Galaxy wrapper id")
 
-        if not tool_id and not galaxy_tool_id:
+        if not galaxy_tool_id:
             print("No tool id found")
             continue
 
-        tool_dir_exist = False
-        if tool_id:
-            tpe_id = tool_id.lower()
-            directory = os.path.join("data", tpe_id)
-            tool_dir_exist = os.path.isdir(directory)
-
-        if not tool_dir_exist and galaxy_tool_id:
-            tpe_id = galaxy_tool_id.lower()
-            directory = os.path.join("imports", "galaxy", tpe_id)
-            os.makedirs(directory, exist_ok=True)
+        tpe_id = galaxy_tool_id.lower()
+        directory = os.path.join("imports", "galaxy", tpe_id)
+        os.makedirs(directory, exist_ok=True)
 
         drop_false = lambda path, key, value: bool(value)
         tool_cleaned = remap(tool, visit=drop_false)
-        with open(os.path.join(directory, tpe_id + ".galaxy.json"), "w") as write_file:
+        save_path = os.path.join(directory, f"{tpe_id}.galaxy.json")
+        with open(save_path, "w") as write_file:
             json.dump(
                 tool_cleaned,
                 write_file,
@@ -51,7 +46,20 @@ def retrieve():
                 indent=4,
                 separators=(",", ": "),
             )
-        print(f"import tool #{nb_tools}: {directory}")
+        print(f"import tool #{nb_tools}: {tpe_id}")
+
+        tool_id = tool.get("bio.tool id")
+        if tool_id:
+            tpe_id = tool_id.lower()
+            directory = os.path.join("data", tpe_id)
+            if os.path.isdir(directory):
+                data_save_path = os.path.join(directory, f"{tpe_id}.galaxy.json")
+                with open(save_path, "rb") as f_src, open(
+                    data_save_path, "wb"
+                ) as f_dst:
+                    f_dst.write(f_src.read())
+                print(f"copy tool #{nb_tools} to data folder: {tpe_id}")
+
         nb_tools += 1
 
 
