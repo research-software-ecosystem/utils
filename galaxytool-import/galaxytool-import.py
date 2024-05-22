@@ -11,7 +11,7 @@ GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/gal
 def clean():
     for data_file in glob.glob(r"data/*/*.galaxy.json"):
         os.remove(data_file)
-    for import_file in glob.glob(r"imports/galaxy/*/*.galaxy.json"):
+    for import_file in glob.glob(r"imports/galaxy/*.galaxy.json"):
         os.remove(import_file)
 
 
@@ -24,6 +24,10 @@ def retrieve():
     entry = pd.read_csv(GALAXY_ALL_TOOLS_METADATA, sep="\t")
     entry = json.loads(entry.to_json(orient="records"))
     nb_tools = 1
+
+    galaxy_directory = os.path.join("imports", "galaxy")
+    os.makedirs(galaxy_directory, exist_ok=True)
+
     for tool in entry:
         galaxy_tool_id = tool.get("Galaxy wrapper id")
 
@@ -31,13 +35,11 @@ def retrieve():
             print("No tool id found")
             continue
 
-        tpe_id = galaxy_tool_id.lower()
-        directory = os.path.join("imports", "galaxy", tpe_id)
-        os.makedirs(directory, exist_ok=True)
+        galaxy_tool_id = galaxy_tool_id.lower()
 
         drop_false = lambda path, key, value: bool(value)
         tool_cleaned = remap(tool, visit=drop_false)
-        save_path = os.path.join(directory, f"{tpe_id}.galaxy.json")
+        save_path = os.path.join(galaxy_directory, f"{galaxy_tool_id}.galaxy.json")
         with open(save_path, "w") as write_file:
             json.dump(
                 tool_cleaned,
@@ -46,7 +48,7 @@ def retrieve():
                 indent=4,
                 separators=(",", ": "),
             )
-        print(f"import tool #{nb_tools}: {tpe_id}")
+        print(f"import tool #{nb_tools}: {galaxy_tool_id}")
 
         tool_id = tool.get("bio.tool id")
         if tool_id:
