@@ -39,6 +39,7 @@ def retrieve():
 
         drop_false = lambda path, key, value: bool(value)
         tool_cleaned = remap(tool, visit=drop_false)
+        tool_cleaned = {k.replace(" ", "_"): v for k, v in tool_cleaned.items()}
         save_path = os.path.join(galaxy_directory, f"{galaxy_tool_id}.galaxy.json")
         with open(save_path, "w") as write_file:
             json.dump(
