@@ -1,0 +1,35 @@
+name: "import galaxy tool"
+description: "galaxy tool bulk import"
+
+inputs:
+  repo-user:
+    description: "User that commits modifications"
+    required: true
+  repo-token:
+    description: "GitHub token to commit modifications"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+
+    - name: import galaxy tool using the API
+      run: |
+        python ${{ github.action_path }}/galaxytool-import.py
+      shell: bash
+
+    - name: reformat json to a predictable format with jq and sponge
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install moreutils
+        FILES='*/*/*.galaxy.json'
+        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
