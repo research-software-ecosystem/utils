@@ -49,6 +49,7 @@ def parse_bioconda(directory):
                     "pin_compatible": fake,
                     "pin_subpackage": fake,
                     "exact": fake,
+                    "stdlib": fake,
                 }
             )
         )
