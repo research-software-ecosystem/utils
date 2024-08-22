@@ -27,5 +27,5 @@ runs:
       shell: bash
     - name: import bioconda tools
       run: |
-        python3 ${{ github.action_path }}/bioconda_importer.py data/ /tmp/bioconda-recipes-master/recipes/
+        python3 ${{ github.action_path }}/bioconda_importer.py . /tmp/bioconda-recipes-master/recipes/
       shell: bash
