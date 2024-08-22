@@ -11,25 +11,12 @@ import jinja2
 
 from collections import defaultdict
 
+def clean(content_path):
+    for data_file in Path(content_path).glob("data/*/bioconda_*.yaml"):
+        os.remove(data_file)
 
 def fake(foo, **args):
     pass
-
-
-def parse_biotools(directory):
-    """
-    Function to get biotools content data into memory.
-    """
-    data = dict()
-    for root, dirs, files in os.walk(directory):
-        for filename in files:
-            if filename.endswith("biotools.json"):
-                filepath = os.path.join(root, filename)
-                with open(filepath, "r") as f:
-                    biotools = json.load(f)
-                    bio_id = biotools["biotoolsID"].lower()
-                    data[bio_id] = {"data": biotools, "path": filepath}
-    return data
 
 
 def parse_bioconda(directory):
@@ -53,55 +40,30 @@ def parse_bioconda(directory):
                 }
             )
         )
-        extras = conda.get("extra", None)
-        identifiers = defaultdict(list)
-        if extras:
-            ids = extras.get("identifiers", None)
-            if ids:
-                for id in ids:
-                    n, c = id.split(":", 1)
-                    identifiers[n].append(c)
-        data[str(p.absolute())] = dict({"recipe": conda, "ids": identifiers})
+        data[str(p.absolute())] = conda
 
     return data
 
 
-def create_metadata(conda, path, biotools_id):
-    data = conda["recipe"]["package"]
-    data.update(conda["recipe"]["about"])
-    extra = conda["recipe"].get("extra", None)
-    if extra:
-        identifiers = extra.get("identifiers", None)
-        if extra.get("identifiers", None):
-            data.update({"identifiers": extra["identifiers"]})
-    data.update({"biotools_id": biotools_id})
-    print(f"updating {path}...")
-    print(data)
-    with open(path, "w") as out:
-        yaml.dump(data, out)
-
-
-def merge(tools, conda, content_path):
+def merge(conda, content_path):
+    bioconda_import_path = os.path.join(content_path, 'imports', 'bioconda')
+    biotools_data_path = os.path.join(content_path, 'data')
     for name, data in conda.items():
-        ids = data["ids"]
-        if ids:
-            bio = ids.get("biotools", None)
-            if bio:
-                # fix me ... recipes with multiple biotools, ids
-                # assert len(bio) == 1
-                bio = bio[0].lower()
-                path = os.path.join(content_path, bio)
-                print(f"bioconda file {path} bio.tools entry {bio}")
-                if not tools.get(bio, None):
-                    print("None bio.tools entry", bio)
-                    # if not os.path.exists(path):
-                    #    os.mkdir(path)
-                    # create_metadata(data, '%s/bioconda_%s.yaml' % (path, bio), bio)
-                    continue
-                create_metadata(data, "%s/bioconda_%s.yaml" % (path, bio), bio)
-                # print(bio, name, tools[bio]['path'])
-                continue
-
+        package_name = data['package']['name']
+        import_file_path = os.path.join(bioconda_import_path, f"bioconda_{package_name}.yaml")
+        with open(import_file_path, "w") as out:
+            yaml.dump(data, out)
+        if 'extra' not in data or 'identifiers' not in data['extra']:
+            continue
+        biotools_ids = [ident.split(':')[1].lower() for ident in data['extra']['identifiers'] if ident.startswith('biotools:')]
+        for biotools_id in biotools_ids:
+            biotools_file_path = os.path.join(content_path, 'data', biotools_id, f"bioconda_{package_name}.yaml")
+            try:
+                with open(biotools_file_path, "w") as out:
+                    yaml.dump(data, out)
+            except FileNotFoundError:
+                print(f"Error trying to create the file {biotools_file_path}")
+                pass
 
 class readable_dir(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -122,7 +84,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="test", fromfile_prefix_chars="@")
     parser.add_argument(
         "biotools",
-        help="path to metadata dir, e.g. content/data/",
+        help="path to RSEc content dir, e.g. content/",
         type=str,
         action=readable_dir,
     )
@@ -133,7 +95,6 @@ if __name__ == "__main__":
         action=readable_dir,
     )
     args = parser.parse_args()
-    content_path = args.biotools
-    tools = parse_biotools(args.biotools)
+    clean(args.biotools)
     conda = parse_bioconda(args.bioconda)
-    merge(tools, conda, content_path)
+    merge(conda, args.biotools)
