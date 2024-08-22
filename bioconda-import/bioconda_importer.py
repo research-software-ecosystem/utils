@@ -11,9 +11,15 @@ import jinja2
 
 from collections import defaultdict
 
+
 def clean(content_path):
+    import_directory = os.path.join(content_path, "imports", "bioconda")
+    os.makedirs(import_directory, exist_ok=True)
+    for data_file in Path(content_path).glob("imports/bioconda/bioconda_*.yaml"):
+        os.remove(data_file)
     for data_file in Path(content_path).glob("data/*/bioconda_*.yaml"):
         os.remove(data_file)
+
 
 def fake(foo, **args):
     pass
