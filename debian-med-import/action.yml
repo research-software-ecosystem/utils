@@ -1,0 +1,25 @@
+name: 'import Debian Med packages'
+description: 'Debian Med bulk import'
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.7"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: import Debian Med packages using the UDD database access
+      run: |
+        python ${{ github.action_path }}/import.py
+      shell: bash
+
