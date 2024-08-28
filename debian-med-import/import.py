@@ -21,9 +21,9 @@ def clean(base_path):
         os.remove(data_file)
 
 def process_data(base_path):
+    """Query UDD for debian-med packages and write them to YAML files in `import/debian-med`, plus in `data` if a biotools cross-link exists."""
     import_directory = os.path.join(base_path, "imports", "debian-med")
     biotools_directory = os.path.join(base_path, "data")
-    """Query UDD for debian-med packages and write them to YAML files in `import/debian-med`, plus in `data` if a biotools cross-link exists."""
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.INFO)
     fileHandler = logging.FileHandler('debian_import.log')
