@@ -20,6 +20,6 @@ runs:
       shell: bash
     - name: import Debian Med packages using the UDD database access
       run: |
-        python ${{ github.action_path }}/import.py ${{ github.workspace }}/data
+        python ${{ github.action_path }}/import.py ${{ github.workspace }}
       shell: bash
 
