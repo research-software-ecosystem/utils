@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from boltons.iterutils import remap
 
-GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/results/all_tools.tsv"
+GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.tsv"
 
 
 def clean():
