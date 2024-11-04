@@ -1,0 +1,31 @@
+name: 'import bioconductor'
+description: 'bioconductor bulk import'
+inputs:
+  repo-user:  # id of input
+    description: 'User that commits modifications'
+    required: true
+  repo-token:
+    description: 'GitHub token to commit modifications'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: import bioconductor using the API
+      run: |
+        python ${{ github.action_path }}/import.py
+      shell: bash
+    - name: reformat json to a predictable format with jq and sponge
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install moreutils
+        FILES='imports/bioconductor/*.bioconductor.json'
+        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+      shell: bash
