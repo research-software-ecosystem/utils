@@ -2,32 +2,106 @@ import argparse
 import glob
 import json
 import os
-
 import requests
+import logging
+import yaml
 
-BIOCONDUCTOR_ENDPOINT = "https://bioconductor.org/packages/json/3.20/bioc/packages.json"
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
+
+# Bioconductor URL format
+BIOCONDUCTOR_BASE_URL = "https://bioconductor.org/packages/json/{}/bioc/packages.json"
+
+def get_bioconductor_version():
+    """
+    Query Bioconductor to get the latest version from the config.yaml file.
+    """
+    config_url = "https://bioconductor.org/config.yaml"
+    try:
+        # Fetch the config.yaml to extract the release version
+        config_response = requests.get(config_url)
+        config_response.raise_for_status()
+        config = yaml.safe_load(config_response.text)
+        
+        # Extract the current release version
+        version = config.get('release_version')
+        if not version:
+            logger.error("Release version not found in the config file.")
+            return None
+        
+        logger.info(f"Detected latest Bioconductor version: {version}")
+        return version
+    except requests.RequestException as e:
+        logger.error(f"Error fetching Bioconductor config: {e}")
+        return None
 
 def clean():
     import_directory = os.path.join("imports", "bioconductor")
     os.makedirs(import_directory, exist_ok=True)
-    for package_file in glob.glob(r"imports/bioconductor/*.bioconductor.json"):
-        os.remove(package_file)
-    #for package_file in glob.glob(r"data/*/*.bioconductor.json"):
-    #    os.remove(package_file)
 
-def retrieve(filters=None):
+    # Get a list of all package files to be removed
+    package_files = glob.glob(r"imports/bioconductor/*.bioconductor.json")
+    
+    # Count and remove files
+    removed_count = len(package_files)
+    for package_file in package_files:
+        os.remove(package_file)
+
+    # Log the number of files removed
+    logger.info(f"Cleaned up {removed_count} previous package files.")
+
+def retrieve(version, filters=None):
     """
-    Go through bioconductor entries using its API and save the JSON files
-    in the right folders
+    Go through Bioconductor entries using its API for the provided version
+    and save the JSON files in the right folders, but only for packages
+    that have 'Software' in the 'biocViews' key.
     """
-    packs = requests.get(BIOCONDUCTOR_ENDPOINT).json()
-    for pack in list(packs.values()):
-        path = os.path.join("imports", "bioconductor", f"{pack['Package'].lower()}.bioconductor.json")
-        with open(path, "w") as write_file:
-            json.dump(pack, write_file, sort_keys=True, indent=4, separators=(",", ": "))
+    if version is None:
+        logger.error("Unable to retrieve data because the Bioconductor version is not available.")
+        return
+
+    logger.info(f"Fetching data for Bioconductor version {version}...")
+    endpoint = BIOCONDUCTOR_BASE_URL.format(version)
+    
+    try:
+        packs = requests.get(endpoint).json()
+    except requests.RequestException as e:
+        logger.error(f"Error fetching data from Bioconductor API: {e}")
+        return
+
+    # Filter packages with 'Software' in the 'biocViews' key
+    software_packs = [pack for pack in packs.values() if "biocViews" in pack and "Software" in pack["biocViews"]]
+
+    if not software_packs:
+        logger.warning("No packages with 'Software' in 'biocViews' found.")
+        return
+
+    logger.info(f"Found {len(software_packs)} packages with 'Software' in 'biocViews'.")
+    total_packs = len(software_packs)
+    
+    # Save the packages and log the progress
+    for idx, pack in enumerate(software_packs, start=1):
+        package_name = pack['Package'].lower()
+        path = os.path.join("imports", "bioconductor", f"{package_name}.bioconductor.json")
+        
+        try:
+            with open(path, "w") as write_file:
+                json.dump(pack, write_file, sort_keys=True, indent=4, separators=(",", ": "))
+            logger.info(f"Saved {idx}/{total_packs} - {package_name}")
+        except IOError as e:
+            logger.error(f"Error saving package {package_name}: {e}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="bioconductor import script")
+    parser = argparse.ArgumentParser(description="Bioconductor import script")
     args = parser.parse_args()
+
+    # Clean old data
     clean()
-    retrieve()
+
+    # Get the latest Bioconductor version
+    version = get_bioconductor_version()
+
+    # Retrieve new data based on the latest version
+    retrieve(version)
+
