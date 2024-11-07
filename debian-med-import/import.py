@@ -44,72 +44,72 @@ def process_data(base_path):
     cursor = connection.cursor()
     query = """
     SELECT array_to_json(array_agg(t)) FROM (
-      SELECT DISTINCT
-             p.package, p.distribution, p.release, p.component,
-             regexp_replace(regexp_replace(regexp_replace(regexp_replace(p.version, '-[.\d]+$', ''), '\+dfsg.*$', '') , '\+lgpl.*$', ''), '-\d*biolinux\d*$', '') AS version, 
-             p.source, p.homepage, p.license as license, p.blend as blend, p.description_md5,
-             edam.topics  as topics,
-             edam.scopes  as edam_scopes
+        SELECT DISTINCT
+            p.package, p.distribution, p.release, p.component,
+            regexp_replace(regexp_replace(regexp_replace(regexp_replace(p.version, '-[.\d]+$', ''), '\+dfsg.*$', '') , '\+lgpl.*$', ''), '-\d*biolinux\d*$', '') AS version, 
+            p.source, p.homepage, p.license as license, p.blend as blend, p.description_md5,
+            edam.topics  as topics,
+            edam.scopes  as edam_scopes
         FROM (
-          SELECT * FROM (
+            SELECT * FROM (
             SELECT DISTINCT
-                 package, distribution, release, component, strip_binary_upload(version) AS version,
-                 source, homepage, description, description_md5, 'unknown' as license, 'debian-med' as blend
+                package, distribution, release, component, strip_binary_upload(version) AS version,
+                source, homepage, description, description_md5, 'unknown' as license, 'debian-med' as blend
             FROM packages
             WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+                            (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
             UNION
             SELECT DISTINCT
-                 package, 'prospective' AS distribution, 'vcs' AS release, component, strip_binary_upload(chlog_version) AS version,
-                 source, homepage, description, description_md5, license, blend
+                package, 'prospective' AS distribution, 'vcs' AS release, component, strip_binary_upload(chlog_version) AS version,
+                source, homepage, description, description_md5, license, blend
             FROM blends_prospectivepackages
             WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
-           ) AS tmp
+                            (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+        ) AS tmp
         ) AS p
         JOIN (
-          -- select packages which have versions outside experimental
-          SELECT px.package, strip_binary_upload(px.version) AS version,
-                 (SELECT release FROM ( SELECT release, sort FROM releases
-                                         UNION
+        -- select packages which have versions outside experimental
+        SELECT px.package, strip_binary_upload(px.version) AS version,
+                (SELECT release FROM ( SELECT release, sort FROM releases
+                                        UNION
                                         SELECT 'vcs' AS release, 10000 AS sort
-                                      ) reltmp WHERE sort = MAX(rx.sort)) AS release
+                                    ) reltmp WHERE sort = MAX(rx.sort)) AS release
             FROM (
-               -- select highest version which is not in experimental - except if a package resides in experimental only
-               SELECT pex.package, CASE WHEN pnoex.version IS NOT NULL THEN pnoex.version ELSE pex.version END AS version FROM
-                  (SELECT package, MAX(version) AS version FROM packages
-                      WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
-                      GROUP BY package
-                  ) pex
-                  LEFT OUTER JOIN
-                  (SELECT package, MAX(version) AS version FROM packages
-                      WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+            -- select highest version which is not in experimental - except if a package resides in experimental only
+            SELECT pex.package, CASE WHEN pnoex.version IS NOT NULL THEN pnoex.version ELSE pex.version END AS version FROM
+                (SELECT package, MAX(version) AS version FROM packages
+                    WHERE package IN
+                        (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+                    GROUP BY package
+                ) pex
+                LEFT OUTER JOIN
+                (SELECT package, MAX(version) AS version FROM packages
+                    WHERE package IN
+                        (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
                         AND release != 'experimental'
-                      GROUP BY package
-                  ) pnoex ON pex.package = pnoex.package
-               UNION
-               SELECT DISTINCT package, strip_binary_upload(chlog_version) AS version FROM blends_prospectivepackages
+                    GROUP BY package
+                ) pnoex ON pex.package = pnoex.package
+            UNION
+            SELECT DISTINCT package, strip_binary_upload(chlog_version) AS version FROM blends_prospectivepackages
             ) px
             JOIN (
-               -- select the release in which this version is available
-               SELECT DISTINCT package, version, release FROM packages
+            -- select the release in which this version is available
+            SELECT DISTINCT package, version, release FROM packages
                 WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
-               UNION
-               SELECT DISTINCT package, chlog_version AS version, 'vcs' AS release FROM blends_prospectivepackages
+                        (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+            UNION
+            SELECT DISTINCT package, chlog_version AS version, 'vcs' AS release FROM blends_prospectivepackages
                 WHERE package IN
-                          (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
+                        (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med')
             ) py ON px.package = py.package AND px.version = py.version
             JOIN ( SELECT release, sort FROM releases
-                   UNION 
-                   SELECT 'vcs' AS release, 10000 AS sort
-                 ) rx ON py.release = rx.release
+                UNION 
+                SELECT 'vcs' AS release, 10000 AS sort
+                ) rx ON py.release = rx.release
             GROUP BY px.package, px.version
-           ) AS pvar ON pvar.package = p.package AND pvar.version = p.version AND pvar.release = p.release
+        ) AS pvar ON pvar.package = p.package AND pvar.version = p.version AND pvar.release = p.release
         LEFT OUTER JOIN edam   edam        ON p.source = edam.source       AND p.package = edam.package
-       ORDER BY source, package
+    ORDER BY source, package
     ) t;
     """
     cursor.execute(query)
@@ -141,14 +141,14 @@ def process_data(base_path):
         biotools_xref = True
         if package == package_source:
             if biotools is None:
-                rootLogger.warning(f"package '{package_source}' has no bio.tools ref, skipping.")
+                rootLogger.warning(f"package '{package_source}' has no bio.tools ref.")
                 biotools_xref = False            
             else:
                 biotools_package_directory = os.path.join(biotools_directory, biotools.lower())
                 p = Path(biotools_package_directory)
                 if not p.is_dir():
                     rootLogger.warning(
-                        f"package '{package_source}' has a biotools ref ('{biotools}') but no folder exists, skipping."
+                        f"package '{package_source}' has a biotools ref ('{biotools}') but no folder exists."
                     )
                     biotools_xref = False            
         else:
@@ -157,7 +157,7 @@ def process_data(base_path):
             )
             biotools_xref = False
         rootLogger.info(
-            f"processing package '{package_source}' with {'biotools ref ' + biotools if biotools_xref else 'with no biotools ref'}."
+            f"processing package '{package_source} (known as {package} in debian)' with {'biotools ref ' + biotools if biotools_xref else 'with no biotools ref'}."
         )
         query_bib = f"select array_to_json(array_agg(t)) from (select key, package, rank, value from bibref where key = 'doi' AND source = '{package_source}') t"
         cursor_loop.execute(query_bib)
