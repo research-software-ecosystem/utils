@@ -29,7 +29,7 @@ def retrieve():
     os.makedirs(galaxy_directory, exist_ok=True)
 
     for tool in entry:
-        galaxy_tool_id = tool.get("Galaxy wrapper id")
+        galaxy_tool_id = tool.get("Suite ID")
 
         if not galaxy_tool_id:
             print("No tool id found")
@@ -51,7 +51,7 @@ def retrieve():
             )
         print(f"import tool #{nb_tools}: {galaxy_tool_id}")
 
-        tool_id = tool.get("bio.tool id")
+        tool_id = tool.get("bio.tool ID")
         if tool_id:
             tpe_id = tool_id.lower()
             directory = os.path.join("data", tpe_id)
