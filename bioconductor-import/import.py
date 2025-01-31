@@ -89,6 +89,13 @@ def retrieve(version, filters=None):
             with open(path, "w") as write_file:
                 json.dump(pack, write_file, sort_keys=True, indent=4, separators=(",", ": "))
             logger.info(f"Saved {idx}/{total_packs} - {package_name}")
+            try:
+                citation_html = requests.get(f"https://www.bioconductor.org/packages/release/bioc/citations/{pack['Package']}/citation.html").text
+                citation_path = os.path.join("imports", "bioconductor", f"{package_name}.bioconductor.citation.html")
+                with open(citation_path, "w") as write_file:
+                    write_file.write(citation_html)
+            except Exception as e:
+                logger.error(f"Error fetching citation for {package_name}: {e}")
         except IOError as e:
             logger.error(f"Error saving package {package_name}: {e}")
 
