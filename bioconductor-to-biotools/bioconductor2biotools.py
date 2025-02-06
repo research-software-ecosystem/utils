@@ -29,21 +29,15 @@ graph TD
 import re
 import json
 import argparse
+import os
 from bs4 import BeautifulSoup
 
 def process_authors(author_str):
     """
     Processes the author field, extracting names, roles, and ORCIDs, and filters only relevant authors.
-    
-    Parameters:
-        author_str (str): The raw author string from Bioconductor.
-    
-    Returns:
-        list: A list of dictionaries with author details formatted for bio.tools.
     """
-
     authors = []
-    author_entries = re.split(r',(?![^\[]*\])', author_str)  # Split on commas outside square brackets
+    author_entries = re.split(r',(?![^\[]*\])', author_str)
     
     for entry in author_entries:
         entry = entry.strip()
@@ -76,35 +70,24 @@ def process_authors(author_str):
     
     return authors
 
+def get_id(data):
+    """
+    returns the bio.tools ID from the Bioconductor JSON data.
+    """
+    return f"bioconductor-{data['Package'].lower()}"
 
 def process_bioconductor_package(data):
     """
     Converts a Bioconductor JSON entry into a bio.tools formatted dictionary.
-    
-    Parameters:
-        data (dict): The input JSON data from Bioconductor.
-    
-    Returns:
-        dict: A dictionary formatted for bio.tools.
     """
     return {
-        "biotoolsCURIE": f"biotools:bioconductor-{data['Package']}",
-        "biotoolsID": f"bioconductor{data['Package']}",
+        "biotoolsCURIE": f"biotools:{get_id(data)}",
+        "biotoolsID": get_id(data),
         "collectionID": ["BioConductor"],
         "credit": process_authors(data.get("Author", "")),
         "description": data.get("Description", ""),
-        "documentation": [
-            {
-                "type": ["User manual"],
-                "url": f"http://bioconductor.org/packages/release/bioc/html/{data['Package']}.html"
-            }
-        ],
-        "download": [
-            {
-                "type": "Source code",
-                "url": f"http://bioconductor/packages/release/bioc/src/{data.get('source.ver', '')}"
-            }
-        ],
+        "documentation": [{"type": ["User manual"], "url": f"http://bioconductor.org/packages/release/bioc/html/{data['Package']}.html"}],
+        "download": [{"type": "Source code", "url": f"http://bioconductor/packages/release/bioc/src/{data.get('source.ver', '')}"}],
         "homepage": f"http://bioconductor.org/packages/release/bioc/html/{data['Package']}.html",
         "language": ["R"],
         "license": data.get("License", ""),
@@ -118,12 +101,6 @@ def process_bioconductor_package(data):
 def extract_publications(citation_html):
     """
     Extracts publication information from a Bioconductor citation HTML file.
-    
-    Parameters:
-        citation_html (str): The HTML content of the Bioconductor citation page.
-    
-    Returns:
-        list: A list of publication dictionaries formatted for bio.tools.
     """
     publications = []
     soup = BeautifulSoup(citation_html, "html.parser")
@@ -132,21 +109,12 @@ def extract_publications(citation_html):
         href = link["href"].strip()
         if "doi.org" in href:
             publications.append({"doi": href.split("doi.org/")[-1]})
-        else:
-            print(f"Error: Non-DOI publication URL found: {href}")
     
     return publications
 
 def update_with_previous_data(new_data, previous_data):
     """
     Updates the newly generated bio.tools data with select fields from a previous bio.tools JSON file.
-    
-    Parameters:
-        new_data (dict): The newly generated bio.tools JSON data.
-        previous_data (dict): The previous bio.tools JSON data.
-    
-    Returns:
-        dict: The updated bio.tools JSON data.
     """
     keys_to_copy = ["additionDate", "biotoolsCURIE", "biotoolsID", "collectionID", "editPermission", "function"]
     for key in keys_to_copy:
@@ -154,33 +122,59 @@ def update_with_previous_data(new_data, previous_data):
             new_data[key] = previous_data[key]
     return new_data
 
+def batch_process(input_dir, output_dir):
+    """
+    Process all Bioconductor JSON and citation HTML files in the input directory.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    for filename in os.listdir(input_dir):
+        if filename.endswith(".json") and "bioconductor" in filename:
+            base_name = filename.replace(".json", "")
+            citation_file = os.path.join(input_dir, base_name + ".citation.html")
+            
+            with open(os.path.join(input_dir, filename), "r") as infile:
+                data = json.load(infile)
+
+            output_file = os.path.join(output_dir, get_id(data) + ".biotools.json")            
+            processed_data = process_bioconductor_package(data)
+            
+            if os.path.exists(citation_file):
+                with open(citation_file, "r", encoding="utf-8") as cit_file:
+                    processed_data["publications"] = extract_publications(cit_file.read())
+            
+            with open(output_file, "w") as outfile:
+                json.dump(processed_data, outfile, indent=4)
+
 def main():
-    """
-    Main function to parse command-line arguments and process JSON files for bio.tools formatting.
-    """
     parser = argparse.ArgumentParser(description="Process Bioconductor JSON and convert it to bio.tools JSON format.")
-    parser.add_argument("bioconductor_json_file", help="Path to the input Bioconductor JSON file.")
-    parser.add_argument("bioconductor_citation_file", help="Path to the Bioconductor citation HTML file.")
-    parser.add_argument("biotools_json_file", help="Path to the output bio.tools JSON file.")
-    parser.add_argument("--previous-biotools-json-file", help="Path to the previous bio.tools JSON file.", required=False)
+    subparsers = parser.add_subparsers(dest="mode", required=True)
+    
+    single_parser = subparsers.add_parser("single")
+    single_parser.add_argument("bioconductor_json_file")
+    single_parser.add_argument("bioconductor_citation_file")
+    single_parser.add_argument("biotools_json_file")
+    single_parser.add_argument("--previous-biotools-json-file", required=False)
+    
+    batch_parser = subparsers.add_parser("batch")
+    batch_parser.add_argument("input_directory")
+    batch_parser.add_argument("output_directory")
+    
     args = parser.parse_args()
     
-    with open(args.bioconductor_json_file, "r") as infile:
-        data = json.load(infile)
-    
-    processed_data = process_bioconductor_package(data)
-    
-    with open(args.bioconductor_citation_file, "r", encoding="utf-8") as citation_file:
-        citation_html = citation_file.read()
-        processed_data["publications"] = extract_publications(citation_html)
-    
-    if args.previous_biotools_json_file:
-        with open(args.previous_biotools_json_file, "r") as prevfile:
-            previous_data = json.load(prevfile)
-        processed_data = update_with_previous_data(processed_data, previous_data)
-    
-    with open(args.biotools_json_file, "w") as outfile:
-        json.dump(processed_data, outfile, indent=4)
-    
+    if args.mode == "single":
+        with open(args.bioconductor_json_file, "r") as infile:
+            data = json.load(infile)
+        processed_data = process_bioconductor_package(data)
+        with open(args.bioconductor_citation_file, "r", encoding="utf-8") as citation_file:
+            processed_data["publications"] = extract_publications(citation_file.read())
+        if args.previous_biotools_json_file:
+            with open(args.previous_biotools_json_file, "r") as prevfile:
+                previous_data = json.load(prevfile)
+            processed_data = update_with_previous_data(processed_data, previous_data)
+        with open(args.biotools_json_file, "w") as outfile:
+            json.dump(processed_data, outfile, indent=4)
+    elif args.mode == "batch":
+        batch_process(args.input_directory, args.output_directory)
+
 if __name__ == "__main__":
     main()
