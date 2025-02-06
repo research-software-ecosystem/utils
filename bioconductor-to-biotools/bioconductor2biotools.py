@@ -140,7 +140,7 @@ def batch_process(input_dir, output_dir):
             
             if os.path.exists(citation_file):
                 with open(citation_file, "r", encoding="utf-8") as cit_file:
-                    processed_data["publications"] = extract_publications(cit_file.read())
+                    processed_data["publication"] = extract_publications(cit_file.read())
             
             with open(output_file, "w") as outfile:
                 json.dump(processed_data, outfile, indent=4)
@@ -166,7 +166,7 @@ def main():
             data = json.load(infile)
         processed_data = process_bioconductor_package(data)
         with open(args.bioconductor_citation_file, "r", encoding="utf-8") as citation_file:
-            processed_data["publications"] = extract_publications(citation_file.read())
+            processed_data["publication"] = extract_publications(citation_file.read())
         if args.previous_biotools_json_file:
             with open(args.previous_biotools_json_file, "r") as prevfile:
                 previous_data = json.load(prevfile)
