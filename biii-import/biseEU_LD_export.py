@@ -30,7 +30,8 @@ parser.add_argument('-dump', '--dump_all', help='RDF dump all Bise resources in 
 parser.add_argument('-test', '--test_dump', help='test the RDF dump on the first 10 Bise resources in RDF', dest='test', action='store_true', required=False)
 parser.add_argument('-leg', '--legacy_ontology', help='builds an RDF dump confiming with the Bise core ontology', dest='legacy_ont', action='store_true', required=False)
 
-ns = "http://biii.eu"
+#ns = "http://biii.eu"
+ns = "https://dev.biii.eurobioimaging.eu"
 
 def clean():
     for data_file in glob.glob("data/*/*/*.neubias.raw.json"):
