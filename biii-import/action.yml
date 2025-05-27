@@ -20,6 +20,6 @@ runs:
       shell: bash
     - name: import biii.eu data as bioschemas and raw files
       run: |
-        python ${{ github.action_path }}/biseEU_LD_export.py -td http://biii.eu -dump
+        python ${{ github.action_path }}/biseEU_LD_export.py -td https://dev.biii.eurobioimaging.eu -dump
       shell: bash
  
