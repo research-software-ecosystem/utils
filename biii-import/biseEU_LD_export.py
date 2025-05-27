@@ -1,5 +1,6 @@
 import os
 import urllib3
+import ssl
 import glob
 import json
 import argparse
@@ -183,8 +184,8 @@ def get_web_service(connection):
     """
     
     http = urllib3.PoolManager(
-        cert_reqs='CERT_NONE',      # Disable certificate verification
-        assert_hostname=False       # Disable hostname verification
+        # cert_reqs='CERT_NONE', 
+        cert_reqs=ssl.CERT_NONE   # Disable certificate verification
     )
     # auth_header = urllib3.util.make_headers(basic_auth=connection["username"] + ':' + connection["password"])
     # if ('proxy_url' in connection.keys()) and connection["proxy_url"]:
