@@ -10,6 +10,8 @@ import sys
 import urllib
 from rdflib import Graph, ConjunctiveGraph
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 parser = argparse.ArgumentParser(description="""
 RDF export tool for the NeuBIAS Bise.eu registry.
 
@@ -179,11 +181,16 @@ def get_web_service(connection):
     :param connection: the connection information (user, password, url, and proxy)
     :return: an urllib3 PoolManager instance connected to the endpoint url
     """
-    http = urllib3.PoolManager()
+    
+    http = urllib3.PoolManager(
+        cert_reqs='CERT_NONE',      # Disable certificate verification
+        assert_hostname=False       # Disable hostname verification
+    )
     # auth_header = urllib3.util.make_headers(basic_auth=connection["username"] + ':' + connection["password"])
     # if ('proxy_url' in connection.keys()) and connection["proxy_url"]:
     #     http = urllib3.ProxyManager(connection["proxy_url"], headers=auth_header)
     # http.headers.update(auth_header)
+    
     http.headers['Accept'] = 'application/json'
     http.headers['Content-type'] = 'application/json'
     return http
