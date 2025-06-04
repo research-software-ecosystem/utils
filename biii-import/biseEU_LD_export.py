@@ -11,7 +11,8 @@ import sys
 import urllib
 from rdflib import Graph, ConjunctiveGraph
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# Intially due to SSL errors
+# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 parser = argparse.ArgumentParser(description="""
 RDF export tool for the NeuBIAS Bise.eu registry.
@@ -184,8 +185,7 @@ def get_web_service(connection):
     """
     
     http = urllib3.PoolManager(
-        # cert_reqs='CERT_NONE', 
-        cert_reqs=ssl.CERT_NONE   # Disable certificate verification
+        # cert_reqs=ssl.CERT_NONE   # Disable certificate verification
     )
     # auth_header = urllib3.util.make_headers(basic_auth=connection["username"] + ':' + connection["password"])
     # if ('proxy_url' in connection.keys()) and connection["proxy_url"]:
