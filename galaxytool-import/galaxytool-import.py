@@ -2,11 +2,10 @@ import glob
 import json
 import os
 
-import pandas as pd
+import requests
 from boltons.iterutils import remap
 
-GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.tsv"
-
+GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.json"
 
 def clean():
     for data_file in glob.glob(r"data/*/*.galaxy.json"):
@@ -21,8 +20,8 @@ def retrieve():
     in the right folders
     """
 
-    entry = pd.read_csv(GALAXY_ALL_TOOLS_METADATA, sep="\t")
-    entry = json.loads(entry.to_json(orient="records"))
+    response = requests.get(GALAXY_ALL_TOOLS_METADATA)
+    entry = json.loads(response.text)
     nb_tools = 1
 
     galaxy_directory = os.path.join("imports", "galaxy")
@@ -31,15 +30,26 @@ def retrieve():
     for tool in entry:
         galaxy_tool_id = tool.get("Suite ID")
 
+        # create full path for tutorials
+        if "Related Tutorials" in tool:
+            updated_tutorials = []
+            for tutorial in tool["Related Tutorials"]:
+                if (
+                    "https://training.galaxyproject.org/training-material/"
+                    not in tutorial
+                ):
+                    topic = tutorial.split("/")[0]
+                    name = tutorial.split("/")[1]
+                    new_tutorials = f"https://training.galaxyproject.org/training-material/topics/{topic}/tutorials/{name}/tutorial.html"
+                    updated_tutorials.append(new_tutorials)
+            tool["Related Tutorials"] = updated_tutorials
+
         if not galaxy_tool_id:
             print("No tool id found")
             continue
 
         galaxy_tool_id = galaxy_tool_id.lower()
-
-        drop_false = lambda path, key, value: bool(value)
-        tool_cleaned = remap(tool, visit=drop_false)
-        tool_cleaned = {k.replace(" ", "_"): v for k, v in tool_cleaned.items()}
+        tool_cleaned = {k.replace(" ", "_"): v for k, v in tool.items()}
         save_path = os.path.join(galaxy_directory, f"{galaxy_tool_id}.galaxy.json")
         with open(save_path, "w") as write_file:
             json.dump(
