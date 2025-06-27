@@ -59,7 +59,8 @@ def merge(conda, content_path):
         import_file_path = os.path.join(bioconda_import_path, f"bioconda_{package_name}.yaml")
         with open(import_file_path, "w") as out:
             yaml.dump(data, out)
-        if 'extra' not in data or 'identifiers' not in data['extra']:
+        extra = data.get('extra')  # safely returns None if 'extra' not in data
+        if not extra or 'identifiers' not in extra:
             continue
         biotools_ids = [ident.split(':')[1].lower() for ident in data['extra']['identifiers'] if ident.startswith('biotools:')]
         for biotools_id in biotools_ids:
