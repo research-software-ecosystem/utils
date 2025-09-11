@@ -6,7 +6,7 @@ import requests
 from boltons.iterutils import remap
 
 HEADERS = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-HOST = 'https://bio-tools-dev.sdu.dk'
+HOST = 'https://bio.tools'
 TOOL_API_URL = f'{HOST}/api/tool/'
 
 logging.basicConfig(level=logging.INFO)   
