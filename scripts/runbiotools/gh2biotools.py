@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import json
 import logging
 import argparse
@@ -120,8 +121,9 @@ def print_summary(results):
 
 
 
-def run_upload(token, files):
-    headers = {**HEADERS, 'Authorization': f'Token {token}'}
+def run_upload(files):
+    TOKEN = os.environ['BIOTOOLS_API_TOKEN']
+    headers = {**HEADERS, 'Authorization': f'Token {TOKEN}'}
     results = {
         'uploaded': [],
         'updated': [],
@@ -144,11 +146,10 @@ def run_upload(token, files):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Sync changed .biotools.json files with bio.tools server')
 
-    parser.add_argument('--token', type=str, help='bio.tools token')
     parser.add_argument('--files', metavar='F', type=str, nargs='+',
                         help='List of changed/created .biotools.json files to process')
     
     args = parser.parse_args()
 
-    if args.token and args.files:
-        run_upload(args.token, args.files)
+    if args.files:
+        run_upload(args.files)
