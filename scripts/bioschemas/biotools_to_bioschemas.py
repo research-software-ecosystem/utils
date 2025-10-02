@@ -74,7 +74,7 @@ def rdfize(json_entry):
                 ## Retrieving FUNDERS
                 if "typeEntity" in credit.keys() and credit["typeEntity"]:
                     if "Funding agency" in credit["typeEntity"]:
-                        sType = "schema:Organization"
+                        sType = "sc:Organization"
                         if "orcidid" in credit.keys() and credit["orcidid"] != None:
                             if not "funder" in entry.keys():
                                 entry["funder"] = {
@@ -98,9 +98,9 @@ def rdfize(json_entry):
                         # print(credit['name'])
                         if "typeEntity" in credit.keys() and credit["typeEntity"]:
                             if "Person" in credit["typeEntity"]:
-                                sType = "schema:Person"
+                                sType = "sc:Person"
                             else:
-                                sType = "schema:Organization"
+                                sType = "sc:Organization"
                             if "orcidid" in credit.keys() and credit["orcidid"] != None:
                                 if not "author" in entry.keys():
                                     entry["author"] = {
@@ -128,9 +128,9 @@ def rdfize(json_entry):
                         # print(credit['name'])
                         if "typeEntity" in credit.keys() and credit["typeEntity"]:
                             if "Person" in credit["typeEntity"]:
-                                sType = "schema:Person"
+                                sType = "sc:Person"
                             else:
-                                sType = "schema:Organization"
+                                sType = "sc:Organization"
 
                             if "orcidid" in credit.keys() and credit["orcidid"] != None:
                                 if not "provider" in entry.keys():
@@ -162,9 +162,9 @@ def rdfize(json_entry):
 
                         if "typeEntity" in credit.keys() and credit["typeEntity"]:
                             if "Person" in credit["typeEntity"]:
-                                sType = "schema:Person"
+                                sType = "sc:Person"
                             else:
-                                sType = "schema:Organization"
+                                sType = "sc:Organization"
 
                             if "orcidid" in credit.keys() and credit["orcidid"] != None:
                                 if not "contributor" in entry.keys():
@@ -194,9 +194,9 @@ def rdfize(json_entry):
 
                         if "typeEntity" in credit.keys() and credit["typeEntity"]:
                             if "Person" in credit["typeEntity"]:
-                                sType = "schema:Person"
+                                sType = "sc:Person"
                             else:
-                                sType = "schema:Organization"
+                                sType = "sc:Organization"
 
                             if "orcidid" in credit.keys() and credit["orcidid"] != None:
                                 if not "primaryContact" in entry.keys():
