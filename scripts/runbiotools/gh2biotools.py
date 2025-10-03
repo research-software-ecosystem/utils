@@ -122,8 +122,12 @@ def print_summary(results):
 
 
 def run_upload(files):
-    TOKEN = os.environ['BIOTOOLS_API_TOKEN']
-    headers = {**HEADERS, 'Authorization': f'Token {TOKEN}'}
+    token = os.environ.get('BIOTOOLS_API_TOKEN')
+    if not token:
+        logging.error('Missing BIOTOOLS_API_TOKEN. Aborting upload.')
+        raise SystemExit(1)
+        
+    headers = {**HEADERS, 'Authorization': f'Token {token}'}
     results = {
         'uploaded': [],
         'updated': [],
