@@ -272,7 +272,7 @@ def get_node_as_bioschema(node_id, connection):
 
 def rdfize_bioschema_tool(json_entry):
     entry = json_entry
-    print(json.dumps(entry, indent=4, sort_keys=True))
+    #print(json.dumps(entry, indent=4, sort_keys=True))
 
     ctx = {
         "@context": {
