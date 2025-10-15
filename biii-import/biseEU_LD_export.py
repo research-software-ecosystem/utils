@@ -108,7 +108,7 @@ def main():
                 os.mkdir("datasets")
             if not os.path.isdir("data"):
                 os.mkdir("data")
-            if not os.path.exists(directory):
+            if not os.path.isdir(directory):
                 os.mkdir(directory)
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
@@ -152,6 +152,11 @@ def main():
             tpe_id = s['title'].lower().replace('/', '').replace(' ', '-')
             directory = os.path.join("data", tpe_id)
 
+            # create directory if it does not exist
+            if not os.path.isdir("datasets"):
+                os.mkdir("datasets")
+            if not os.path.isdir("data"):
+                os.mkdir("data")
             if not os.path.isdir(directory):
                 os.mkdir(directory)
 
