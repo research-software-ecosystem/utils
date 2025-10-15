@@ -1,2 +1,3 @@
 urllib3
 rdflib-jsonld
+beautifulsoup4

@@ -11,6 +11,12 @@ import sys
 import urllib
 from rdflib import Graph, ConjunctiveGraph
 
+from bs4 import BeautifulSoup
+
+def sanitize_html(text):
+    soup = BeautifulSoup(text, "html.parser")
+    return soup.get_text()
+
 # Intially due to SSL errors
 # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -181,7 +187,8 @@ def main():
 
             import_to_graph(graph, node_ld)
             count += 1
-        os.remove(out_filename)
+        if os.path.isfile(out_filename):
+            os.remove(out_filename)
         graph.serialize(
             format="turtle",
             destination=out_filename
@@ -312,7 +319,7 @@ def rdfize_bioschema_tool(json_entry):
         out["@type"] = "SoftwareApplication"
 
         if entry["body"] and entry["body"][0] and entry["body"][0]["value"]:
-            out["description"] = entry["body"][0]["value"]
+            out["description"] = sanitize_html(entry["body"][0]["value"])
 
         if entry["title"] and entry["title"][0] and entry["title"][0]["value"]:
             out["name"] = entry["title"][0]["value"]
@@ -437,7 +444,7 @@ def rdfize(json_entry):
 
         ######
         if entry["body"] and entry["body"][0] and entry["body"][0]["value"]:
-            entry["hasDescription"] = entry["body"][0]["value"]
+            entry["hasDescription"] = sanitize_html(entry["body"][0]["value"])
 
         if entry["title"] and entry["title"][0] and entry["title"][0]["value"]:
             entry["hasTitle"] = entry["title"][0]["value"]
