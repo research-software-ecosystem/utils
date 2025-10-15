@@ -269,6 +269,7 @@ def get_node_as_bioschema(node_id, connection):
     try:
         req = http.request('GET', connection["url"] + '/node/' + str(node_id) + '?_format=json')
         entry = json.loads(req.data.decode('utf-8'))
+        # print()
         # print(json.dumps(entry, indent=4, sort_keys=True))
         # print()
         return rdfize_bioschema_tool(entry)
@@ -279,7 +280,6 @@ def get_node_as_bioschema(node_id, connection):
 
 def rdfize_bioschema_tool(json_entry):
     entry = json_entry
-    #print(json.dumps(entry, indent=4, sort_keys=True))
 
     ctx = {
         "@context": {
@@ -337,12 +337,13 @@ def rdfize_bioschema_tool(json_entry):
                 #     out["applicationCategory"].append({"@id": item["target_uuid"]})
 
         for item in entry['field_has_topic']:
-            # print(item)
             if "target_uuid" in item.keys():
                 if not "hasTopic" in entry.keys():
-                    entry["hasTopic"] = [{"@id": item["target_uuid"]}]
+                    out["hasTopic"] = [{"@id": item["target_uuid"]}]
+                    # print(f"Added first topic {item['target_uuid']}")
                 else:
-                    entry["hasTopic"].append({"@id": item["target_uuid"]})
+                    out["hasTopic"].append({"@id": item["target_uuid"]})
+                    # print(f"Added another topic {item['target_uuid']}")
 
         for item in entry['field_has_reference_publication']:
             if not "citation" in out.keys():
