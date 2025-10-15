@@ -94,7 +94,7 @@ def main():
         for s in softwares:
             if count > 10:
                 break
-
+            
             sys.stdout.buffer.write(
                 'Exporting '.encode('utf-8') + s['title'].encode('utf-8') + ': '.encode('utf-8') + s['nid'].encode(
                     'utf-8') + ' ['.encode('utf-8') + str(round(count * 100 / total)).encode(
@@ -102,8 +102,13 @@ def main():
             sys.stdout.flush()
 
             tpe_id = s['title'].lower().replace('/', '').replace(' ', '-')
-            directory = os.path.join("data", tpe_id)
-            if not os.path.isdir(directory):
+            directory = os.path.join("./data", tpe_id)
+            # create directory if it does not exist
+            if not os.path.isdir("datasets"):
+                os.mkdir("datasets")
+            if not os.path.isdir("data"):
+                os.mkdir("data")
+            if not os.path.exists(directory):
                 os.mkdir(directory)
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
@@ -126,7 +131,8 @@ def main():
 
             import_to_graph(graph, node_ld)
             count += 1
-        os.remove(out_filename)
+        if os.path.isfile(out_filename):
+            os.remove(out_filename)
         graph.serialize(
             format="turtle",
             destination=out_filename
@@ -261,7 +267,7 @@ def get_node_as_bioschema(node_id, connection):
 
 def rdfize_bioschema_tool(json_entry):
     entry = json_entry
-    # print(json.dumps(entry, indent=4, sort_keys=True))
+    print(json.dumps(entry, indent=4, sort_keys=True))
 
     ctx = {
         "@context": {
@@ -313,10 +319,10 @@ def rdfize_bioschema_tool(json_entry):
                 else:
                     out["featureList"].append({"@id": item["target_uuid"]})
 
-                if not "applicationCategory" in out.keys():
-                    out["applicationCategory"] = [{"@id": item["target_uuid"]}]
-                else:
-                    out["applicationCategory"].append({"@id": item["target_uuid"]})
+                # if not "applicationCategory" in out.keys():
+                #     out["applicationCategory"] = [{"@id": item["target_uuid"]}]
+                # else:
+                #     out["applicationCategory"].append({"@id": item["target_uuid"]})
 
         for item in entry['field_has_topic']:
             # print(item)
