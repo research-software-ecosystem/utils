@@ -338,7 +338,7 @@ def rdfize_bioschema_tool(json_entry):
 
         for item in entry['field_has_topic']:
             if "target_uuid" in item.keys():
-                if not "hasTopic" in entry.keys():
+                if not "hasTopic" in out.keys():
                     out["hasTopic"] = [{"@id": item["target_uuid"]}]
                     # print(f"Added first topic {item['target_uuid']}")
                 else:
