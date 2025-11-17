@@ -64,7 +64,7 @@ def merge(conda, content_path):
             continue
         biotools_ids = [ident.split(':')[1].lower() for ident in data['extra']['identifiers'] if ident.startswith('biotools:')]
         for biotools_id in biotools_ids:
-            biotools_file_path = os.path.join(content_path, 'data', biotools_id, f"bioconda_{package_name}.yaml")
+            biotools_file_path = os.path.join(biotools_data_path, biotools_id, f"bioconda_{package_name}.yaml")
             try:
                 with open(biotools_file_path, "w") as out:
                     yaml.dump(data, out)
