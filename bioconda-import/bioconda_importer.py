@@ -48,7 +48,7 @@ def parse_bioconda(directory):
             )
             data[str(p.absolute())] = conda
         except Exception as e:
-            print(f"Error processing {p}: {str(e)}")
+            print(f"Error processing {p}: {type(e).__name__}: {str(e)}")
             continue
 
     return data
