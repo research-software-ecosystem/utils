@@ -72,7 +72,6 @@ def merge(conda, content_path):
                     yaml.dump(data, out)
             except FileNotFoundError:
                 print(f"Error trying to create the file {biotools_file_path}")
-                pass
 
 class readable_dir(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
