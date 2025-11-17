@@ -5,7 +5,6 @@ import yaml
 import argparse
 from pathlib import Path
 import jinja2
-from collections import defaultdict
 
 def clean(content_path):
     import_directory = os.path.join(content_path, "imports", "bioconda")
