@@ -3,14 +3,10 @@
 import json
 import os
 import yaml
-
 import argparse
 from pathlib import Path
-
 import jinja2
-
 from collections import defaultdict
-
 
 def clean(content_path):
     import_directory = os.path.join(content_path, "imports", "bioconda")
@@ -20,36 +16,42 @@ def clean(content_path):
     for data_file in Path(content_path).glob("data/*/bioconda_*.yaml"):
         os.remove(data_file)
 
-
-def fake(foo, **args):
-    pass
-
-
 def parse_bioconda(directory):
     """
-    Function to get bioconda content data into memory.
+    Get bioconda content data into memory.
     """
     data = dict()
+
+    # Create a custom Undefined class that treats undefined variables in conda jinja template as empty strings
+    class SilentUndefined(jinja2.Undefined):
+        def __str__(self):
+            return ""
+        __repr__ = __str__
+        __bool__ = lambda self: False
+        __getattr__ = __getitem__ = lambda self, *a, **kw: self
+        __iter__ = lambda self: iter(())
+        __call__ = lambda self, *a, **kw: self
+
+    # load custom Undefined class in custom environment
+    env = jinja2.Environment(undefined=SilentUndefined)
+
     for p in Path(directory).glob("./*/meta.yaml"):
-        template = jinja2.Template(p.read_text())
-        conda = yaml.safe_load(
-            template.render(
-                {
-                    "os": os,
-                    "compiler": fake,
-                    "environ": "",
-                    "cdt": fake,
-                    "pin_compatible": fake,
-                    "pin_subpackage": fake,
-                    "exact": fake,
-                    "stdlib": fake,
-                }
+        print(f"processing {p}...")
+        try:
+            template = env.from_string(p.read_text())
+            conda = yaml.safe_load(
+                template.render(
+                    {
+                        "os": os,
+                    }
+                )
             )
-        )
-        data[str(p.absolute())] = conda
+            data[str(p.absolute())] = conda
+        except Exception as e:
+            print(f"Error processing {p}: {str(e)}")
+            continue
 
     return data
-
 
 def merge(conda, content_path):
     bioconda_import_path = os.path.join(content_path, 'imports', 'bioconda')
@@ -86,9 +88,8 @@ class readable_dir(argparse.Action):
                 "readable_dir:{0} is not a readable dir".format(prospective_dir)
             )
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="test", fromfile_prefix_chars="@")
+    parser = argparse.ArgumentParser(description="bioconda import script", fromfile_prefix_chars="@")
     parser.add_argument(
         "biotools",
         help="path to RSEc content dir, e.g. content/",
