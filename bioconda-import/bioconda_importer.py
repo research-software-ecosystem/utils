@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 
-import json
 import os
 import yaml
-
 import argparse
 from pathlib import Path
-
 import jinja2
-
-from collections import defaultdict
-
 
 def clean(content_path):
     import_directory = os.path.join(content_path, "imports", "bioconda")
@@ -20,57 +14,66 @@ def clean(content_path):
     for data_file in Path(content_path).glob("data/*/bioconda_*.yaml"):
         os.remove(data_file)
 
-
-def fake(foo, **args):
-    pass
-
-
 def parse_bioconda(directory):
     """
-    Function to get bioconda content data into memory.
+    Get bioconda content data into memory.
     """
     data = dict()
+
+    # Create a custom Undefined class that treats undefined variables in conda jinja template as empty strings
+    class SilentUndefined(jinja2.Undefined):
+        def __str__(self):
+            return ""
+        __repr__ = __str__
+        __bool__ = lambda self: False
+        __getattr__ = __getitem__ = lambda self, *a, **kw: self
+        __iter__ = lambda self: iter(())
+        __call__ = lambda self, *a, **kw: self
+
+    # load custom Undefined class in custom environment
+    env = jinja2.Environment(undefined=SilentUndefined)
+
     for p in Path(directory).glob("./*/meta.yaml"):
-        template = jinja2.Template(p.read_text())
-        conda = yaml.safe_load(
-            template.render(
-                {
-                    "os": os,
-                    "compiler": fake,
-                    "environ": "",
-                    "cdt": fake,
-                    "pin_compatible": fake,
-                    "pin_subpackage": fake,
-                    "exact": fake,
-                    "stdlib": fake,
-                }
+        print(f"processing {p}...")
+        try:
+            template = env.from_string(p.read_text())
+            conda = yaml.safe_load(
+                template.render(
+                    {
+                        "os": os,
+                    }
+                )
             )
-        )
-        data[str(p.absolute())] = conda
+            data[str(p.absolute())] = conda
+        except Exception as e:
+            print(f"Error processing {p}: {type(e).__name__}: {str(e)}")
+            continue
 
     return data
-
 
 def merge(conda, content_path):
     bioconda_import_path = os.path.join(content_path, 'imports', 'bioconda')
     biotools_data_path = os.path.join(content_path, 'data')
     for name, data in conda.items():
-        package_name = data['package']['name']
-        import_file_path = os.path.join(bioconda_import_path, f"bioconda_{package_name}.yaml")
-        with open(import_file_path, "w") as out:
-            yaml.dump(data, out)
-        extra = data.get('extra')  # safely returns None if 'extra' not in data
-        if not extra or 'identifiers' not in extra:
+        try:
+            package_name = data['package']['name']
+            import_file_path = os.path.join(bioconda_import_path, f"bioconda_{package_name}.yaml")
+            with open(import_file_path, "w") as out:
+                yaml.dump(data, out)
+            extra = data.get('extra')  # safely returns None if 'extra' not in data
+            if not extra or 'identifiers' not in extra:
+                continue
+            biotools_ids = [ident.split(':')[1].lower() for ident in data['extra']['identifiers'] if ident.startswith('biotools:')]
+            for biotools_id in biotools_ids:
+                biotools_file_path = os.path.join(biotools_data_path, biotools_id, f"bioconda_{package_name}.yaml")
+                try:
+                    with open(biotools_file_path, "w") as out:
+                        yaml.dump(data, out)
+                except FileNotFoundError:
+                    print(f"Error trying to create the file {biotools_file_path}")
+        except (KeyError, TypeError) as e:
+            print(f"Error processing {name}: missing or invalid package structure ({type(e).__name__}: {e})")
             continue
-        biotools_ids = [ident.split(':')[1].lower() for ident in data['extra']['identifiers'] if ident.startswith('biotools:')]
-        for biotools_id in biotools_ids:
-            biotools_file_path = os.path.join(content_path, 'data', biotools_id, f"bioconda_{package_name}.yaml")
-            try:
-                with open(biotools_file_path, "w") as out:
-                    yaml.dump(data, out)
-            except FileNotFoundError:
-                print(f"Error trying to create the file {biotools_file_path}")
-                pass
 
 class readable_dir(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -86,9 +89,8 @@ class readable_dir(argparse.Action):
                 "readable_dir:{0} is not a readable dir".format(prospective_dir)
             )
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="test", fromfile_prefix_chars="@")
+    parser = argparse.ArgumentParser(description="bioconda import script", fromfile_prefix_chars="@")
     parser.add_argument(
         "biotools",
         help="path to RSEc content dir, e.g. content/",
