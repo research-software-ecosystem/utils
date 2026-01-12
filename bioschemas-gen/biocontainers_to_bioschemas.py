@@ -134,9 +134,13 @@ def process_tools():
         tpe_id = tool_id.lower()
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
+        if not os.path.exists(directory):
+            raise Exception(f"Directory {directory} does not exist for {tool_id}!")
+            continue
+
         ## generate biocontainers JSON-LD and TTL files
         temp_graph = rdfize(tool)
-        if temp_graph:
+        if temp_graph and os.path.exists(directory):
             temp_graph.serialize(
                 format="json-ld",
                 auto_compact=True,
