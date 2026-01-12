@@ -14,7 +14,6 @@ def rdfize(json_entry):
     entry = json_entry
 
     try:
-
         ctx = {
             "@context": {
                 "@base": "https://bio.tools/",
@@ -64,9 +63,9 @@ def rdfize(json_entry):
         entry["contributor"] = []
         entry["provider"] = []
         entry["funder"] = []
-        entry[
-            "conformsTo"
-        ] = "https://bioschemas.org/profiles/ComputationalTool/0.6-DRAFT"
+        entry["conformsTo"] = (
+            "https://bioschemas.org/profiles/ComputationalTool/0.6-DRAFT"
+        )
 
         if entry.get("credit"):
             for credit in entry["credit"]:
@@ -82,9 +81,10 @@ def rdfize(json_entry):
                                     "@type": sType,
                                 }
                             else:
-                                entry["funder"].append(
-                                    {"@id": credit["orcidid"], "@type": sType}
-                                )
+                                entry["funder"].append({
+                                    "@id": credit["orcidid"],
+                                    "@type": sType,
+                                })
                         elif "name" in credit.keys() and credit["name"] != None:
                             if not "funder" in entry.keys():
                                 entry["funder"] = [credit["name"]]
@@ -108,9 +108,10 @@ def rdfize(json_entry):
                                         "@type": sType,
                                     }
                                 else:
-                                    entry["author"].append(
-                                        {"@id": credit["orcidid"], "@type": sType}
-                                    )
+                                    entry["author"].append({
+                                        "@id": credit["orcidid"],
+                                        "@type": sType,
+                                    })
                             elif "name" in credit.keys() and credit["name"] != None:
                                 if not "author" in entry.keys():
                                     entry["author"] = [credit["name"]]
@@ -141,9 +142,10 @@ def rdfize(json_entry):
                                     # if 'name' in credit.keys() and credit['name'] != None:
                                     #    entry['author_person']['name'] = credit['name']
                                 else:
-                                    entry["provider"].append(
-                                        {"@id": credit["orcidid"], "@type": sType}
-                                    )
+                                    entry["provider"].append({
+                                        "@id": credit["orcidid"],
+                                        "@type": sType,
+                                    })
                             elif "name" in credit.keys() and credit["name"] != None:
                                 if not "provider" in entry.keys():
                                     entry["provider"] = [credit["name"]]
@@ -173,9 +175,10 @@ def rdfize(json_entry):
                                         "@type": sType,
                                     }
                                 else:
-                                    entry["contributor"].append(
-                                        {"@id": credit["orcidid"], "@type": sType}
-                                    )
+                                    entry["contributor"].append({
+                                        "@id": credit["orcidid"],
+                                        "@type": sType,
+                                    })
                             elif "name" in credit.keys() and credit["name"] != None:
                                 if not "contributor" in entry.keys():
                                     entry["contributor"] = [credit["name"]]
@@ -205,9 +208,10 @@ def rdfize(json_entry):
                                         "@type": sType,
                                     }
                                 else:
-                                    entry["primaryContact"].append(
-                                        {"@id": credit["orcidid"], "@type": sType}
-                                    )
+                                    entry["primaryContact"].append({
+                                        "@id": credit["orcidid"],
+                                        "@type": sType,
+                                    })
                             elif "name" in credit.keys() and credit["name"] != None:
                                 if not "primaryContact" in entry.keys():
                                     entry["primaryContact"] = [credit["name"]]
@@ -244,12 +248,10 @@ def rdfize(json_entry):
                                 }
                             ]
                         else:
-                            entry["hasPublication"].append(
-                                {
-                                    "@id": "https://doi.org/" + publication["doi"],
-                                    "@type": "sc:CreativeWork",
-                                }
-                            )
+                            entry["hasPublication"].append({
+                                "@id": "https://doi.org/" + publication["doi"],
+                                "@type": "sc:CreativeWork",
+                            })
 
         if entry.get("function"):
             for item in entry["function"]:
@@ -286,9 +288,9 @@ def rdfize(json_entry):
                         }
                         if output.get("format"):
                             for f in output["format"]:
-                                output_object["encodingFormat"].append(
-                                    {"@id": f["uri"]}
-                                )
+                                output_object["encodingFormat"].append({
+                                    "@id": f["uri"]
+                                })
                         if not "hasOutputData" in entry.keys():
                             entry["hasOutputData"] = [output_object]
                         else:
@@ -372,7 +374,7 @@ def process_tools_by_id(id="SPROUT"):
 
 
 def clean():
-    for data_file in glob.glob(r"../../../content/data/*/*.bioschemas.jsonld"):
+    for data_file in glob.glob(r"../../content/data/*/*.bioschemas.jsonld"):
         print(f"removing file {data_file}")
         os.remove(data_file)
 

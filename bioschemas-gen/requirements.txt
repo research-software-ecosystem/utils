@@ -1,3 +1,4 @@
 requests
-rdflib-jsonld
+rdflib
 tabulate
+pyyaml
