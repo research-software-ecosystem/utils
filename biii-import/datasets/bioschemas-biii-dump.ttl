@@ -1,0 +1,186 @@
+@prefix ns1: <http://schema.org/> .
+
+<https://dev.biii.eurobioimaging.eu/biigle> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_3474>,
+        <http://edamontology.org/topic_Microscopy>,
+        <http://edamontology.org/topic__RBDp7HwdUBEjpS6PRjYfV2V> ;
+    ns1:citation <https://www.frontiersin.org/articles/10.3389/fmars.2017.00083/full>,
+        "BIIGLE 2.0 paper" ;
+    ns1:dateCreated "2024-03-18T15:00:57+00:00" ;
+    ns1:dateModified "2024-03-18T15:14:21+00:00" ;
+    ns1:description """BIIGLE is a web-based software for image and video annotation that enables collaborative research on large datasets. It offers tools for manual and computer-assisted annotation, quality control and the collaboration on custom taxonomies to describe objects. BIIGLE is freely available and can be installed in cloud environments, a local network or on mobile platforms during research expeditions. The public instance on biigle.de is free for non-commercial use.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_2990>,
+        <http://edamontology.org/operation_3553>,
+        <http://edamontology.org/operation__RBNng13hEB0CJD5VzSKqrfB> ;
+    ns1:license "GPL 3.0" ;
+    ns1:name "BIIGLE" ;
+    ns1:publisher "Langenkämper Daniel orcid.org/0000-0003-1857-5040 ",
+        "Nattkemper Tim W. orcid.org/0000-0002-7986-1158",
+        "Zurowietz Martin orcid.org/0000-0002-7122-2343" .
+
+<https://dev.biii.eurobioimaging.eu/biovoxxel-toolbox> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_3382> ;
+    ns1:dateCreated "2024-10-25T13:05:55+00:00" ;
+    ns1:dateModified "2024-10-25T13:14:43+00:00" ;
+    ns1:description """The BioVoxxel Toolbox is a suite which contains plugins and some macros dealing with image filtering, image segmentation and binary image processing and analysis. The following plugins are hosted here:
+
+Extended Particle Analyzer
+Binary Feature Extractor
+Speckle Inspector
+Watershed Irregular Features
+EDM Binary Operations
+Filter Check
+Pseudo flat-field correction
+Convoluted Background Subtraction
+2D Particle Distribution (Distribution_Analysis)
+Cluster Indicator
+SSIDC Cluster Indicator
+Gaussian weighted Median filter
+Adaptive Filter
+Enhance True Color Contrast
+Mode and Differential Limited Mean Binarization
+Basic Recursive Filter
+
+""" ;
+    ns1:featureList <http://edamontology.org/operation_2945>,
+        <http://edamontology.org/operation_3096>,
+        <http://edamontology.org/operation_3443> ;
+    ns1:license "3-Clause BSD License" ;
+    ns1:name "BioVoxxel Toolbox " ;
+    ns1:publisher "Jan Brocher https://www.biovoxxel.de/" ;
+    ns1:softwareRequirements <http://biii.eu/node/38>,
+        <http://biii.eu/node/79> .
+
+<https://dev.biii.eurobioimaging.eu/dextrusion> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_Fluorescent_microscopy> ;
+    ns1:citation <https://doi.org/10.1242/dev.201747>,
+        "DeXtrusion: automatic recognition of epithelial cell extrusion through machine learning in vivo . Alexis Villars  , Gaëlle Letort , Léo Valon, Romain Levayer Development (2023) 150 (13): dev201747." ;
+    ns1:dateCreated "2024-10-24T13:56:22+00:00" ;
+    ns1:dateModified "2024-10-24T14:11:22+00:00" ;
+    ns1:description """DeXtrusion is a machine learning based python pipeline to detect cell extrusions in epithelial tissues movies. It can also detect cell divisions and SOPs, and can easily be trained to detect other dynamic events.
+DeXtrusion takes as input a movie of an epithelium and outputs the spatio-temporal location of cell extrusion events or other event as cell divisions. The movie is discretized into small overlapping rolling windows which are individually classified for event detection by a trained neural network. Results are then put together in event probability map for the whole movie or as spatio-temporal points indicating each event.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_0226>,
+        <http://edamontology.org/operation_Object_detection> ;
+    ns1:license "BSD 3" ;
+    ns1:name "DeXtrusion" ;
+    ns1:publisher "Letort Gaëlle orcid.org/0000-0002-5866-0322" .
+
+<https://dev.biii.eurobioimaging.eu/epyseg> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_Fluorescent_microscopy> ;
+    ns1:citation <https://journals.biologists.com/dev/article/147/24/dev194589/226105/EPySeg-a-coding-free-solution-for-automated>,
+        "EPySeg: a coding-free solution for automated segmentation of epithelia using deep learning" ;
+    ns1:dateCreated "2024-11-13T09:58:17+00:00" ;
+    ns1:dateModified "2024-11-13T10:36:52+00:00" ;
+    ns1:description """EPySeg is a package for segmenting 2D epithelial tissues. EPySeg also ships with a graphical user interface that allows for building, training and running deep learning models.
+Training can be done with or without data augmentation (2D-xy and 3D-xyz data augmentation are supported). EPySeg relies on the segmentation_models library. EPySeg source code is available here. Cloud version available here.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_Image_segmentation> ;
+    ns1:name "EpySeg" ;
+    ns1:publisher "Benoit Aigouy" ;
+    ns1:softwareRequirements <http://biii.eu/node/1312> .
+
+<https://dev.biii.eurobioimaging.eu/faim-ipa> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_3385>,
+        <http://edamontology.org/topic_High_content_screening> ;
+    ns1:dateCreated "2024-10-25T12:45:12+00:00" ;
+    ns1:dateModified "2024-10-25T12:52:29+00:00" ;
+    ns1:description """A collection of Image Processing and Analysis (IPA) functions used at the Facility for Advanced Imaging and Microscopy (FAIM).
+""" ;
+    ns1:featureList <http://edamontology.org/operation_Image_processing> ;
+    ns1:license "BSD-3-Clause license" ;
+    ns1:name "faim-ipa" ;
+    ns1:publisher "Buchholz Tim-Oliver orcid.org/0000-0001-6953-8915",
+        "Eglinger Jan orcid.org/0000-0001-7234-1435" .
+
+<https://dev.biii.eurobioimaging.eu/fast4dreg> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_Fluorescent_microscopy>,
+        <http://edamontology.org/topic__RL4rPCXlIu9uzNrGcbcSNp> ;
+    ns1:citation <https://doi.org/10.1242/jcs.260728>,
+        "Original publication" ;
+    ns1:dateCreated "2024-10-25T13:00:57+00:00" ;
+    ns1:dateModified "2024-10-25T13:19:56+00:00" ;
+    ns1:description """Fast4DReg is a Fiji macro for drift correction for 2D and 3D video and is able to correct drift in all x-, y- and/or z-directions. Fast4DReg creates intensity projections along both axes and estimates their drift using cross-correlation based drift correction, and then translates the video frame by frame. Additionally, Fast4DReg can be used for alignment multi-channel 2D or 3D images which is particularly useful for instruments that suffer from a misalignment of channels.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_Image_registration> ;
+    ns1:license "MIT" ;
+    ns1:name "Fast4DReg" ;
+    ns1:publisher "Jacquemet Guillaume orcid.org/0000-0002-9286-920X",
+        "Pylvänäinen W. Joanna orcid.org/0000-0002-3540-5150" .
+
+<https://dev.biii.eurobioimaging.eu/ijrotatedcrop> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic__RBDp7HwdUBEjpS6PRjYfV2V> ;
+    ns1:dateCreated "2024-10-25T12:58:35+00:00" ;
+    ns1:dateModified "2024-10-25T13:16:54+00:00" ;
+    ns1:description """Crop 2D/3D images with arbitrary box size and orientation(s).
+The RotCrop Plugins for ImageJ allow to perform rotated crop of 2D/3D images. In fully manual versions, the crop can be defined based on crop dimensions, crop center, and rotation angle(s) of the crop frame (in 3D, three angles are necessary).
+Additional plugins provides an estimate of the rotation based on the gradient vector computed around the crop frame center. The gradient direction is used as vertical direction in the result, making it easier to generate 2D/3D images that are tangent to a surface such as the epidermis of an organ or organism.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_Rotation>,
+        <http://edamontology.org/operation__Rhb4iyLUQWY4HnhPpuqNNI> ;
+    ns1:name "ijRotatedCrop" ;
+    ns1:publisher "Legland David orcid.org/0000-0001-7456-4632" .
+
+<https://dev.biii.eurobioimaging.eu/oocytor> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic__R9P5gEAm1wic4R2PcZ7ZpPA> ;
+    ns1:citation <https://doi.org/10.1242/jcs.260281>,
+        "An interpretable and versatile machine learning approach for oocyte phenotyping" ;
+    ns1:dateCreated "2024-11-13T10:11:28+00:00" ;
+    ns1:dateModified "2024-11-13T10:35:38+00:00" ;
+    ns1:description """Fiji plugin to segment oocyte and zona pellucida contours from transmitted light images and extract hundreds of morphological features to describe numerically the oocyte. Segmentation is based on trained neural networks (U-Net) that were trained on both mouse and human oocytes (in prophase and meiosis I) acquired in different conditions. They are freely avaialable on the github repository and can be retrained if necessary. Oocytor also have options to extract hundreds of morphological/intensity features to characterize manually the oocyte (eg perimeter, texture...). These features can also be used in machine learning pipeline for automatic phenotyping.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_3443>,
+        <http://edamontology.org/operation_Cell_segmentation>,
+        <http://edamontology.org/operation_Feature_extraction>,
+        <http://edamontology.org/operation_Image_segmentation> ;
+    ns1:license "GPL 3.0" ;
+    ns1:name "Oocytor" ;
+    ns1:publisher "Gaëlle Letort" ;
+    ns1:softwareRequirements <http://biii.eu/node/1201>,
+        <http://biii.eu/node/1291>,
+        <http://biii.eu/node/1605>,
+        <http://biii.eu/node/79> .
+
+<https://dev.biii.eurobioimaging.eu/qupath-multiplex-analysis> a ns1:SoftwareApplication ;
+    ns1:citation <https://github.com/MontpellierRessourcesImagerie/qupath_multiplex_analysis>,
+        "qupath_multiplex_analysis" ;
+    ns1:dateCreated "2025-01-08T12:30:30+00:00" ;
+    ns1:dateModified "2025-01-08T12:58:09+00:00" ;
+    ns1:description """Scripts that allow to automatize  a multiplex analysis in qupath. The input is a multi channel image with one channel containing a staining of cell nuclei and the other channels containing markers for a specific molecule. The goal is to obtain a count of positive cells for the markers in the different channels and for the combinations of positive markers. The workflow also adds the total numbers of positive cells for each marker to the results table (cells positive for multiple markers are not counted positive for the individual markers in the original qupath result).
+""" ;
+    ns1:name "Qupath Multiplex Analysis" ;
+    ns1:publisher "Bäcker Volker orcid.org/0000-0002-9129-6403" .
+
+<https://dev.biii.eurobioimaging.eu/spine-analyzer> a ns1:SoftwareApplication ;
+    ns1:applicationSubCategory <http://edamontology.org/topic_Digital_histology>,
+        <http://edamontology.org/topic_Fluorescent_microscopy>,
+        <http://edamontology.org/topic_Microscopy>,
+        <http://edamontology.org/topic__RBDp7HwdUBEjpS6PRjYfV2V> ;
+    ns1:dateCreated "2024-10-25T12:56:27+00:00" ;
+    ns1:dateModified "2024-10-25T13:09:14+00:00" ;
+    ns1:description """Spine Analyzer allows to semi-automatically segment dendritic spines in 3D+t images and to measure their volumes and the intensities of the signal within in different channels over time.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_Interactive_segmentation> ;
+    ns1:name "Spine Analyzer" ;
+    ns1:publisher "Bäcker Volker orcid.org/0000-0002-9129-6403" .
+
+<https://dev.biii.eurobioimaging.eu/visualisation-tooklit-vtk> a ns1:SoftwareApplication ;
+    ns1:dateCreated "2024-10-25T13:11:37+00:00" ;
+    ns1:dateModified "2024-10-25T13:17:50+00:00" ;
+    ns1:description """VTK is an open-source software system for image processing, 3D graphics, volume rendering and visualization. VTK includes many advanced algorithms (e.g., surface reconstruction, implicit modeling, decimation) and rendering techniques (e.g., hardware-accelerated volume rendering, LOD control).
+VTK is used by academicians for teaching and research; by government research institutions such as Los Alamos National Lab in the US or CINECA in Italy; and by many commercial firms who use VTK to build or extend products.
+The origin of VTK is with the textbook "The Visualization Toolkit, an Object-Oriented Approach to 3D Graphics" originally published by Prentice Hall and now published by Kitware, Inc. (Third Edition ISBN 1-930934-07-6). VTK has grown (since its initial release in 1994) to a world-wide user base in the commercial, academic, and research communities.
+""" ;
+    ns1:featureList <http://edamontology.org/operation_0337>,
+        <http://edamontology.org/operation_3441>,
+        <http://edamontology.org/operation_Image_thresholding>,
+        <http://edamontology.org/operation_Image_visualisation>,
+        <http://edamontology.org/operation_Volume_rendering>,
+        <http://edamontology.org/operation__R9Vc5BV3ZMcLHEL6WEceXbY>,
+        <http://edamontology.org/operation____Slice_rendering>,
+        <http://edamontology.org/operation____Surface_rendering> ;
+    ns1:license "Apache 2.0" ;
+    ns1:name "The Visualisation Tooklit (VTK)" ;
+    ns1:publisher "Kitware" .
+
