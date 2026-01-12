@@ -26,6 +26,9 @@ def getCitationFromBioContainers(biocontainers_data) -> list:
     res = []
     if "identifiers" in biocontainers_data.keys():
         for id in biocontainers_data["identifiers"]:
+            if not isinstance(id, str):
+                print(f"WARNING: identifier is not a string: {id}")
+                continue
             if id.lower().startswith("doi:"):
                 res.append(id)
     return res
