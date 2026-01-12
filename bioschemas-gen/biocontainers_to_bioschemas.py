@@ -99,16 +99,18 @@ def process_tools_by_id(id="SPROUT"):
 
             ## generate biocontainers JSON-LD and TTL files
             temp_graph = rdfize(tool)
-
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, tpe_id + ".biocontainers.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
-            )
+            if temp_graph and os.path.exists(directory):
+                temp_graph.serialize(
+                    format="json-ld",
+                    auto_compact=True,
+                    destination=os.path.join(
+                        directory, tpe_id + ".biocontainers.jsonld"
+                    ),
+                )
+                temp_graph.serialize(
+                    format="turtle",
+                    destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
+                )
 
 
 def clean():
