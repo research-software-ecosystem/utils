@@ -11,8 +11,8 @@ def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
     """
     if "identifiers" in biocontainers_data.keys():
         for id in biocontainers_data["identifiers"]:
-            if isinstance(id, list):
-                print(f"WARNING: identifier is a list: {id}")
+            if not isinstance(id, str):
+                print(f"WARNING: identifier is not a string: {id}")
                 continue
             if id.lower().startswith("biotools:"):
                 return id
