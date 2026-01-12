@@ -97,7 +97,7 @@ def process_tools_by_id(id="SPROUT"):
             tpe_id = tool_id.lower()
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-            ## generate bioschemas JSON-LD
+            ## generate biocontainers JSON-LD and TTL files
             temp_graph = rdfize(tool)
 
             temp_graph.serialize(
@@ -112,9 +112,10 @@ def process_tools_by_id(id="SPROUT"):
 
 
 def clean():
-    for data_file in glob.glob(
-        r"../../content/data/*/*.biocontainers.bioschemas.jsonld"
-    ):
+    for data_file in glob.glob(r"../../content/data/*/*.biocontainers.jsonld"):
+        print(f"removing file {data_file}")
+        os.remove(data_file)
+    for data_file in glob.glob(r"../../content/data/*/*.biocontainers.ttl"):
         print(f"removing file {data_file}")
         os.remove(data_file)
 
@@ -148,6 +149,6 @@ def process_tools():
 
 
 if __name__ == "__main__":
-    # clean()
-    # process_tools()
-    process_tools_by_id("macsyfinder")
+    clean()
+    process_tools()
+    # process_tools_by_id("macsyfinder")
