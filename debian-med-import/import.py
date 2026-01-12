@@ -171,7 +171,7 @@ def process_data(base_path):
         cursor_loop.execute(query_popcon)
         popcon_data = cursor_loop.fetchone()[0]
         item["popcon"] = popcon_data
-        query_descr = f"""select array_to_json(array_agg(t)) from (select package, description, long_description, release, description_md5, 'unknown' as license, 'debian-med' as blend
+        query_descr = f"""select array_to_json(array_agg(t)) from (select package, description, long_description, language, release, description_md5, 'unknown' as license, 'debian-med' as blend
                       from descriptions
                       WHERE package IN
                       (SELECT DISTINCT package FROM blends_dependencies WHERE blend = 'debian-med') and package='{package}' and release='{release}' and (description_md5='{description_md5}' or description_md5 is null)
