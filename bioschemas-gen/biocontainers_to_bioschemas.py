@@ -136,15 +136,16 @@ def process_tools():
 
         ## generate biocontainers JSON-LD and TTL files
         temp_graph = rdfize(tool)
-        temp_graph.serialize(
-            format="json-ld",
-            auto_compact=True,
-            destination=os.path.join(directory, tpe_id + ".biocontainers.jsonld"),
-        )
-        temp_graph.serialize(
-            format="turtle",
-            destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
-        )
+        if temp_graph:
+            temp_graph.serialize(
+                format="json-ld",
+                auto_compact=True,
+                destination=os.path.join(directory, tpe_id + ".biocontainers.jsonld"),
+            )
+            temp_graph.serialize(
+                format="turtle",
+                destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
+            )
 
 
 if __name__ == "__main__":
