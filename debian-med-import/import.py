@@ -179,7 +179,7 @@ def process_data(base_path):
         if item["release"] == "vcs":
             query_descr += f"""
                       UNION
-                      SELECT package, description, long_description, 'vcs' AS release, description_md5, license, blend FROM blends_prospectivepackages
+                      SELECT package, description, long_description, '', 'vcs' AS release, description_md5, license, blend FROM blends_prospectivepackages
                        where package='{package}' and (description_md5='{description_md5}' or description_md5 is null)"""
         query_descr += ") t"
         cursor_loop.execute(query_descr)
