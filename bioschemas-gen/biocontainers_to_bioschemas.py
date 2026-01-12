@@ -134,9 +134,8 @@ def process_tools():
         tpe_id = tool_id.lower()
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-        ## generate bioschemas JSON-LD
+        ## generate biocontainers JSON-LD and TTL files
         temp_graph = rdfize(tool)
-
         temp_graph.serialize(
             format="json-ld",
             auto_compact=True,
