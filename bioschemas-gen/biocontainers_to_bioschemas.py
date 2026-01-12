@@ -137,7 +137,7 @@ def process_tools():
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
-            raise Exception(f"Directory {directory} does not exist for {tool_id}!")
+            print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
             continue
 
         ## generate biocontainers JSON-LD and TTL files
