@@ -78,6 +78,7 @@ def rdfize(data) -> Graph:
     except Exception as e:
         print("PARSING ERROR for:")
         print(prefix + "\n" + triples)
+        print(e)
 
 
 def get_biotools_files_in_repo():

@@ -2,7 +2,6 @@ import json
 import os
 import glob
 from rdflib import ConjunctiveGraph
-from json import JSONDecodeError
 
 
 def rdfize(json_entry):
