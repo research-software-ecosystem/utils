@@ -123,7 +123,7 @@ def rdfize(data) -> Graph:
 
 def get_biotools_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.biocontainers.yaml"):
+    for data_file in glob.glob("../../content/data/*/bioconda_*.yaml"):
         tools.append(data_file)
     return tools
 
@@ -187,7 +187,7 @@ def process_tools():
             print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
             continue
 
-        ## generate biocontainers JSON-LD and TTL files
+        ## generate bioconda JSON-LD and TTL files
         temp_graph = rdfize(tool)
         if temp_graph and os.path.exists(directory):
             # temp_graph.serialize(
