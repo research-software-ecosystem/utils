@@ -120,10 +120,12 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'
 
             for maintainer in getMaintainers(data):
-                triples += (
-                    f"{package_uri} schema:author <https://github.com/{maintainer}> .\n"
-                )
-                triples += f"{package_uri} schema:maintainer <https://github.com/{maintainer}> .\n"
+                # triples += (
+                #     f"{package_uri} schema:author <https://github.com/{maintainer}> .\n"
+                # )
+                # triples += f"{package_uri} schema:maintainer <https://github.com/{maintainer}> .\n"
+                triples += f'{package_uri} schema:author "{maintainer}" .\n'
+                triples += f'{package_uri} schema:maintainer "{maintainer}" .\n'
 
             for url in download_url:
                 triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
