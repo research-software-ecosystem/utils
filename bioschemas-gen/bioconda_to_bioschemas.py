@@ -218,6 +218,6 @@ def process_tools():
 
 
 if __name__ == "__main__":
-    # clean()
-    # process_tools()
-    process_tools_by_id("macsyfinder")
+    clean()
+    process_tools()
+    # process_tools_by_id("macsyfinder")
