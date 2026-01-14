@@ -115,6 +115,7 @@ def rdfize(data) -> Graph:
             print(g.serialize(format="turtle"))
             # serialize in compact json ld syntax
             # print(g.serialize(format='json-ld'))
+        return g
 
     except Exception as e:
         print("PARSING ERROR for:")
@@ -156,13 +157,13 @@ def process_tools_by_id(id="SPROUT"):
             ## generate bioconda JSON-LD and TTL files
             temp_graph = rdfize(tool)
             if temp_graph and os.path.exists(directory):
-                # temp_graph.serialize(
-                #    format="json-ld",
-                #    auto_compact=True,
-                #    destination=os.path.join(
-                #        directory, tpe_id + ".biocontainers.jsonld"
-                #    ),
-                # )
+                temp_graph.serialize(
+                    format="json-ld",
+                    auto_compact=True,
+                    destination=os.path.join(
+                        directory, tpe_id + ".biocontainers.jsonld"
+                    ),
+                )
                 temp_graph.serialize(
                     format="turtle",
                     destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
@@ -207,11 +208,11 @@ def process_tools():
         ## generate bioconda JSON-LD and TTL files
         temp_graph = rdfize(tool)
         if temp_graph and os.path.exists(directory):
-            # temp_graph.serialize(
-            #     format="json-ld",
-            #     auto_compact=True,
-            #     destination=os.path.join(directory, tpe_id + ".bioconda.jsonld"),
-            # )
+            temp_graph.serialize(
+                format="json-ld",
+                auto_compact=True,
+                destination=os.path.join(directory, tpe_id + ".bioconda.jsonld"),
+            )
             temp_graph.serialize(
                 format="turtle",
                 destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
