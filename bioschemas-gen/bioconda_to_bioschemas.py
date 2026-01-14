@@ -160,9 +160,7 @@ def process_tools_by_id(id="SPROUT"):
                 temp_graph.serialize(
                     format="json-ld",
                     auto_compact=True,
-                    destination=os.path.join(
-                        directory, tpe_id + ".biocontainers.jsonld"
-                    ),
+                    destination=os.path.join(directory, tpe_id + ".bioconda.jsonld"),
                 )
                 temp_graph.serialize(
                     format="turtle",
