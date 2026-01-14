@@ -75,6 +75,9 @@ def rdfize(data) -> Graph:
             version = data["package"]["version"]
 
     if "source" in data.keys():
+        if not isinstance(data["source"], dict):
+            print(f"WARNING: identifier is not a string: {data['source']}")
+            return Graph()
         if "url" in data["source"].keys():
             download_url = data["source"]["url"]
 
@@ -112,7 +115,7 @@ def rdfize(data) -> Graph:
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
-            print(g.serialize(format="turtle"))
+            # print(g.serialize(format="turtle"))
             # serialize in compact json ld syntax
             # print(g.serialize(format='json-ld'))
         return g
