@@ -3,6 +3,7 @@ import glob
 import yaml
 from pathlib import Path
 from rdflib import Graph
+import json
 
 
 def getBiotoolsId(bioconda_data) -> str:
@@ -138,6 +139,8 @@ def process_tools_by_id(id="SPROUT"):
         if id in tool_file:
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+            print(json.dumps(tool, indent=2))
 
             print(tool_file)
             tool_id = tool["name"]
