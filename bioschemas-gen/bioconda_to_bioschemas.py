@@ -140,10 +140,16 @@ def process_tools_by_id(id="SPROUT"):
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-            print(json.dumps(tool, indent=2))
+            # print(tool_file)
+            # print(json.dumps(tool, indent=2))
+            tool_id = None
+            if "package" in tool.keys():
+                if "name" in tool["package"].keys():
+                    tool_id = tool["package"]["name"]
 
-            print(tool_file)
-            tool_id = tool["name"]
+            if tool_id is None:
+                print(f"WARNING: no tool id found for {tool_file}!")
+                continue
             tpe_id = tool_id.lower()
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
@@ -182,7 +188,15 @@ def process_tools():
         tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
         print(tool_file)
-        tool_id = tool["name"]
+        tool_id = None
+        if "package" in tool.keys():
+            if "name" in tool["package"].keys():
+                tool_id = tool["package"]["name"]
+
+        if tool_id is None:
+            print(f"WARNING: no tool id found for {tool_file}!")
+            continue
+
         tpe_id = tool_id.lower()
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
