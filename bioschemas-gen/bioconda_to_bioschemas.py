@@ -56,6 +56,12 @@ def rdfize(data) -> Graph:
     triples = ""
 
     name = None
+    desc = None
+    license = None
+    doc_url = None
+    home = None
+    version = None
+    download_url = None
 
     if "about" in data.keys():
         if "summary" in data["about"].keys():
@@ -68,7 +74,6 @@ def rdfize(data) -> Graph:
             home = data["about"]["home"]
 
     if "package" in data.keys():
-        # print(json.dumps(data['package']))
         if "name" in data["package"].keys():
             name = data["package"]["name"]
         if "version" in data["package"].keys():
@@ -76,7 +81,7 @@ def rdfize(data) -> Graph:
 
     if "source" in data.keys():
         if not isinstance(data["source"], dict):
-            print(f"WARNING: identifier is not a string: {data['source']}")
+            print(f"WARNING: source is not a dict: {data['source']}")
             return Graph()
         if "url" in data["source"].keys():
             download_url = data["source"]["url"]
