@@ -61,7 +61,7 @@ def rdfize(data) -> Graph:
     doc_url = None
     home = None
     version = None
-    download_url = None
+    download_url = []
 
     if "about" in data.keys():
         if "summary" in data["about"].keys():
@@ -80,11 +80,19 @@ def rdfize(data) -> Graph:
             version = data["package"]["version"]
 
     if "source" in data.keys():
-        if not isinstance(data["source"], dict):
-            print(f"WARNING: source is not a dict: {data['source']}")
-            return Graph()
-        if "url" in data["source"].keys():
-            download_url = data["source"]["url"]
+        if isinstance(data["source"], list):
+            for source in data["source"]:
+                if not isinstance(source, dict):
+                    print(f"WARNING: source is not a dict: {source}")
+                    continue
+                if "url" in source.keys():
+                    download_url.append(source["url"])
+        else:
+            if not isinstance(data["source"], dict):
+                print(f"WARNING: source is not a dict: {data['source']}")
+                return Graph()
+            if "url" in data["source"].keys():
+                download_url.append(data["source"]["url"])
 
     biotools_id = getBiotoolsId(data)
     dois = getCitation(data)
@@ -111,12 +119,14 @@ def rdfize(data) -> Graph:
             for doi in dois:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'
 
-            for maintainers in getMaintainers(data):
-                triples += f"{package_uri} schema:author <https://github.com/{maintainers}> .\n"
-                triples += f"{package_uri} schema:maintainer <https://github.com/{maintainers}> .\n"
+            for maintainer in getMaintainers(data):
+                triples += (
+                    f"{package_uri} schema:author <https://github.com/{maintainer}> .\n"
+                )
+                triples += f"{package_uri} schema:maintainer <https://github.com/{maintainer}> .\n"
 
-            if download_url:
-                triples += f'{package_uri} schema:downloadUrl "{download_url}" .\n'
+            for url in download_url:
+                triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
