@@ -71,9 +71,10 @@ def rdfize(data) -> Graph:
                     id = f"{e['name'].lower()}:{e['entry']}"
                     triples += f'{package_uri} schema:identifier "{id}" .\n'
 
-        g = Graph()
-        g.parse(data=prefix+"\n"+triples, format="turtle")
-        print(g.serialize(format='turtle'))
+            g = Graph()
+            g.parse(data=prefix+"\n"+triples, format="turtle")
+            print(g.serialize(format='turtle'))
+        return g
 
     except Exception as e:
         print("PARSING ERROR for:")
