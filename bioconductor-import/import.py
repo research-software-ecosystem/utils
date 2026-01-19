@@ -2,9 +2,13 @@ import argparse
 import glob
 import json
 import os
+import sys
 import requests
 import logging
 import yaml
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
 
 # Set up logging
 logging.basicConfig(
@@ -99,6 +103,7 @@ def retrieve(version, filters=None):
         )
 
         try:
+            pack = normalize_version_fields(pack, ["Version"])
             with open(path, "w") as write_file:
                 json.dump(
                     pack, write_file, sort_keys=True, indent=4, separators=(",", ": ")

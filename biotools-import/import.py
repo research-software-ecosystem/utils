@@ -6,6 +6,9 @@ import argparse
 import requests
 from boltons.iterutils import remap
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
+
 BIOTOOLS_DOMAIN = "https://bio.tools"
 SSL_VERIFY = True
 
@@ -62,6 +65,10 @@ def retrieve(filters=None):
                     return bool(value)
 
                 tool_cleaned = remap(tool, visit=drop_false)
+                tool_cleaned = normalize_version_fields(
+                    tool_cleaned, ["version", "version[].version"]
+                )
+
                 json.dump(
                     tool_cleaned,
                     write_file,
