@@ -101,6 +101,7 @@ def rdfize(data) -> Graph:
         if name:
             package_uri = f"bioconda:{name}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            triples += f'{package_uri} schema:name "{name}" .\n'
             if desc:
                 triples += f'{package_uri} schema:description "{desc}" .\n'
             if license:
