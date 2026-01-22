@@ -108,13 +108,13 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:license "{license}" .\n'
             if biotools_id:
                 triples += f"{package_uri} spdx:builtFrom {biotools_id} .\n"
-                triples += f"{package_uri} schema:identifiers {biotools_id} .\n"
+                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if doc_url:
                 triples += f'{package_uri} schema:softwareHelp "{doc_url}" .\n'
             if home:
                 triples += f'{package_uri} schema:url "{home}" .\n'
             if version:
-                triples += f'{package_uri} schema:version "{version}" .\n'
+                triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
             # process DOIs
             for doi in dois:
