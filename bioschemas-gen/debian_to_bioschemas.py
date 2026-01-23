@@ -26,15 +26,17 @@ def getCitationFromDebian(debian_data) -> list:
                 res.append(entry['key'] + ":" + entry['value'])
     return res
 
-def getDescriptionFromDebian(debian_data) -> list:
-  res = []
-  if 'descr' in debian_data.keys():
-    for entry in debian_data['descr']:
-      if 'language' in entry.keys() and 'description' in entry.keys() and entry['language'] == "en":
-        return entry['description']
+def getDescriptionFromDebian(debian_data) -> str:
+    """
+    Get tool descriptions from the debian data.
+    """
+    if 'descr' in debian_data.keys():
+        for entry in debian_data['descr']:
+            if 'language' in entry.keys() and 'description' in entry.keys() and entry['language'] == "en":
+                return entry['description']
       # elif 'language' in entry.keys() and 'long_description' in entry.keys() and entry['language'] == "en":
         # return entry['long_description']
-  return None
+    return None
 
 def rdfize(data) -> Graph:
     prefix = """
