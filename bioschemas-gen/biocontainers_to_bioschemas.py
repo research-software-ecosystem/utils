@@ -53,6 +53,7 @@ def rdfize(data) -> Graph:
         if "name" in data.keys():
             package_uri = f"biocontainers:{data['name']}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            triples += f'{package_uri} schema:name "{data["name"]}" .\n'
             if "description" in data.keys():
                 triples += (
                     f'{package_uri} schema:description "{data["description"]}" .\n'
