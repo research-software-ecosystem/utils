@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import yaml
 import argparse
 from pathlib import Path
 import jinja2
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
 
 def clean(content_path):
     import_directory = os.path.join(content_path, "imports", "bioconda")
@@ -56,6 +60,7 @@ def merge(conda, content_path):
     biotools_data_path = os.path.join(content_path, 'data')
     for name, data in conda.items():
         try:
+            data = normalize_version_fields(data, ["package.version"])
             package_name = data['package']['name']
             import_file_path = os.path.join(bioconda_import_path, f"bioconda_{package_name}.yaml")
             with open(import_file_path, "w") as out:
