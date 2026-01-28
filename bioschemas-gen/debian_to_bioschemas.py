@@ -26,6 +26,18 @@ def getCitationFromDebian(debian_data) -> list:
                 res.append(entry['key'] + ":" + entry['value'])
     return res
 
+def getDescriptionFromDebian(debian_data) -> str:
+    """
+    Get tool descriptions from the debian data.
+    """
+    if 'descr' in debian_data.keys():
+        for entry in debian_data['descr']:
+            if 'language' in entry.keys() and 'description' in entry.keys() and entry['language'] == "en":
+                return entry['description']
+      # elif 'language' in entry.keys() and 'long_description' in entry.keys() and entry['language'] == "en":
+        # return entry['long_description']
+    return None
+
 def rdfize(data) -> Graph:
     prefix = """
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -40,6 +52,7 @@ def rdfize(data) -> Graph:
 
     biotools_id = getBiotoolsIdFromDebian(data)
     dois = getCitationFromDebian(data)
+    description = getDescriptionFromDebian(data)
 
     try:
         if "package" in data.keys() :
@@ -51,9 +64,11 @@ def rdfize(data) -> Graph:
         if "license" in data.keys() :
             triples += f'{package_uri} schema:license "{data["license"]}" .\n'
         if "version" in data.keys() :
-            triples += f'{package_uri} schema:version "{data["version"]}" .\n'
+            triples += f'{package_uri} schema:softwareVersion "{data["version"]}" .\n'
         if biotools_id :
             triples += f'{package_uri} spdx:builtFrom "{biotools_id}" .\n'
+        if description :
+            triples += f'{package_uri} schema:description "{description}" .\n'
         if "homepage" in data.keys():
             triples += f'{package_uri} schema:url "{data["homepage"]}" .\n'
         if "tags" in data.keys():
