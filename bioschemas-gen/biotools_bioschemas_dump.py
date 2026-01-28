@@ -6,7 +6,7 @@ from tabulate import tabulate
 
 def get_bioschemas_files_in_repo():
     tools = []
-    for data_file in glob.glob(r"../../../content/data/*/*.bioschemas.jsonld"):
+    for data_file in glob.glob(r"../../content/data/*/*.bioschemas.jsonld"):
         filename_ext = os.path.basename(data_file).split(".")
         if len(filename_ext) == 3 and filename_ext[2] == "jsonld":
             tools.append(data_file)
@@ -23,12 +23,12 @@ def process_tools():
     rdf_graph = ConjunctiveGraph()
 
     for tool_file in tool_files:
-        print(tool_file)
+        # print(tool_file)
         rdf_graph.parse(tool_file, format="json-ld")
 
     rdf_graph.serialize(
         format="turtle",
-        destination="bioschemas-dump.ttl"
+        destination="../../content/datasets/bioschemas-dump.ttl"
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
 
