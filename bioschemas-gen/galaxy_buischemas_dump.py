@@ -1,0 +1,73 @@
+import os
+import glob
+from rdflib import ConjunctiveGraph
+from tabulate import tabulate
+
+
+def get_galaxy_files_in_repo():
+    tools = []
+    for data_file in glob.glob(r"../../content/data/*/*.galaxy.jsonld"):
+        # print(data_file)
+        filename_ext = os.path.basename(data_file).split(".")
+        if len(filename_ext) == 3 and filename_ext[2] == "jsonld":
+            tools.append(data_file)
+    print(f"found {len(tools)} bioschemas descriptors")
+    return tools
+
+
+def process_tools():
+    """
+    Go through all galaxy entries in bioschemas JSON-LD and produce an single RDF file.
+    """
+    tool_files = get_galaxy_files_in_repo()
+    rdf_graph = ConjunctiveGraph()
+
+    for tool_file in tool_files:
+        # print(tool_file)
+        rdf_graph.parse(tool_file, format="json-ld")
+
+    rdf_graph.serialize(
+        format="turtle",
+        destination="../../content/datasets/galaxy-dump.ttl"
+        # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
+    )
+
+    show_stats(rdf_graph)
+
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    } 
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    } 
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
+
+
+if __name__ == "__main__":
+    process_tools()
