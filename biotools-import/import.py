@@ -53,7 +53,7 @@ def retrieve(filters=None):
                 drop_false = lambda path, key, value: bool(value)
                 tool_cleaned = remap(tool, visit=drop_false)
                 tool_cleaned = normalize_version_fields(
-                    tool_cleaned, ["version", "version[].version"]
+                    tool_cleaned, ["version"]
                 )
 
                 json.dump(
