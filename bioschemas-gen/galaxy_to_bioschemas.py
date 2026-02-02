@@ -5,35 +5,37 @@ from pathlib import Path
 from rdflib import Graph
 from rdflib import ConjunctiveGraph
 
-edam_version = 'https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl'
+edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
 
 kg = ConjunctiveGraph()
-kg.parse(edam_version, format='xml')
+kg.parse(edam_version, format="xml")
 
-def getEdamUrisFromLabels(edam_labels) -> list :
-  """
-  Get EDAM URIs from EDAM labels.
-  """
 
-  res = []
+def getEdamUrisFromLabels(edam_labels) -> list:
+    """
+    Get EDAM URIs from EDAM labels.
+    """
 
-  for lab in edam_labels:
-    query="""
+    res = []
+
+    for lab in edam_labels:
+        query = """
     PREFIX edam: <http://edamontology.org/>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
     SELECT ?label ?entity WHERE {
         ?entity rdfs:label '%s' .
     }
-    """%(lab)
+    """ % (lab)
 
-    q = kg.query(query)
-    for r in q:
-        # uri = r['entity']
-        uri = r['entity'].rsplit('/', 1)[-1]
-        res.append(f'{uri}')
+        q = kg.query(query)
+        for r in q:
+            # uri = r['entity']
+            uri = r["entity"].rsplit("/", 1)[-1]
+            res.append(f"{uri}")
 
-  return res
+    return res
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -49,27 +51,27 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    name = None # OK
-    desc = None # OK
-    url = None # OK
-    #owner = None # Suite_owner -> author, contributor, primaryContact?
-    version = None # OK
+    name = None  # OK
+    desc = None  # OK
+    url = None  # OK
+    # owner = None # Suite_owner -> author, contributor, primaryContact?
+    version = None  # OK
 
-    biotools_id = None # OK
-    #biii_id = None # biii_ID
-    bioconda_id = None # OK
+    biotools_id = None  # OK
+    # biii_id = None # biii_ID
+    bioconda_id = None  # OK
 
-    edam_operations = [] # OK
-    edam_topics = [] # OK
-    keywords = [] # OK
-    #help = [] # Related_Tutorials -> many many GTN links
-    #workflows = [] # Related_Workflows : 'link' (ex. many WfHub or usegalaxy refs)
+    edam_operations = []  # OK
+    edam_topics = []  # OK
+    keywords = []  # OK
+    # help = [] # Related_Tutorials -> many many GTN links
+    # workflows = [] # Related_Workflows : 'link' (ex. many WfHub or usegalaxy refs)
 
-    #biotools_name = None
-    #biotools_desc = None
+    # biotools_name = None
+    # biotools_desc = None
 
-    #Tool_ids = [] # see for ex. bedtools suite ++
-    #Suite_source
+    # Tool_ids = [] # see for ex. bedtools suite ++
+    # Suite_source
 
     if "Suite_ID" in data.keys():
         name = data["Suite_ID"]
@@ -82,11 +84,13 @@ def rdfize(data) -> Graph:
     if "bio.tool_ID" in data.keys():
         biotools_id = "biotools:" + data["bio.tool_ID"]
     if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
-        bioconda_id = "bioconda:" + data["Suite_conda_package"].strip() # see pharokka package bioconda ID
+        bioconda_id = (
+            "bioconda:" + data["Suite_conda_package"].strip()
+        )  # see pharokka package bioconda ID
 
     if "EDAM_operations" in data.keys():
-        #for operation in data["EDAM_operations"]:
-            #op = getEdamUrisFromSingleLabel(operation)
+        # for operation in data["EDAM_operations"]:
+        # op = getEdamUrisFromSingleLabel(operation)
         ope = getEdamUrisFromLabels(data["EDAM_operations"])
         for o in ope:
             edam_operations.append("edam:" + o)
@@ -100,19 +104,19 @@ def rdfize(data) -> Graph:
         for keyword in data["ToolShed_categories"]:
             keywords.append(keyword)
 
-    #if "bio.tool_description" in data.keys():
-        #biotools_desc = data["bio.tool_description"]
-    #if "bio.tool_name" in data.keys():
-        #name = data["bio.tool_name"]
+    # if "bio.tool_description" in data.keys():
+    # biotools_desc = data["bio.tool_description"]
+    # if "bio.tool_name" in data.keys():
+    # name = data["bio.tool_name"]
 
     try:
         if name:
-            package_uri = f'galaxy:{name}'
-            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            package_uri = f"galaxy:{name}"
+            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             triples += f'{package_uri} schema:name "{name}" .\n'
 
             if desc:
-                triples += f'''{package_uri} schema:description """{desc}""" .\n''' # see package infernal for ex. of special characters issue
+                triples += f'''{package_uri} schema:description """{desc}""" .\n'''  # see package infernal for ex. of special characters issue
             if url:
                 triples += f'{package_uri} schema:url "{url}" .\n'
             if version:
@@ -125,21 +129,22 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:identifier "{bioconda_id}" .\n'
 
             for ope in edam_operations:
-                triples += f'{package_uri} schema:featureList {ope} .\n'
+                triples += f"{package_uri} schema:featureList {ope} .\n"
             for top in edam_topics:
                 triples += f'{package_uri} schema:applicationSubCategory "{top}" .\n'
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
 
             g = Graph()
-            g.parse(data=prefix+"\n"+triples, format="turtle")
-            print(g.serialize(format='turtle'))
+            g.parse(data=prefix + "\n" + triples, format="turtle")
+            print(g.serialize(format="turtle"))
             return g
 
     except Exception as e:
         print("PARSING ERROR for:")
-        print(prefix+"\n"+triples)
-        raise(e)
+        print(prefix + "\n" + triples)
+        raise (e)
+
 
 def get_galaxy_files_in_repo():
     tools = []
@@ -157,7 +162,7 @@ def process_tools_by_id(id="SPROUT"):
     for tool_file in tool_files:
         if id in tool_file:
             path = Path(tool_file)
-        #     #tool = yaml.safe_load(path.read_text(encoding="utf-8"))
+            #     #tool = yaml.safe_load(path.read_text(encoding="utf-8"))
             tool = json.loads(path.read_text(encoding="utf-8"))
 
             tool_id = None
