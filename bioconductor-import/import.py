@@ -2,9 +2,13 @@ import argparse
 import glob
 import json
 import os
+import sys
 import requests
 import logging
 import yaml
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -86,6 +90,7 @@ def retrieve(version, filters=None):
         path = os.path.join("imports", "bioconductor", f"{package_name}.bioconductor.json")
         
         try:
+            pack = normalize_version_fields(pack, ["Version"])
             with open(path, "w") as write_file:
                 json.dump(pack, write_file, sort_keys=True, indent=4, separators=(",", ": "))
             logger.info(f"Saved {idx}/{total_packs} - {package_name}")
