@@ -39,9 +39,9 @@ def main():
         oeb_id = tokens[0] if len(tokens) == 1 else tokens[1]
         tool_dir = TOOLS_CONTENT_PATH + oeb_id
 
-        if tool_dir != None and os.path.isdir(tool_dir):
+        if tool_dir is not None and os.path.isdir(tool_dir):
             metrics_list = git_metrics.get(tool_dir)
-            if metrics_list != None:
+            if metrics_list is not None:
                 metrics_list.append(m)
             else:
                 git_metrics[tool_dir] = [m]
@@ -60,7 +60,7 @@ def get_metrics():
         data = res.read()
         return json.loads(data)
 
-    print("error reading metrics", req)
+    print("error reading metrics", res.getcode())
 
 
 if __name__ == "__main__":
