@@ -125,7 +125,7 @@ class Repository(object):
                 pretty_index.append(
                     [
                         "No " + summary_df.index.names[cell_idx]
-                        if cell == False
+                        if not cell
                         else summary_df.index.names[cell_idx]
                         for cell_idx, cell in enumerate(idx_row)
                     ]

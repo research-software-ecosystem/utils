@@ -3,7 +3,6 @@ import json
 import os
 
 import requests
-from boltons.iterutils import remap
 
 GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.json"
 GALAXY_ALL_WORKFLOWS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/workflows.json"
@@ -91,9 +90,10 @@ def retrieve():
             directory = os.path.join("data", tpe_id)
             if os.path.isdir(directory):
                 data_save_path = os.path.join(directory, f"{tpe_id}.galaxy.json")
-                with open(save_path, "rb") as f_src, open(
-                    data_save_path, "wb"
-                ) as f_dst:
+                with (
+                    open(save_path, "rb") as f_src,
+                    open(data_save_path, "wb") as f_dst,
+                ):
                     f_dst.write(f_src.read())
                 print(f"copy tool #{nb_tools} to data folder: {tpe_id}")
 

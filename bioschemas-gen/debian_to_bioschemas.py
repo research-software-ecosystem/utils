@@ -9,34 +9,41 @@ def getBiotoolsIdFromDebian(debian_data) -> str:
     """
     Get the bio.tools ID from the debian data.
     """
-    if 'registries' in debian_data.keys():
-        for r in debian_data['registries']:
-            if 'name' in r.keys() and r['name'] == 'bio.tools':
-                return r['entry']
+    if "registries" in debian_data.keys():
+        for r in debian_data["registries"]:
+            if "name" in r.keys() and r["name"] == "bio.tools":
+                return r["entry"]
     return None
+
 
 def getCitationFromDebian(debian_data) -> list:
     """
     Get DOIs from the debian data.
     """
     res = []
-    if 'bib' in debian_data.keys():
-        for entry in debian_data['bib']:
-            if 'key' in entry.keys() and 'value' in entry.keys():
-                res.append(entry['key'] + ":" + entry['value'])
+    if "bib" in debian_data.keys():
+        for entry in debian_data["bib"]:
+            if "key" in entry.keys() and "value" in entry.keys():
+                res.append(entry["key"] + ":" + entry["value"])
     return res
+
 
 def getDescriptionFromDebian(debian_data) -> str:
     """
     Get tool descriptions from the debian data.
     """
-    if 'descr' in debian_data.keys():
-        for entry in debian_data['descr']:
-            if 'language' in entry.keys() and 'description' in entry.keys() and entry['language'] == "en":
-                return entry['description']
-      # elif 'language' in entry.keys() and 'long_description' in entry.keys() and entry['language'] == "en":
-        # return entry['long_description']
+    if "descr" in debian_data.keys():
+        for entry in debian_data["descr"]:
+            if (
+                "language" in entry.keys()
+                and "description" in entry.keys()
+                and entry["language"] == "en"
+            ):
+                return entry["description"]
+    # elif 'language' in entry.keys() and 'long_description' in entry.keys() and entry['language'] == "en":
+    # return entry['long_description']
     return None
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -55,46 +62,47 @@ def rdfize(data) -> Graph:
     description = getDescriptionFromDebian(data)
 
     try:
-        if "package" in data.keys() :
-            package_uri = f"debianmed:{data["package"]}"
-            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+        if "package" in data.keys():
+            package_uri = f"debianmed:{data['package']}"
+            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             triples += f'{package_uri} schema:name "{data["package"]}" .\n'
             # if "description" in data.keys() :
             #   triples += f'{package_uri} schema:description "{data["description"]}" .\n'
-        if "license" in data.keys() :
+        if "license" in data.keys():
             triples += f'{package_uri} schema:license "{data["license"]}" .\n'
-        if "version" in data.keys() :
+        if "version" in data.keys():
             triples += f'{package_uri} schema:softwareVersion "{data["version"]}" .\n'
-        if biotools_id :
+        if biotools_id:
             triples += f'{package_uri} spdx:builtFrom "{biotools_id}" .\n'
-        if description :
+        if description:
             triples += f'{package_uri} schema:description "{description}" .\n'
         if "homepage" in data.keys():
             triples += f'{package_uri} schema:url "{data["homepage"]}" .\n'
         if "tags" in data.keys():
             for kw in data["tags"]:
-                if 'tag' in kw.keys():
+                if "tag" in kw.keys():
                     triples += f'{package_uri} schema:keywords "{kw["tag"]}" .\n'
         # process DOIs
         for doi in dois:
             triples += f'{package_uri} schema:citation "{doi}" .\n'
 
         # process identifiers
-        if 'registries' in data.keys():
-            for e in data['registries']:
-                if 'name' in e.keys() and "entry" in e.keys():
+        if "registries" in data.keys():
+            for e in data["registries"]:
+                if "name" in e.keys() and "entry" in e.keys():
                     id = f"{e['name'].lower()}:{e['entry']}"
                     triples += f'{package_uri} schema:identifier "{id}" .\n'
 
             g = Graph()
-            g.parse(data=prefix+"\n"+triples, format="turtle")
-            print(g.serialize(format='turtle'))
+            g.parse(data=prefix + "\n" + triples, format="turtle")
+            print(g.serialize(format="turtle"))
         return g
 
     except Exception as e:
         print("PARSING ERROR for:")
-        print(prefix+"\n"+triples)
-        raise(e)
+        print(prefix + "\n" + triples)
+        raise (e)
+
 
 def get_biotools_files_in_repo():
     tools = []
@@ -125,14 +133,13 @@ def process_tools_by_id(id="SPROUT"):
                 temp_graph.serialize(
                     format="json-ld",
                     auto_compact=True,
-                    destination=os.path.join(
-                        directory, tpe_id + ".debian.jsonld"
-                    ),
+                    destination=os.path.join(directory, tpe_id + ".debian.jsonld"),
                 )
                 temp_graph.serialize(
                     format="turtle",
                     destination=os.path.join(directory, tpe_id + ".debian.ttl"),
                 )
+
 
 def clean():
     for data_file in glob.glob(r"../../content/data/*/*.debian.jsonld"):
@@ -141,6 +148,7 @@ def clean():
     for data_file in glob.glob(r"../../content/data/*/*.debian.ttl"):
         print(f"removing file {data_file}")
         os.remove(data_file)
+
 
 def process_tools():
     """
