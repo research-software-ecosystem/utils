@@ -1,14 +1,23 @@
-name: Lint
+name: Lint and Format
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  ruff:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/ruff-action@v3
+
+      - name: Run Ruff Linter
+        uses: astral-sh/ruff-action@v3
         with:
-          args: check --select E,F,W --ignore E501
+          args: "check --select E,F,W --ignore E501"
+
+      - name: Run Ruff Formatter
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "format --check"
