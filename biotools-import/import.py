@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import glob
 import argparse
 
@@ -35,7 +34,7 @@ def retrieve(filters=None):
         )
         try:
             entry = response.json()
-        except JSONDecodeError as e:
+        except JSONDecodeError:
             print("Json decode error for " + str(req.data.decode("utf-8")))
             break
         has_next_page = entry["next"] != None

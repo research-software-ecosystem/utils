@@ -1,6 +1,5 @@
 # coding: utf-8
 import argparse
-import json
 import logging
 from pathlib import Path
 import os

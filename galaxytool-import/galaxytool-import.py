@@ -3,7 +3,6 @@ import json
 import os
 
 import requests
-from boltons.iterutils import remap
 
 GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.json"
 GALAXY_ALL_WORKFLOWS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/workflows.json"

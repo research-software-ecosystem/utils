@@ -412,7 +412,7 @@ def rdfize_bioschema_tool(json_entry):
 
         for item in entry["field_has_function"]:
             if "target_uuid" in item.keys():
-                if not "featureList" in out.keys():
+                if "featureList" not in out.keys():
                     out["featureList"] = [{"@id": item["target_uuid"]}]
                 else:
                     out["featureList"].append({"@id": item["target_uuid"]})
@@ -424,7 +424,7 @@ def rdfize_bioschema_tool(json_entry):
 
         for item in entry["field_has_topic"]:
             if "target_uuid" in item.keys():
-                if not "hasTopic" in out.keys():
+                if "hasTopic" not in out.keys():
                     out["hasTopic"] = [{"@id": item["target_uuid"]}]
                     # print(f"Added first topic {item['target_uuid']}")
                 else:
@@ -432,7 +432,7 @@ def rdfize_bioschema_tool(json_entry):
                     # print(f"Added another topic {item['target_uuid']}")
 
         for item in entry["field_has_reference_publication"]:
-            if not "citation" in out.keys():
+            if "citation" not in out.keys():
                 out["citation"] = []
             if item["uri"]:
                 out["citation"].append({"@id": item["uri"].strip()})
@@ -440,13 +440,13 @@ def rdfize_bioschema_tool(json_entry):
                 out["citation"].append(item["title"])
 
         for item in entry["field_has_license"]:
-            if not "license" in out.keys():
+            if "license" not in out.keys():
                 out["license"] = []
             if item["value"]:
                 out["license"].append(item["value"])
 
         for item in entry["field_has_author"]:
-            if not "publisher" in out.keys():
+            if "publisher" not in out.keys():
                 out["publisher"] = []
             if item["value"]:
                 out["publisher"].append(item["value"])
@@ -462,7 +462,7 @@ def rdfize_bioschema_tool(json_entry):
                 out["dateModified"] = str(date.isoformat())
 
         for item in entry["field_is_dependent_of"]:
-            if not "softwareRequirements" in out.keys():
+            if "softwareRequirements" not in out.keys():
                 out["softwareRequirements"] = []
             if item["target_id"]:
                 out["softwareRequirements"].append({
@@ -536,13 +536,13 @@ def rdfize(json_entry):
             entry["hasTitle"] = entry["title"][0]["value"]
 
         for item in entry["field_image"]:
-            if not "hasIllustration" in entry.keys():
+            if "hasIllustration" not in entry.keys():
                 entry["hasIllustration"] = [item["url"]]
             else:
                 entry["hasIllustration"].append(item["url"])
 
         for item in entry["field_has_author"]:
-            if not "hasAuthor" in entry.keys():
+            if "hasAuthor" not in entry.keys():
                 entry["hasAuthor"] = []
             if item["value"]:
                 entry["hasAuthor"].append(item["value"])
@@ -553,7 +553,7 @@ def rdfize(json_entry):
         for item in entry["field_has_function"]:
             # print(item)
             if "target_uuid" in item.keys():
-                if not "hasFunction" in entry.keys():
+                if "hasFunction" not in entry.keys():
                     entry["hasFunction"] = [{"@id": item["target_uuid"]}]
                 else:
                     entry["hasFunction"].append({"@id": item["target_uuid"]})
@@ -561,7 +561,7 @@ def rdfize(json_entry):
         for item in entry["field_has_topic"]:
             # print(item)
             if "target_uuid" in item.keys():
-                if not "hasTopic" in entry.keys():
+                if "hasTopic" not in entry.keys():
                     entry["hasTopic"] = [{"@id": item["target_uuid"]}]
                 else:
                     entry["hasTopic"].append({"@id": item["target_uuid"]})
@@ -569,7 +569,7 @@ def rdfize(json_entry):
         for item in entry["field_is_dependent_of"]:
             # print(item)
             if "target_id" in item.keys():
-                if not "requires" in entry.keys():
+                if "requires" not in entry.keys():
                     entry["requires"] = [
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
@@ -579,7 +579,7 @@ def rdfize(json_entry):
                     })
 
         for item in entry["field_has_reference_publication"]:
-            if not "citation" in entry.keys():
+            if "citation" not in entry.keys():
                 entry["citation"] = []
             if item["uri"]:
                 entry["citation"].append({
@@ -589,7 +589,7 @@ def rdfize(json_entry):
                 entry["citation"].append(item["title"])
 
         for item in entry["field_has_location"]:
-            if not "location" in entry.keys():
+            if "location" not in entry.keys():
                 entry["location"] = []
             if item["uri"]:
                 entry["location"].append({
@@ -599,14 +599,14 @@ def rdfize(json_entry):
                 entry["location"].append(item["title"])
 
         for item in entry["field_has_license"]:
-            if not "license" in entry.keys():
+            if "license" not in entry.keys():
                 entry["license"] = []
             if item["value"]:
                 entry["license"].append(item["value"])
 
         for item in entry["field_license_openness"]:
             if "target_id" in item.keys():
-                if not "openess" in entry.keys():
+                if "openess" not in entry.keys():
                     entry["openess"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -621,7 +621,7 @@ def rdfize(json_entry):
         for item in entry["field_has_implementation"]:
             # print(item)
             if "target_id" in item.keys():
-                if not "hasImplementation" in entry.keys():
+                if "hasImplementation" not in entry.keys():
                     entry["hasImplementation"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -635,7 +635,7 @@ def rdfize(json_entry):
 
         for item in entry["field_type"]:
             if "target_id" in item.keys():
-                if not "hasType" in entry.keys():
+                if "hasType" not in entry.keys():
                     entry["hasType"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -649,7 +649,7 @@ def rdfize(json_entry):
 
         for item in entry["field_has_programming_language"]:
             if "target_id" in item.keys():
-                if not "hasProgrammingLanguage" in entry.keys():
+                if "hasProgrammingLanguage" not in entry.keys():
                     entry["hasProgrammingLanguage"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -663,7 +663,7 @@ def rdfize(json_entry):
 
         for item in entry["field_platform"]:
             if "target_id" in item.keys():
-                if not "hasPlatform" in entry.keys():
+                if "hasPlatform" not in entry.keys():
                     entry["hasPlatform"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -677,7 +677,7 @@ def rdfize(json_entry):
 
         for item in entry["field_supported_image_dimension"]:
             if "target_id" in item.keys():
-                if not "hasSupportedImageDimension" in entry.keys():
+                if "hasSupportedImageDimension" not in entry.keys():
                     entry["hasSupportedImageDimension"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -691,7 +691,7 @@ def rdfize(json_entry):
 
         for item in entry["field_is_covered_by_training_mat"]:
             if "target_id" in item.keys():
-                if not "hasTrainingMaterial" in entry.keys():
+                if "hasTrainingMaterial" not in entry.keys():
                     entry["hasTrainingMaterial"] = [
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
@@ -701,7 +701,7 @@ def rdfize(json_entry):
                     })
 
         for item in entry["field_has_documentation"]:
-            if not "uri" in entry.keys():
+            if "uri" not in entry.keys():
                 entry["hasDocumentation"] = []
             if item["uri"]:
                 entry["hasDocumentation"].append({
@@ -711,7 +711,7 @@ def rdfize(json_entry):
                 entry["hasDocumentation"].append(item["title"])
 
         for item in entry["field_has_comparison"]:
-            if not "uri" in entry.keys():
+            if "uri" not in entry.keys():
                 entry["hasComparison"] = []
             if item["uri"]:
                 entry["hasComparison"].append({
@@ -721,7 +721,7 @@ def rdfize(json_entry):
                 entry["hasComparison"].append(item["title"])
 
         for item in entry["field_has_usage_example"]:
-            if not "uri" in entry.keys():
+            if "uri" not in entry.keys():
                 entry["hasUsageExample"] = []
             if item["uri"]:
                 entry["hasUsageExample"].append({
@@ -731,7 +731,7 @@ def rdfize(json_entry):
                 entry["hasUsageExample"].append(item["title"])
 
         for item in entry["field_has_doi"]:
-            if not "uri" in entry.keys():
+            if "uri" not in entry.keys():
                 entry["hasDOI"] = []
             if item["uri"]:
                 entry["hasDOI"].append({
@@ -796,7 +796,7 @@ def get_software_list(connection):
     except urllib3.exceptions.HTTPError as e:
         print("Connection error")
         print(e)
-    except json.decoder.JSONDecodeError as e:
+    except json.decoder.JSONDecodeError:
         print(f"Contents are not propertly formatted in {req.geturl()}")
         print("Response contents:", req.data)
         return None

@@ -32,7 +32,7 @@ def validate_debian_files(path):
         try:
             parse_yaml(file)
             valid_files_counter += 1
-        except yaml.YAMLError as exc:
+        except yaml.YAMLError:
             print("unable to parse " + file, file=sys.stderr)
             invalid_files.append(file)
 
