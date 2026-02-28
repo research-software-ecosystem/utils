@@ -8,8 +8,8 @@ ignore = [
 
 [lint.per-file-ignores]
 "*.ipynb" = [
-    "E501",  # Allow longer lines in notebooks
+    #"E501",  # Allow longer lines in notebooks
     "E402",   # Allow imports not at top
-    "F401",   # Allow unused imports
-    "B018",   # Allow "useless" expressions
+    #"F401",   # Allow unused imports
+    #"B018",   # Allow "useless" expressions
 ]
