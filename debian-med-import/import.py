@@ -184,7 +184,8 @@ def process_data(base_path):
         cursor_loop.execute(query_descr)
         descr_data = cursor_loop.fetchone()[0]
         item["descr"] = descr_data
-        drop_false = lambda path, key, value: bool(value)
+        def drop_false(path, key, value):
+            return bool(value)
         item = remap(item, visit=drop_false)
         file_path = os.path.join(import_directory, f"{item['package']}.debian.yaml")
         with open(file_path, "w") as fh:

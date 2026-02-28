@@ -73,7 +73,7 @@ def rdfize(json_entry):
                 if "typeEntity" in credit.keys() and credit["typeEntity"]:
                     if "Funding agency" in credit["typeEntity"]:
                         sType = "sc:Organization"
-                        if "orcidid" in credit.keys() and credit["orcidid"] != None:
+                        if "orcidid" in credit.keys() and credit["orcidid"] is not None:
                             if "funder" not in entry.keys():
                                 entry["funder"] = {
                                     "@id": credit["orcidid"],
@@ -84,7 +84,7 @@ def rdfize(json_entry):
                                     "@id": credit["orcidid"],
                                     "@type": sType,
                                 })
-                        elif "name" in credit.keys() and credit["name"] != None:
+                        elif "name" in credit.keys() and credit["name"] is not None:
                             if "funder" not in entry.keys():
                                 entry["funder"] = [credit["name"]]
                             else:
@@ -100,7 +100,7 @@ def rdfize(json_entry):
                                 sType = "sc:Person"
                             else:
                                 sType = "sc:Organization"
-                            if "orcidid" in credit.keys() and credit["orcidid"] != None:
+                            if "orcidid" in credit.keys() and credit["orcidid"] is not None:
                                 if "author" not in entry.keys():
                                     entry["author"] = {
                                         "@id": credit["orcidid"],
@@ -111,13 +111,13 @@ def rdfize(json_entry):
                                         "@id": credit["orcidid"],
                                         "@type": sType,
                                     })
-                            elif "name" in credit.keys() and credit["name"] != None:
+                            elif "name" in credit.keys() and credit["name"] is not None:
                                 if "author" not in entry.keys():
                                     entry["author"] = [credit["name"]]
                                 else:
                                     entry["author"].append(credit["name"])
                         else:
-                            if "name" in credit.keys() and credit["name"] != None:
+                            if "name" in credit.keys() and credit["name"] is not None:
                                 if "author" not in entry.keys():
                                     entry["author"] = [credit["name"]]
                                 else:
@@ -132,7 +132,7 @@ def rdfize(json_entry):
                             else:
                                 sType = "sc:Organization"
 
-                            if "orcidid" in credit.keys() and credit["orcidid"] != None:
+                            if "orcidid" in credit.keys() and credit["orcidid"] is not None:
                                 if "provider" not in entry.keys():
                                     entry["provider"] = {
                                         "@id": credit["orcidid"],
@@ -145,13 +145,13 @@ def rdfize(json_entry):
                                         "@id": credit["orcidid"],
                                         "@type": sType,
                                     })
-                            elif "name" in credit.keys() and credit["name"] != None:
+                            elif "name" in credit.keys() and credit["name"] is not None:
                                 if "provider" not in entry.keys():
                                     entry["provider"] = [credit["name"]]
                                 else:
                                     entry["provider"].append(credit["name"])
                         else:
-                            if "name" in credit.keys() and credit["name"] != None:
+                            if "name" in credit.keys() and credit["name"] is not None:
                                 if "provider" not in entry.keys():
                                     entry["provider"] = [credit["name"]]
                                 else:
@@ -167,7 +167,7 @@ def rdfize(json_entry):
                             else:
                                 sType = "sc:Organization"
 
-                            if "orcidid" in credit.keys() and credit["orcidid"] != None:
+                            if "orcidid" in credit.keys() and credit["orcidid"] is not None:
                                 if "contributor" not in entry.keys():
                                     entry["contributor"] = {
                                         "@id": credit["orcidid"],
@@ -178,13 +178,13 @@ def rdfize(json_entry):
                                         "@id": credit["orcidid"],
                                         "@type": sType,
                                     })
-                            elif "name" in credit.keys() and credit["name"] != None:
+                            elif "name" in credit.keys() and credit["name"] is not None:
                                 if "contributor" not in entry.keys():
                                     entry["contributor"] = [credit["name"]]
                                 else:
                                     entry["contributor"].append(credit["name"])
                         else:
-                            if "name" in credit.keys() and credit["name"] != None:
+                            if "name" in credit.keys() and credit["name"] is not None:
                                 if "contributor" not in entry.keys():
                                     entry["contributor"] = [credit["name"]]
                                 else:
@@ -200,7 +200,7 @@ def rdfize(json_entry):
                             else:
                                 sType = "sc:Organization"
 
-                            if "orcidid" in credit.keys() and credit["orcidid"] != None:
+                            if "orcidid" in credit.keys() and credit["orcidid"] is not None:
                                 if "primaryContact" not in entry.keys():
                                     entry["primaryContact"] = {
                                         "@id": credit["orcidid"],
@@ -211,13 +211,13 @@ def rdfize(json_entry):
                                         "@id": credit["orcidid"],
                                         "@type": sType,
                                     })
-                            elif "name" in credit.keys() and credit["name"] != None:
+                            elif "name" in credit.keys() and credit["name"] is not None:
                                 if "primaryContact" not in entry.keys():
                                     entry["primaryContact"] = [credit["name"]]
                                 else:
                                     entry["primaryContact"].append(credit["name"])
                         else:
-                            if "name" in credit.keys() and credit["name"] != None:
+                            if "name" in credit.keys() and credit["name"] is not None:
                                 if "primaryContact" not in entry.keys():
                                     entry["primaryContact"] = [credit["name"]]
                                 else:

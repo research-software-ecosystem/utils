@@ -25,10 +25,13 @@ def parse_bioconda(directory):
         def __str__(self):
             return ""
         __repr__ = __str__
-        __bool__ = lambda self: False
+        def __bool__(self):
+            return False
         __getattr__ = __getitem__ = lambda self, *a, **kw: self
-        __iter__ = lambda self: iter(())
-        __call__ = lambda self, *a, **kw: self
+        def __iter__(self):
+            return iter(())
+        def __call__(self, *a, **kw):
+            return self
 
     # load custom Undefined class in custom environment
     env = jinja2.Environment(undefined=SilentUndefined)
