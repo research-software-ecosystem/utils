@@ -18,7 +18,7 @@ def login(user, password):
     return token
 
 def run_upload(token, user):
-    headers = HEADERS
+    headers = HEADERS.copy()
     headers.update({'Authorization':f'Token {token}'})
     print(token)
     url = HOST + '/api/tool/validate/'
@@ -44,12 +44,26 @@ def run_upload(token, user):
                 messages = response.text
             logging.error(f'error while uploading {biotools_json_file} (status {response.status_code}): {messages}')
             tools_ko.append(payload_dict["biotoolsID"])
-        except:
-            logging.error(f'error while uploading {biotools_json_file}', exc_info=True)
-            tools_ko.append(payload_dict["biotoolsID"])
-    logging.error('Tools upload finished')
-    logging.error(f"Tools OK: {len(tools_ok)}")
-    logging.error(f"Tools KO: {len(tools_ko)}")
+        except (FileNotFoundError, PermissionError) as e:
+            logging.error(f'file error while uploading {biotools_json_file}: {e}')
+            # Note: can't get biotoolsID if file couldn't be read
+        except json.JSONDecodeError as e:
+            logging.error(f'invalid JSON in {biotools_json_file}: {e}')
+        except KeyError as e:
+            logging.error(f'missing required field {e} in {biotools_json_file}')
+            if "biotoolsID" in payload_dict:
+                tools_ko.append(payload_dict["biotoolsID"])
+        except requests.RequestException as e:
+            logging.error(f'request error while uploading {biotools_json_file}: {e}')
+            if "biotoolsID" in payload_dict:
+                tools_ko.append(payload_dict["biotoolsID"])
+        except Exception as e:
+            logging.error(f'unexpected error while uploading {biotools_json_file}: {e}', exc_info=True)
+            if "biotoolsID" in payload_dict:
+                tools_ko.append(payload_dict["biotoolsID"])
+    logging.info('Tools upload finished')
+    logging.info(f"Tools OK: {len(tools_ok)}")
+    logging.info(f"Tools KO: {len(tools_ko)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Bulk upload github tools to a test bio.tools server')
