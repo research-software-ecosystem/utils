@@ -138,8 +138,8 @@ def run_upload(files):
         'failed_update': []
     }
 
-    for json in files:
-        with open(json, 'r') as file:
+    for json_file in files:
+        with open(json_file, 'r') as file:
             tool_id, status = process_single_file(file, headers)
             results[status].append(tool_id)
 
