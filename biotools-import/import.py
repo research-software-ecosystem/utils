@@ -34,10 +34,18 @@ def retrieve(filters=None):
         )
         try:
             entry = response.json()
-        except JSONDecodeError:
-            print("Json decode error for " + str(req.data.decode("utf-8")))
+        except requests.HTTPError as e:
+            print(f"HTTP error: {e}")
+            print(f"Response content: {response.text}")
             break
-        has_next_page = entry["next"] != None
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            print(f"Response content: {response.text}")
+            break
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            break
+        has_next_page = entry["next"] is not None
 
         for tool in entry["list"]:
             tool_id = tool["biotoolsID"]
@@ -46,7 +54,8 @@ def retrieve(filters=None):
             if not os.path.isdir(directory):
                 os.mkdir(directory)
             with open(os.path.join(directory, tpe_id + ".biotools.json"), "w") as write_file:
-                drop_false = lambda path, key, value: bool(value)
+                def drop_false(path, key, value):
+                    return bool(value)
                 tool_cleaned = remap(tool, visit=drop_false)
                 json.dump(
                     tool_cleaned, write_file, sort_keys=True, indent=4, separators=(",", ": ")
