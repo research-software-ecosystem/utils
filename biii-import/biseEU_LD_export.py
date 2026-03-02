@@ -465,9 +465,9 @@ def rdfize_bioschema_tool(json_entry):
             if "softwareRequirements" not in out.keys():
                 out["softwareRequirements"] = []
             if item["target_id"]:
-                out["softwareRequirements"].append({
-                    "@id": "http://biii.eu/node/" + str(item["target_id"]).strip()
-                })
+                out["softwareRequirements"].append(
+                    {"@id": "http://biii.eu/node/" + str(item["target_id"]).strip()}
+                )
 
         out.update(ctx)
 
@@ -574,17 +574,17 @@ def rdfize(json_entry):
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
                 else:
-                    entry["requires"].append({
-                        "@id": "http://biii.eu/node/" + str(item["target_id"])
-                    })
+                    entry["requires"].append(
+                        {"@id": "http://biii.eu/node/" + str(item["target_id"])}
+                    )
 
         for item in entry["field_has_reference_publication"]:
             if "citation" not in entry.keys():
                 entry["citation"] = []
             if item["uri"]:
-                entry["citation"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["citation"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["citation"].append(item["title"])
 
@@ -592,9 +592,9 @@ def rdfize(json_entry):
             if "location" not in entry.keys():
                 entry["location"] = []
             if item["uri"]:
-                entry["location"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["location"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["location"].append(item["title"])
 
@@ -614,9 +614,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["openess"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["openess"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_has_implementation"]:
             # print(item)
@@ -629,9 +632,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["hasImplementation"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["hasImplementation"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_type"]:
             if "target_id" in item.keys():
@@ -643,9 +649,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["hasType"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["hasType"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_has_programming_language"]:
             if "target_id" in item.keys():
@@ -657,9 +666,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["hasProgrammingLanguage"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["hasProgrammingLanguage"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_platform"]:
             if "target_id" in item.keys():
@@ -671,9 +683,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["hasPlatform"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["hasPlatform"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_supported_image_dimension"]:
             if "target_id" in item.keys():
@@ -685,9 +700,12 @@ def rdfize(json_entry):
                         }
                     ]
                 else:
-                    entry["hasSupportedImageDimension"].append({
-                        "@id": "http://biii.eu/taxonomy/term/" + str(item["target_id"])
-                    })
+                    entry["hasSupportedImageDimension"].append(
+                        {
+                            "@id": "http://biii.eu/taxonomy/term/"
+                            + str(item["target_id"])
+                        }
+                    )
 
         for item in entry["field_is_covered_by_training_mat"]:
             if "target_id" in item.keys():
@@ -696,17 +714,17 @@ def rdfize(json_entry):
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
                 else:
-                    entry["hasTrainingMaterial"].append({
-                        "@id": "http://biii.eu/node/" + str(item["target_id"])
-                    })
+                    entry["hasTrainingMaterial"].append(
+                        {"@id": "http://biii.eu/node/" + str(item["target_id"])}
+                    )
 
         for item in entry["field_has_documentation"]:
             if "uri" not in entry.keys():
                 entry["hasDocumentation"] = []
             if item["uri"]:
-                entry["hasDocumentation"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["hasDocumentation"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["hasDocumentation"].append(item["title"])
 
@@ -714,9 +732,9 @@ def rdfize(json_entry):
             if "uri" not in entry.keys():
                 entry["hasComparison"] = []
             if item["uri"]:
-                entry["hasComparison"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["hasComparison"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["hasComparison"].append(item["title"])
 
@@ -724,9 +742,9 @@ def rdfize(json_entry):
             if "uri" not in entry.keys():
                 entry["hasUsageExample"] = []
             if item["uri"]:
-                entry["hasUsageExample"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["hasUsageExample"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["hasUsageExample"].append(item["title"])
 
@@ -734,9 +752,9 @@ def rdfize(json_entry):
             if "uri" not in entry.keys():
                 entry["hasDOI"] = []
             if item["uri"]:
-                entry["hasDOI"].append({
-                    "@id": urllib.parse.quote(item["uri"], safe=":/")
-                })
+                entry["hasDOI"].append(
+                    {"@id": urllib.parse.quote(item["uri"], safe=":/")}
+                )
             if item["title"]:
                 entry["hasDOI"].append(item["title"])
 

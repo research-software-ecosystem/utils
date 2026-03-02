@@ -10,6 +10,7 @@ from ruamel.yaml import YAML
 
 yaml = YAML()
 
+
 def clean(base_path):
     import_directory = os.path.join(base_path, "imports", "debian-med")
     biotools_directory = os.path.join(base_path, "data")
@@ -19,19 +20,18 @@ def clean(base_path):
     for data_file in Path(biotools_directory).glob("*/*.debian.yaml"):
         os.remove(data_file)
 
+
 def process_data(base_path):
     """Query UDD for debian-med packages and write them to YAML files in `import/debian-med`, plus in `data` if a biotools cross-link exists."""
     import_directory = os.path.join(base_path, "imports", "debian-med")
     biotools_directory = os.path.join(base_path, "data")
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.INFO)
-    fileHandler = logging.FileHandler('debian_import.log')
+    fileHandler = logging.FileHandler("debian_import.log")
     rootLogger.addHandler(fileHandler)
     consoleHandler = logging.StreamHandler()
     rootLogger.addHandler(consoleHandler)
-    rootLogger.info(
-        "starting debian med metadata import from UDD..."
-    )
+    rootLogger.info("starting debian med metadata import from UDD...")
     connection = psycopg2.connect(
         user="udd-mirror",
         password="udd-mirror",
@@ -120,9 +120,7 @@ def process_data(base_path):
         package = item["package"]
         release = item["release"]
         description_md5 = item["description_md5"]
-        rootLogger.info(
-            f"processing package {package}"
-        )
+        rootLogger.info(f"processing package {package}")
         query_registries = f"select array_to_json(array_agg(t)) from (select entry, name from registry where source = '{package_source}') t"
         cursor_loop.execute(query_registries)
         registries_data = cursor_loop.fetchone()[0]
@@ -141,15 +139,17 @@ def process_data(base_path):
         if package == package_source:
             if biotools is None:
                 rootLogger.warning(f"package '{package_source}' has no bio.tools ref.")
-                biotools_xref = False            
+                biotools_xref = False
             else:
-                biotools_package_directory = os.path.join(biotools_directory, biotools.lower())
+                biotools_package_directory = os.path.join(
+                    biotools_directory, biotools.lower()
+                )
                 p = Path(biotools_package_directory)
                 if not p.is_dir():
                     rootLogger.warning(
                         f"package '{package_source}' has a biotools ref ('{biotools}') but no folder exists."
                     )
-                    biotools_xref = False            
+                    biotools_xref = False
         else:
             rootLogger.warning(
                 f"package name '{package}' is different from package source name '{package_source}', skipping."
@@ -184,21 +184,23 @@ def process_data(base_path):
         cursor_loop.execute(query_descr)
         descr_data = cursor_loop.fetchone()[0]
         item["descr"] = descr_data
+
         def drop_false(path, key, value):
             return bool(value)
+
         item = remap(item, visit=drop_false)
         file_path = os.path.join(import_directory, f"{item['package']}.debian.yaml")
         with open(file_path, "w") as fh:
             yaml.dump(item, fh)
         if biotools_xref:
-            file_path = os.path.join(biotools_package_directory, f"{item['package']}.debian.yaml")
+            file_path = os.path.join(
+                biotools_package_directory, f"{item['package']}.debian.yaml"
+            )
             with open(file_path, "w") as fh:
                 yaml.dump(item, fh)
     cursor_loop.close()
     connection.close()
-    rootLogger.info(
-        "finished debian med metadata import from UDD."
-    )
+    rootLogger.info("finished debian med metadata import from UDD.")
 
 
 def get_parser():
