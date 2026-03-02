@@ -4,6 +4,7 @@ import glob
 import os
 import json
 import urllib.request
+import urllib.error
 
 TOOLS_CONTENT_PATH = "data/"
 OPENEBENCH_METRICS_ENDPOINT = "https://openebench.bsc.es/monitor/metrics/"
@@ -27,6 +28,10 @@ def main():
     git_metrics = {}
     metrics = get_metrics()
 
+    if metrics is None:
+        print("Failed to retrieve metrics, exiting")
+        return
+
     for m in metrics:
         uri = m.get("@id")
         suffix = uri.find("/", len(OPENEBENCH_METRICS_ENDPOINT))
@@ -39,9 +44,9 @@ def main():
         oeb_id = tokens[0] if len(tokens) == 1 else tokens[1]
         tool_dir = TOOLS_CONTENT_PATH + oeb_id
 
-        if tool_dir != None and os.path.isdir(tool_dir):
+        if tool_dir is not None and os.path.isdir(tool_dir):
             metrics_list = git_metrics.get(tool_dir)
-            if metrics_list != None:
+            if metrics_list is not None:
                 metrics_list.append(m)
             else:
                 git_metrics[tool_dir] = [m]
@@ -49,18 +54,32 @@ def main():
     for tool_dir, m in git_metrics.items():
         path = tool_dir + "/" + os.path.basename(tool_dir) + ".oeb.metrics.json"
         with open(path, "w") as f:
-            print("writing to file" + path)
+            print("writing to file " + path)
             json.dump(m, f, indent=4, sort_keys=True)
 
 
 # Get OpenEBench metrics
 def get_metrics():
-    res = urllib.request.urlopen(OPENEBENCH_METRICS_ENDPOINT)
-    if res.getcode() < 300:
-        data = res.read()
-        return json.loads(data)
-
-    print("error reading metrics", req)
+    try:
+        res = urllib.request.urlopen(OPENEBENCH_METRICS_ENDPOINT)
+        if res.getcode() < 300:
+            data = res.read()
+            return json.loads(data)
+        else:
+            print(f"Error reading metrics: HTTP {res.getcode()}")
+            return None
+    except urllib.error.HTTPError as e:
+        print(f"HTTP Error: {e.code} - {e.reason}")
+        return None
+    except urllib.error.URLError as e:
+        print(f"URL Error: {e.reason}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error reading metrics: {e}")
+        return None
 
 
 if __name__ == "__main__":

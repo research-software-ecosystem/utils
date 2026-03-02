@@ -28,7 +28,7 @@ def process_tools():
 
     rdf_graph.serialize(
         format="turtle",
-        destination="../../content/datasets/galaxy-dump.ttl"
+        destination="../../content/datasets/galaxy-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
 
