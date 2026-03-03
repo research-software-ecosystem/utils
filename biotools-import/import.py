@@ -8,7 +8,7 @@ import requests
 from boltons.iterutils import remap
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from common.metadata import normalize_version_fields  # noqa: E402
+from common.metadata import normalize_version_fields
 
 BIOTOOLS_DOMAIN = "https://bio.tools"
 SSL_VERIFY = True
