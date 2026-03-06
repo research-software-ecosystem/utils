@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 CACHE_FILE = "pmid_doi_cache.json"
 
+
 def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as file:
@@ -19,27 +20,50 @@ def load_cache():
     else:
         return {}
 
+
 def save_cache(cache):
     with open(CACHE_FILE, "w") as file:
         json.dump(cache, file)
 
+
 cache = load_cache()
 
 # Define the command-line arguments
-parser = argparse.ArgumentParser(description='Extract biotoolsID and publication.doi from JSON files')
-parser.add_argument('directory', type=str, help='path to the directory containing the JSON files')
-parser.add_argument('name_pattern', type=str, help='name pattern of the JSON files')
-parser.add_argument('--output', type=str, help='optional: name of the output CSV file (default: output.csv)', default='output.csv')
-parser.add_argument('--duplicate_output', type=str, help='optional: name of the output CSV file for duplicate DOIs (default: duplicate_output.csv)', default='duplicate_output.csv')
-parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                    default='INFO', help='Set the logging level (default: INFO)')
-parser.add_argument('--email', type=str, help='User email used for Entrez calls', default=None)
+parser = argparse.ArgumentParser(
+    description="Extract biotoolsID and publication.doi from JSON files"
+)
+parser.add_argument(
+    "directory", type=str, help="path to the directory containing the JSON files"
+)
+parser.add_argument("name_pattern", type=str, help="name pattern of the JSON files")
+parser.add_argument(
+    "--output",
+    type=str,
+    help="optional: name of the output CSV file (default: output.csv)",
+    default="output.csv",
+)
+parser.add_argument(
+    "--duplicate_output",
+    type=str,
+    help="optional: name of the output CSV file for duplicate DOIs (default: duplicate_output.csv)",
+    default="duplicate_output.csv",
+)
+parser.add_argument(
+    "--log-level",
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    default="INFO",
+    help="Set the logging level (default: INFO)",
+)
+parser.add_argument(
+    "--email", type=str, help="User email used for Entrez calls", default=None
+)
 
 # Parse the command-line arguments
 args = parser.parse_args()
 
 if args.email:
     Entrez.email = args.email  # Set your email address
+
 
 def get_doi_from_pubmed_id(pubmed_id):
     if pubmed_id in cache:
@@ -49,9 +73,9 @@ def get_doi_from_pubmed_id(pubmed_id):
     handle.close()
     logging.info(f"Retrieving DOI for PMID {pubmed_id}")
     try:
-        article = records['PubmedArticle'][0]['PubmedData']['ArticleIdList']
+        article = records["PubmedArticle"][0]["PubmedData"]["ArticleIdList"]
         for identifier in article:
-            if identifier.attributes['IdType'] == 'doi':
+            if identifier.attributes["IdType"] == "doi":
                 cache[pubmed_id] = identifier
                 save_cache(cache)
                 logging.info(f"Found DOI for PMID {pubmed_id}: {identifier}")
@@ -62,6 +86,7 @@ def get_doi_from_pubmed_id(pubmed_id):
     save_cache(cache)
     logging.warning(f"Didn't find DOI for PMID {pubmed_id}")
     return None
+
 
 # Configure logging based on the provided log level
 logging.basicConfig(level=args.log_level)
@@ -76,7 +101,11 @@ publication_dois = []
 total_files = len(glob.glob(os.path.join(args.directory, args.name_pattern)))
 
 # Loop through each JSON file in the directory with tqdm for progress bar
-for filename in tqdm(glob.glob(os.path.join(args.directory, args.name_pattern)), total=total_files, desc='Processing files'):
+for filename in tqdm(
+    glob.glob(os.path.join(args.directory, args.name_pattern)),
+    total=total_files,
+    desc="Processing files",
+):
     try:
         # Load the JSON file
         with open(filename, "r") as f:
@@ -87,7 +116,7 @@ for filename in tqdm(glob.glob(os.path.join(args.directory, args.name_pattern)),
 
         # Extract publication DOIs from the array using list comprehension
         publication_list = []
-        for item in json_data.get("publication",[]):
+        for item in json_data.get("publication", []):
             doi = item.get("doi", None)
             if doi is not None:
                 publication_list.append(doi)
@@ -96,7 +125,9 @@ for filename in tqdm(glob.glob(os.path.join(args.directory, args.name_pattern)),
             if pmid is not None:
                 doi = get_doi_from_pubmed_id(pmid)
                 publication_list.append(doi)
-        publication_list = [item.get("doi", None) for item in json_data.get("publication", [])]
+        publication_list = [
+            item.get("doi", None) for item in json_data.get("publication", [])
+        ]
 
         # Filter out None values
         publication_list = [doi for doi in publication_list if doi is not None]
@@ -118,11 +149,11 @@ for filename in tqdm(glob.glob(os.path.join(args.directory, args.name_pattern)),
 df = pd.DataFrame(data)
 
 # Flatten the 'publication.doi' lists before checking for duplicates
-flat_dois = [doi for sublist in df['publication.doi'] for doi in sublist]
+flat_dois = [doi for sublist in df["publication.doi"] for doi in sublist]
 
 # Check for duplicate DOIs and create a new dataframe with corresponding biotoolsIDs
-duplicate_df = df[df.duplicated(subset='publication.doi', keep=False)]
-duplicate_dois = duplicate_df.explode('publication.doi')['publication.doi'].unique()
+duplicate_df = df[df.duplicated(subset="publication.doi", keep=False)]
+duplicate_dois = duplicate_df.explode("publication.doi")["publication.doi"].unique()
 
 if len(duplicate_dois) > 0:
     print("\nDuplicate DOIs:")
@@ -131,7 +162,9 @@ if len(duplicate_dois) > 0:
     # Create a new DataFrame to store duplicate DOI information
     duplicate_info = []
     for doi in duplicate_dois:
-        biotools_ids = duplicate_df[duplicate_df['publication.doi'].apply(lambda x: doi in x)]['biotoolsID'].tolist()
+        biotools_ids = duplicate_df[
+            duplicate_df["publication.doi"].apply(lambda x: doi in x)
+        ]["biotoolsID"].tolist()
         duplicate_info.append({"DOI": doi, "BiotoolsID": biotools_ids})
 
     # Create a DataFrame from the duplicate_info list
@@ -139,7 +172,7 @@ if len(duplicate_dois) > 0:
 
     # Save the duplicate DataFrame to a CSV file
     duplicate_df_final.to_csv(args.duplicate_output, index=False)
-    
+
     print("\nDuplicate DOIs and Corresponding BiotoolsIDs:")
     print(duplicate_df_final)
 else:
@@ -147,4 +180,3 @@ else:
 
 # Save the original dataframe to a CSV file
 df.to_csv(args.output, index=False)
-
