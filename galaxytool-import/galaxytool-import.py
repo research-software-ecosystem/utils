@@ -1,9 +1,12 @@
 import glob
 import json
 import os
+import sys
 
 import requests
-from boltons.iterutils import remap
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
 
 GALAXY_ALL_TOOLS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.json"
 GALAXY_ALL_WORKFLOWS_METADATA = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/workflows.json"
@@ -73,6 +76,14 @@ def retrieve():
         # store tool json in galaxy import folder
         galaxy_tool_id = galaxy_tool_id.lower()
         tool_cleaned = {k.replace(" ", "_"): v for k, v in tool.items()}
+        tool_cleaned = normalize_version_fields(
+            tool_cleaned,
+            [
+                "Suite_version",
+                "Latest_suite_conda_package_version",
+                "Related_Workflows[].latest_version",
+            ],
+        )
         save_path = os.path.join(galaxy_directory, f"{galaxy_tool_id}.galaxy.json")
         with open(save_path, "w") as write_file:
             json.dump(
@@ -91,9 +102,10 @@ def retrieve():
             directory = os.path.join("data", tpe_id)
             if os.path.isdir(directory):
                 data_save_path = os.path.join(directory, f"{tpe_id}.galaxy.json")
-                with open(save_path, "rb") as f_src, open(
-                    data_save_path, "wb"
-                ) as f_dst:
+                with (
+                    open(save_path, "rb") as f_src,
+                    open(data_save_path, "wb") as f_dst,
+                ):
                     f_dst.write(f_src.read())
                 print(f"copy tool #{nb_tools} to data folder: {tpe_id}")
 

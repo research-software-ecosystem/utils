@@ -7,8 +7,12 @@ import argparse
 import requests
 from boltons.iterutils import remap
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.metadata import normalize_version_fields
+
 BIOTOOLS_DOMAIN = "https://bio.tools"
 SSL_VERIFY = True
+
 
 def clean():
     for data_file in glob.glob(r"data/*/*.biotools.json"):
@@ -31,14 +35,22 @@ def retrieve(filters=None):
             f"{BIOTOOLS_DOMAIN}/api/tool/",
             params=parameters,
             headers={"Accept": "application/json"},
-            verify=SSL_VERIFY
+            verify=SSL_VERIFY,
         )
         try:
             entry = response.json()
-        except JSONDecodeError as e:
-            print("Json decode error for " + str(req.data.decode("utf-8")))
+        except requests.HTTPError as e:
+            print(f"HTTP error: {e}")
+            print(f"Response content: {response.text}")
             break
-        has_next_page = entry["next"] != None
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            print(f"Response content: {response.text}")
+            break
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            break
+        has_next_page = entry["next"] is not None
 
         for tool in entry["list"]:
             tool_id = tool["biotoolsID"]
@@ -46,11 +58,22 @@ def retrieve(filters=None):
             directory = os.path.join("data", tpe_id)
             if not os.path.isdir(directory):
                 os.mkdir(directory)
-            with open(os.path.join(directory, tpe_id + ".biotools.json"), "w") as write_file:
-                drop_false = lambda path, key, value: bool(value)
+            with open(
+                os.path.join(directory, tpe_id + ".biotools.json"), "w"
+            ) as write_file:
+
+                def drop_false(path, key, value):
+                    return bool(value)
+
                 tool_cleaned = remap(tool, visit=drop_false)
+                tool_cleaned = normalize_version_fields(tool_cleaned, ["version"])
+
                 json.dump(
-                    tool_cleaned, write_file, sort_keys=True, indent=4, separators=(",", ": ")
+                    tool_cleaned,
+                    write_file,
+                    sort_keys=True,
+                    indent=4,
+                    separators=(",", ": "),
                 )
             nb_tools += 1
             print(f"import tool #{nb_tools}: {tool_id} in folder {directory}")

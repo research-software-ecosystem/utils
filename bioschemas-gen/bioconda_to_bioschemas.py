@@ -3,7 +3,6 @@ import glob
 import yaml
 from pathlib import Path
 from rdflib import Graph
-import json
 
 
 def getBiotoolsId(bioconda_data) -> str:
