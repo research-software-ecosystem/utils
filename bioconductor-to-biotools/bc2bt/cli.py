@@ -13,31 +13,33 @@ from .mapper import compare_files, IdentityRegistry
 from .updater import update_entries
 
 
-def convert_command():
+def convert_command(args=None):
     """Convert Bioconductor packages to bio.tools format."""
-    parser = argparse.ArgumentParser(
-        description="Convert Bioconductor metadata to bio.tools format"
-    )
-    parser.add_argument(
-        "input_dir",
-        help="Directory containing Bioconductor JSON files",
-    )
-    parser.add_argument(
-        "output_dir",
-        help="Directory to write converted bio.tools JSON files",
-    )
-    parser.add_argument(
-        "--existing",
-        default=None,
-        help="Directory with existing bio.tools entries to merge with",
-    )
-    parser.add_argument(
-        "--citation-dir",
-        default=None,
-        help="Directory containing citation HTML files",
-    )
+    # Parse arguments if not provided (when called as console script)
+    if args is None:
+        parser = argparse.ArgumentParser(
+            description="Convert Bioconductor metadata to bio.tools format"
+        )
+        parser.add_argument(
+            "input_dir",
+            help="Directory containing Bioconductor JSON files",
+        )
+        parser.add_argument(
+            "output_dir",
+            help="Directory to write converted bio.tools JSON files",
+        )
+        parser.add_argument(
+            "--existing",
+            default=None,
+            help="Directory with existing bio.tools entries to merge with",
+        )
+        parser.add_argument(
+            "--citation-dir",
+            default=None,
+            help="Directory containing citation HTML files",
+        )
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
     try:
         result = batch_convert(
@@ -53,48 +55,50 @@ def convert_command():
         return 1
 
 
-def compare_command():
+def compare_command(args=None):
     """Compare two sets of bio.tools entries to find matches."""
-    parser = argparse.ArgumentParser(
-        description="Compare bio.tools entries to find matches and duplicates"
-    )
-    parser.add_argument(
-        "pattern1",
-        help="File pattern for first set (e.g., 'data/*/*.biotools.json')",
-    )
-    parser.add_argument(
-        "pattern2",
-        help="File pattern for second set (e.g., 'converted/*.biotools.json')",
-    )
-    parser.add_argument(
-        "--methods",
-        nargs="+",
-        default=["name_homepage", "doi"],
-        help="Identity methods to use for matching",
-    )
-    parser.add_argument(
-        "--results",
-        default="matches.json",
-        help="Output file for match results",
-    )
-    parser.add_argument(
-        "--upset1",
-        default=None,
-        help="Path to save UpSet plot for first set",
-    )
-    parser.add_argument(
-        "--upset2",
-        default=None,
-        help="Path to save UpSet plot for second set",
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=None,
-        help="Number of parallel workers",
-    )
+    # Parse arguments if not provided (when called as console script)
+    if args is None:
+        parser = argparse.ArgumentParser(
+            description="Compare bio.tools entries to find matches and duplicates"
+        )
+        parser.add_argument(
+            "pattern1",
+            help="File pattern for first set (e.g., 'data/*/*.biotools.json')",
+        )
+        parser.add_argument(
+            "pattern2",
+            help="File pattern for second set (e.g., 'converted/*.biotools.json')",
+        )
+        parser.add_argument(
+            "--methods",
+            nargs="+",
+            default=["name_homepage", "doi"],
+            help="Identity methods to use for matching",
+        )
+        parser.add_argument(
+            "--results",
+            default="matches.json",
+            help="Output file for match results",
+        )
+        parser.add_argument(
+            "--upset1",
+            default=None,
+            help="Path to save UpSet plot for first set",
+        )
+        parser.add_argument(
+            "--upset2",
+            default=None,
+            help="Path to save UpSet plot for second set",
+        )
+        parser.add_argument(
+            "--workers",
+            type=int,
+            default=None,
+            help="Number of parallel workers",
+        )
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
     # Validate methods
     registry = IdentityRegistry()
@@ -128,39 +132,54 @@ def compare_command():
         return 1
 
 
-def update_command():
+def update_command(args=None):
     """Update bio.tools entries based on match results."""
-    parser = argparse.ArgumentParser(
-        description="Update or create bio.tools entries based on match results"
-    )
-    parser.add_argument(
-        "results_file",
-        help="JSON file with match results from compare command",
-    )
-    parser.add_argument(
-        "converted_dir",
-        help="Directory with converted Bioconductor files",
-    )
-    parser.add_argument(
-        "bt_files_dir",
-        help="Directory containing existing bio.tools entries",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be done without making changes",
-    )
-    parser.add_argument(
-        "--no-backup",
-        action="store_true",
-        help="Don't create backup files before updating",
-    )
+    # Parse arguments if not provided (when called as console script)
+    if args is None:
+        parser = argparse.ArgumentParser(
+            description="Update or create bio.tools entries based on match results"
+        )
+        parser.add_argument(
+            "results_file",
+            help="JSON file with match results from compare command",
+        )
+        parser.add_argument(
+            "converted_dir",
+            help="Directory with converted Bioconductor files",
+        )
+        parser.add_argument(
+            "bt_files_dir",
+            help="Directory containing existing bio.tools entries",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Show what would be done without making changes",
+        )
+        parser.add_argument(
+            "--no-backup",
+            action="store_true",
+            help="Don't create backup files before updating",
+        )
+        parser.add_argument(
+            "--no-copy-source",
+            action="store_true",
+            help="Disable copying of original Bioconductor JSON files to data directory",
+        )
+        parser.add_argument(
+            "--bioc-files-dir",
+            default=None,
+            help="Directory with original Bioconductor JSON files (default: same as converted_dir)",
+        )
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
     try:
         with open(args.results_file, "r") as f:
             match_results = json.load(f)
+
+        # Use converted_dir as default for bioc_files_dir if not specified
+        bioc_files_dir = args.bioc_files_dir or args.converted_dir
 
         summary = update_entries(
             match_results=match_results,
@@ -168,6 +187,8 @@ def update_command():
             bt_files_dir=args.bt_files_dir,
             dry_run=args.dry_run,
             backup=not args.no_backup,
+            copy_source=not args.no_copy_source,
+            bioc_files_dir=bioc_files_dir,
         )
 
         print("\n" + "=" * 60)
@@ -241,6 +262,11 @@ def sync_command(args=None):
             "--keep-work-dir",
             action="store_true",
             help="Keep working directory after completion",
+        )
+        parser.add_argument(
+            "--no-copy-source",
+            action="store_true",
+            help="Disable copying of original Bioconductor JSON files to data directory",
         )
         args = parser.parse_args()
 
@@ -319,6 +345,8 @@ def sync_command(args=None):
             bt_files_dir=args.bt_files_dir,
             dry_run=args.dry_run,
             backup=not args.no_backup,
+            copy_source=not args.no_copy_source,
+            bioc_files_dir=args.input_dir,
         )
 
         print("\nUPDATE SUMMARY")
@@ -419,6 +447,11 @@ def main():
         action="store_true",
         help="Keep working directory after completion",
     )
+    sync_parser.add_argument(
+        "--no-copy-source",
+        action="store_true",
+        help="Disable copying of original Bioconductor JSON files to data directory",
+    )
 
     # Convert command
     convert_parser = subparsers.add_parser(
@@ -465,6 +498,21 @@ def main():
         action="store_true",
         help="Preview changes without applying",
     )
+    update_parser.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Don't create backup files before updating",
+    )
+    update_parser.add_argument(
+        "--no-copy-source",
+        action="store_true",
+        help="Disable copying of original Bioconductor JSON files to data directory",
+    )
+    update_parser.add_argument(
+        "--bioc-files-dir",
+        default=None,
+        help="Directory with original Bioconductor JSON files (default: same as converted_dir)",
+    )
 
     args = parser.parse_args()
 
@@ -476,11 +524,11 @@ def main():
     if args.command == "sync":
         return sync_command(args)
     elif args.command == "convert":
-        return convert_command()
+        return convert_command(args)
     elif args.command == "compare":
-        return compare_command()
+        return compare_command(args)
     elif args.command == "update":
-        return update_command()
+        return update_command(args)
 
     return 0
 

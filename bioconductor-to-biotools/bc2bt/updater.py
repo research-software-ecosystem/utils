@@ -19,6 +19,8 @@ class Updater:
         bt_files_dir: str,
         dry_run: bool = False,
         backup: bool = True,
+        bioc_files_dir: str | None = None,
+        copy_source: bool = True,
     ):
         """
         Initialize the updater.
@@ -27,10 +29,72 @@ class Updater:
             bt_files_dir: Directory containing existing bio.tools entries
             dry_run: If True, don't actually write any changes
             backup: If True, create .backup files before modifying
+            bioc_files_dir: Directory containing original Bioconductor JSON files
+            copy_source: If True, copy original Bioconductor files to data directory
         """
         self.bt_files_dir = Path(bt_files_dir)
         self.dry_run = dry_run
         self.backup = backup
+        self.bioc_files_dir = Path(bioc_files_dir) if bioc_files_dir else None
+        self.copy_source = copy_source
+
+    def _get_source_bioc_file(self, biotools_id: str) -> Path | None:
+        """
+        Get the path to the original Bioconductor source file.
+
+        The biotools_id is formatted as "bioconductor-{package_name}",
+        so we extract the package name and look for {package}.bioconductor.json.
+
+        Args:
+            biotools_id: The bio.tools ID (e.g., "bioconductor-limma")
+
+        Returns:
+            Path to the source Bioconductor file, or None if not found
+        """
+        if not self.bioc_files_dir:
+            return None
+
+        # Extract package name from biotools_id (remove "bioconductor-" prefix)
+        if biotools_id.startswith("bioconductor-"):
+            package_name = biotools_id[len("bioconductor-"):]
+        else:
+            package_name = biotools_id
+
+        source_file = self.bioc_files_dir / f"{package_name}.bioconductor.json"
+        return source_file if source_file.exists() else None
+
+    def _copy_source_file(self, biotools_id: str, target_dir: Path) -> Path | None:
+        """
+        Copy the original Bioconductor source file to the target directory.
+
+        Args:
+            biotools_id: The bio.tools ID
+            target_dir: Directory to copy the source file to
+
+        Returns:
+            Path to the copied file, or None if not copied
+        """
+        if not self.copy_source or not self.bioc_files_dir:
+            return None
+
+        source_file = self._get_source_bioc_file(biotools_id)
+        if not source_file:
+            logger.debug(f"No source Bioconductor file found for {biotools_id}")
+            return None
+
+        if self.dry_run:
+            target_path = target_dir / f"{biotools_id}.bioconductor.json"
+            logger.info(f"[DRY RUN] Would copy source: {source_file} -> {target_path}")
+            return target_path
+
+        # Ensure target directory exists
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy the source file with biotools_id naming
+        target_path = target_dir / f"{biotools_id}.bioconductor.json"
+        shutil.copy2(source_file, target_path)
+        logger.info(f"Copied source: {target_path}")
+        return target_path
 
     def create_entry(self, converted_file_path: str, target_dir: str) -> str:
         """
@@ -55,6 +119,8 @@ class Updater:
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would create: {target_path}")
+            # Also log source copy in dry run mode
+            self._copy_source_file(biotools_id, target_path.parent)
             return str(target_path)
 
         # Ensure target directory exists
@@ -65,6 +131,10 @@ class Updater:
             json.dump(data, f, indent=4)
 
         logger.info(f"Created: {target_path}")
+
+        # Copy source Bioconductor file if enabled
+        self._copy_source_file(biotools_id, target_path.parent)
+
         return str(target_path)
 
     def update_entry(
@@ -94,6 +164,9 @@ class Updater:
         with open(converted_file_path, "r", encoding="utf-8") as f:
             bioc_data = json.load(f)
 
+        # Get biotoolsID for source copying
+        biotools_id = existing_data.get("biotoolsID") or bioc_data.get("biotoolsID")
+
         # Start with existing data (preserves ALL fields from bio.tools)
         merged_data = {**existing_data}
 
@@ -120,6 +193,9 @@ class Updater:
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would update: {existing_path}")
+            # Also log source copy in dry run mode
+            if biotools_id:
+                self._copy_source_file(biotools_id, existing_path.parent)
             return str(existing_path)
 
         # Create backup if requested
@@ -133,6 +209,11 @@ class Updater:
             json.dump(merged_data, f, indent=4)
 
         logger.info(f"Updated: {existing_path}")
+
+        # Copy source Bioconductor file if enabled
+        if biotools_id:
+            self._copy_source_file(biotools_id, existing_path.parent)
+
         return str(existing_path)
 
     def apply_changes(
@@ -230,6 +311,8 @@ def update_entries(
     bt_files_dir: str,
     dry_run: bool = False,
     backup: bool = True,
+    bioc_files_dir: str | None = None,
+    copy_source: bool = True,
 ) -> dict:
     """
     Convenience function to update/create bio.tools entries based on match results.
@@ -240,9 +323,11 @@ def update_entries(
         bt_files_dir: Directory containing existing bio.tools entries
         dry_run: If True, don't actually write any changes
         backup: If True, create .backup files before modifying
+        bioc_files_dir: Directory containing original Bioconductor JSON files
+        copy_source: If True, copy original Bioconductor files to data directory
 
     Returns:
         Summary of operations performed
     """
-    updater = Updater(bt_files_dir, dry_run, backup)
+    updater = Updater(bt_files_dir, dry_run, backup, bioc_files_dir, copy_source)
     return updater.apply_changes(match_results, converted_files_dir)
