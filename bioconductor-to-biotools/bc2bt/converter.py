@@ -154,8 +154,10 @@ def extract_publications(citation_html: str) -> list:
         href = link["href"].strip()
         if "doi.org" in href:
             doi = href.split("doi.org/")[-1]
-            meta = get_publication_metadata(doi)
-            publications.append({"doi": doi, "metadata": meta})
+            # not updating the publications for now because this is ignored and overwritten by bio.tools
+            #meta = get_publication_metadata(doi)
+            #publications.append({"doi": doi, "metadata": meta})
+            publications.append({"doi": doi})
 
     return publications
 
