@@ -56,7 +56,7 @@ class Updater:
 
         # Extract package name from biotools_id (remove "bioconductor-" prefix)
         if biotools_id.startswith("bioconductor-"):
-            package_name = biotools_id[len("bioconductor-"):]
+            package_name = biotools_id[len("bioconductor-") :]
         else:
             package_name = biotools_id
 
