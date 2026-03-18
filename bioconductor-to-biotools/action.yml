@@ -15,7 +15,7 @@ runs:
       with:
         python-version: '3.12'
     - name: Install bc2bt
-      run:
+      run: |
         pip install -r ${{ github.action_path }}/requirements.txt
         pip install ${{ github.action_path }}
       shell: bash
