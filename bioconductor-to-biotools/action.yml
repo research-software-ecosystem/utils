@@ -21,7 +21,7 @@ runs:
       shell: bash
     - name: Synchronize Bioconductor to bio.tools
       run: |
-        bc2bt sync imports/bioconductor data --work-dir /tmp/bc2bt_work
+        bc2bt-sync imports/bioconductor data --work-dir /tmp/bc2bt_work
       shell: bash
     - name: reformat json to a predictable format with jq and sponge
       run: |
