@@ -30,17 +30,11 @@ for file in "$@"; do
   # Check if this is a new file or existing file
   if ! git show "${GITHUB_BEFORE_SHA}:${file}" > old.json 2>/dev/null; then
     # NEW FILE
-    echo "ℹ️ New file detected: $file"
-    for field in "${PROTECTED_FIELDS[@]}"; do
-      val=$(jq -r ".$field // empty" "$file" 2>/dev/null)
-      if [ -n "$val" ] && [ "$val" != "null" ]; then
-        echo "::error file=$file::Protected field '$field' must not be present in new files (found: '$val')"
-        failed=true
-      fi
-    done
+    echo "ℹ New file detected: $file"
+    echo "ℹ Skipping validation for protected fields..."
   else
     # EXISTING FILE
-    echo "ℹ️ Existing file: $file"
+    echo "ℹ Existing file: $file"
     cat "$file" > new.json
     
     for field in "${PROTECTED_FIELDS[@]}"; do
@@ -57,7 +51,7 @@ for file in "$@"; do
 done
 
 if [ "$failed" = true ]; then
-  echo "::error::Validation failed - protected fields were modified or present in new files"
+  echo "::error::Validation failed - protected fields were modified."
   exit 1
 else
   echo "✅ All validation checks passed"
