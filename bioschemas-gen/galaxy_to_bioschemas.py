@@ -60,6 +60,7 @@ def rdfize(data) -> Graph:
     biotools_id = None  # OK
     # biii_id = None # biii_ID
     bioconda_id = None  # OK
+    workflowhub_ids = []  # OK
 
     edam_operations = []  # OK
     edam_topics = []  # OK
@@ -104,6 +105,13 @@ def rdfize(data) -> Graph:
         for keyword in data["ToolShed_categories"]:
             keywords.append(keyword)
 
+    if "Related_Workflows" in data.keys():
+        for workflow in data["Related_Workflows"]:
+            for wf in workflow.keys():
+                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/"):
+                    workflowhub_ids.append("workflowhub:" + workflow[wf])
+
+
     # if "bio.tool_description" in data.keys():
     # biotools_desc = data["bio.tool_description"]
     # if "bio.tool_name" in data.keys():
@@ -134,6 +142,10 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:applicationSubCategory "{top}" .\n'
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
+
+            for wf in workflowhub_ids:
+                #print(wf)
+                triples += f'{package_uri} schema:identifier "{wf}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
