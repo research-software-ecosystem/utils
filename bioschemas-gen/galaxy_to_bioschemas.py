@@ -61,7 +61,9 @@ def rdfize(data) -> Graph:
     biotools_id = None  # OK
     # biii_id = None # biii_ID
     bioconda_id = None  # OK
+    
     workflowhub_ids = []  # OK
+    galaxywf_ids = []  # OK
 
     edam_operations = []  # OK
     edam_topics = []  # OK
@@ -109,8 +111,14 @@ def rdfize(data) -> Graph:
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
             for wf in workflow.keys():
-                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/"):
-                    workflowhub_ids.append("workflowhub:" + workflow[wf])
+
+                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/workflows/"):
+                    workflow_id = workflow[wf].strip("https://workflowhub.eu/workflows/")
+                    workflowhub_ids.append("workflowhub:" + workflow_id)
+                
+                if wf == "link" and workflow[wf].startswith("https://usegalaxy.eu/published/"):
+                    workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
+                    galaxywf_ids.append("galaxywf:" + workflow_id)
 
 
     # if "bio.tool_description" in data.keys():
@@ -120,7 +128,7 @@ def rdfize(data) -> Graph:
 
     try:
         if name:
-            package_uri = f"galaxy:{name}"
+            package_uri = f"galaxytool:{name}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             triples += f'{package_uri} schema:name "{name}" .\n'
 
@@ -132,7 +140,6 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
             if biotools_id:
-                triples += f'{package_uri} spdx:builtFrom "{biotools_id}" .\n'
                 triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
             if bioconda_id:
                 triples += f'{package_uri} schema:identifier "{bioconda_id}" .\n'
@@ -144,9 +151,10 @@ def rdfize(data) -> Graph:
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
 
-            for wf in workflowhub_ids:
-                #print(wf)
-                triples += f'{package_uri} schema:identifier "{wf}" .\n'
+            for workflowhub_id in workflowhub_ids:
+                triples += f'{package_uri} schema:identifier "{workflowhub_id}" .\n'
+            for galaxywf_id in galaxywf_ids:
+                triples += f'{package_uri} schema:identifier "{galaxywf_id}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -254,4 +262,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    # process_tools_by_id("limma")
+    #process_tools_by_id("deseq2")
