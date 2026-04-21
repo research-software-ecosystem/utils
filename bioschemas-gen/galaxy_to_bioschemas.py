@@ -42,10 +42,11 @@ def rdfize(data) -> Graph:
     @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
     @prefix schema: <http://schema.org/> .
-    @prefix spdx: <http://spdx.org/rdf/terms/> .
     @prefix biotools: <https://bio.tools/> .
     @prefix bioconda: <https://bioconda.github.io/recipes/> .
-    @prefix galaxy: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
+    @prefix galaxytool: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
+    @prefix galaxywf: <https://usegalaxy.eu/published/> .
+    @prefix workflowhub: <https://workflowhub.eu/workflows/> .
     @prefix edam: <http://edamontology.org/> .
     """
 

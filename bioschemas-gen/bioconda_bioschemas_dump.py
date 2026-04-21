@@ -1,7 +1,12 @@
 import os
 import glob
 from rdflib import ConjunctiveGraph
-from tabulate import tabulate
+
+try:
+    from tabulate import tabulate
+except ImportError:
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
 
 def get_bioconda_files_in_repo():
@@ -35,7 +40,7 @@ def process_tools():
 
     rdf_graph.serialize(
         format="turtle",
-        destination="../../content/datasets/bioconda-dump.ttl",
+        destination="content/datasets/bioconda-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
 
