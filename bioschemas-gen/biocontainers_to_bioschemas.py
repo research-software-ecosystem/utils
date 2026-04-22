@@ -1,6 +1,7 @@
+import yaml
 import os
 import glob
-import yaml
+import json
 from pathlib import Path
 from rdflib import Graph
 
@@ -55,9 +56,10 @@ def rdfize(data) -> Graph:
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
             if "description" in data.keys():
-                triples += (
-                    f'{package_uri} schema:description "{data["description"]}" .\n'
-                )
+                triples += f"{package_uri} schema:description " + json.dumps(data["description"]) + " .\n"
+                # triples += (
+                #     f'{package_uri} schema:description "{data["description"]}" .\n'
+                # )
             if "license" in data.keys():
                 triples += f'{package_uri} schema:license "{data["license"]}" .\n'
             if biotools_id:
