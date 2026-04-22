@@ -61,9 +61,10 @@ def rdfize(data) -> Graph:
                 #     f'{package_uri} schema:description "{data["description"]}" .\n'
                 # )
             if "license" in data.keys():
-                triples += f'{package_uri} schema:license "{data["license"]}" .\n'
+                #triples += f'{package_uri} schema:license "{data["license"]}" .\n'
+                triples += f"{package_uri} schema:license " + json.dumps(data["license"]) + " .\n"
+
             if biotools_id:
-                triples += f"{package_uri} spdx:builtFrom {biotools_id} .\n"
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if "home_url" in data.keys():
                 triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
