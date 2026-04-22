@@ -261,6 +261,8 @@ def rdfize(json_entry):
                         entry["hasPublication"].append("pmcid:" + publication["pmcid"])
                 if publication.get("doi"):
                     if not ("<" in publication["doi"] or ">" in publication["doi"]):
+                        publication["doi"] = publication["doi"].replace("[", "%5B")
+                        publication["doi"] = publication["doi"].replace("]", "%5D")
                         if "hasPublication" not in entry.keys():
                             entry["hasPublication"] = [
                                 {
@@ -338,6 +340,8 @@ def rdfize(json_entry):
             for item in entry["documentation"]:
                 if "type" in item.keys() and item["type"]:
                     item["url"] = item["url"].replace("|", "%7C")
+                    if "app.gitter.im" in item["url"]: 
+                        continue
                     if "API" in item["type"]:
                         if "hasApiDoc" not in entry.keys():
                             entry["hasApiDoc"] = [{"@id": item["url"]}]
