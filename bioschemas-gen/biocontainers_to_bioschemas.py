@@ -5,18 +5,24 @@ import json
 from pathlib import Path
 from rdflib import Graph
 
-
 def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
     """
     Get the bio.tools ID from the biocontainers data.
     """
-    if "identifiers" in biocontainers_data.keys():
-        for id in biocontainers_data["identifiers"]:
-            if not isinstance(id, str):
-                print(f"WARNING: identifier is not a string: {id}")
-                continue
-            if id.lower().startswith("biotools:"):
+    if 'identifiers' in biocontainers_data.keys():
+        for id in biocontainers_data['identifiers']:
+            if isinstance(id, str) and id.lower().startswith('biotools:'):
                 return id
+            elif isinstance(id, str) and not id.lower().startswith('biotools:'):
+                continue
+      ## Fixing error from yaml where there's an extra space (ex. package spectra-cluster-cli)
+            elif isinstance(id, dict) and "biotools" in id:
+                id = "biotools:" + id['biotools']
+                return id
+            elif isinstance(id, dict) and not "biotools" in id:
+                continue
+            else:
+                print(f"WARNING: identifier is not a string: {id}")
     return None
 
 
@@ -25,13 +31,23 @@ def getCitationFromBioContainers(biocontainers_data) -> list:
     Get DOIs from the biocontainers data.
     """
     res = []
-    if "identifiers" in biocontainers_data.keys():
-        for id in biocontainers_data["identifiers"]:
-            if not isinstance(id, str):
-                print(f"WARNING: identifier is not a string: {id}")
-                continue
-            if id.lower().startswith("doi:"):
+    if 'identifiers' in biocontainers_data.keys():
+        for id in biocontainers_data['identifiers']:
+            if isinstance(id, str) and id.lower().startswith('doi:'):
                 res.append(id)
+            elif isinstance(id, str) and not id.lower().startswith('doi:'):
+                continue
+            ## Fixing error from yaml where there's an extra space (ex. package spectra-cluster-cli)
+            ## Fixing error from yaml where doi value is null (case porechop)
+            elif isinstance(id, dict) and "doi" in id and isinstance(id['doi'], str):
+                id = "doi:" + id['doi']
+                res.append(id)
+            elif isinstance(id, dict) and not "doi" in id:
+                continue
+            else:
+                print(f"WARNING: identifier is not a string: {id} et totototot")
+                continue
+
     return res
 
 
