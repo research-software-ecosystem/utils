@@ -86,8 +86,8 @@ parser.add_argument(
     required=False,
 )
 
-# ns = "http://biii.eu"
-ns = "https://dev.biii.eurobioimaging.eu"
+ns = "http://biii.eu"
+# ns = "https://dev.biii.eurobioimaging.eu"
 
 
 def clean():
