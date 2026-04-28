@@ -83,8 +83,8 @@ if __name__ == "__main__":
 
     merged_kg = ConjunctiveGraph()
     counter = 0
-    #for url in data[1:50]:
-    for url in data:
+    for url in data[1:50]:
+    #for url in data:
         #print(url)
         kg = retrieve_rdf(url["loc"])
         #print(f"KG has {len(kg)} triples")
