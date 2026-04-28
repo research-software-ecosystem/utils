@@ -45,7 +45,7 @@ def getCitationFromBioContainers(biocontainers_data) -> list:
             elif isinstance(id, dict) and not "doi" in id:
                 continue
             else:
-                print(f"WARNING: identifier is not a string: {id} et totototot")
+                print(f"WARNING: identifier is not a string: {id}")
                 continue
 
     return res
