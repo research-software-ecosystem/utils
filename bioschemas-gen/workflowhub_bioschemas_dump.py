@@ -94,5 +94,5 @@ if __name__ == "__main__":
 
     print(f"Final merged KG has {len(merged_kg)} triples")
 
-    merged_kg.serialize(destination="content/datasets/workflowhub-dump.ttl", format="turtle")
+    merged_kg.serialize(destination="../../content/datasets/workflowhub-dump.ttl", format="turtle")
 
