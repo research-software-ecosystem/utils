@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import time
-from urllib.parse import urlparse, parse_qs
+
 
 import requests
 
@@ -99,7 +99,6 @@ def build_workflow_entry(wf_id, attr):
     versions = attr.get("versions", [])
     latest_version = attr.get("latest_version") or (len(versions) if versions else 1)
 
-    first_version = versions[0] if versions else {}
     last_version = versions[-1] if versions else {}
     doi = attr.get("doi") or ""
     if not doi and last_version:
@@ -177,7 +176,7 @@ def retrieve(max_workflows=None):
             tool_to_biotool[suite_id.lower()] = biotool_id.lower()
 
     print(f"Loaded {len(tool_to_biotool)} Suite ID → bio.tool ID mappings")
-    print(f"Fetching workflow list from WorkflowHub API...")
+    print("Fetching workflow list from WorkflowHub API...")
 
     workflow_ids = fetch_all_workflow_ids(max_workflows)
     limit_msg = f" (limited to {max_workflows})" if max_workflows else ""
@@ -245,13 +244,13 @@ def retrieve(max_workflows=None):
         matched_count += 1
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
-    print(f"\nStats:")
+    print("\nStats:")
     print(f"  workflows processed: {len(all_entries)}")
     print(f"  unique tool names found: {len(stat_unique_tools)}")
     print(f"  tool occurrences via galaxy_codex mapping: {stat_mapped}")
     print(f"  tool occurrences via raw-name fallback: {stat_fallback}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
-    print(f"\n  Workflow engine distribution:")
+    print("\n  Workflow engine distribution:")
     for engine in sorted(stat_engines.keys(), key=lambda e: stat_engines[e], reverse=True):
         wf_count = stat_engines[engine]
         tool_count = len(stat_engine_tools[engine])
