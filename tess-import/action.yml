@@ -1,0 +1,27 @@
+name: "import tess"
+description: "TESS training material bulk import"
+
+inputs:
+  repo-user:
+    description: "User that commits modifications"
+    required: true
+  repo-token:
+    description: "GitHub token to commit modifications"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+
+    - name: import TESS data using the API
+      run: |
+        python ${{ github.action_path }}/tess-import.py
+      shell: bash
