@@ -119,8 +119,12 @@ def build_workflow_entry(wf_id, attr):
     if other:
         creators.append(other)
 
-    edam_operations = [op["label"] for op in attr.get("operation_annotations", []) if op.get("label")]
-    edam_topics = [t["label"] for t in attr.get("topic_annotations", []) if t.get("label")]
+    edam_operations = [
+        op["label"] for op in attr.get("operation_annotations", []) if op.get("label")
+    ]
+    edam_topics = [
+        t["label"] for t in attr.get("topic_annotations", []) if t.get("label")
+    ]
     tags = [w.lower() for w in attr.get("tags", [])]
 
     internals = attr.get("internals", {})
@@ -251,7 +255,9 @@ def retrieve(max_workflows=None):
     print(f"  tool occurrences via raw-name fallback: {stat_fallback}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
     print("\n  Workflow engine distribution:")
-    for engine in sorted(stat_engines.keys(), key=lambda e: stat_engines[e], reverse=True):
+    for engine in sorted(
+        stat_engines.keys(), key=lambda e: stat_engines[e], reverse=True
+    ):
         wf_count = stat_engines[engine]
         tool_count = len(stat_engine_tools[engine])
         pct = wf_count / len(all_entries) * 100
@@ -259,9 +265,17 @@ def retrieve(max_workflows=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Import workflows from WorkflowHub API")
-    parser.add_argument("--test", type=int, nargs="?", const=100, default=None,
-                        help="Run with a limited number of workflows (default: 100)")
+    parser = argparse.ArgumentParser(
+        description="Import workflows from WorkflowHub API"
+    )
+    parser.add_argument(
+        "--test",
+        type=int,
+        nargs="?",
+        const=100,
+        default=None,
+        help="Run with a limited number of workflows (default: 100)",
+    )
     args = parser.parse_args()
 
     clean()
