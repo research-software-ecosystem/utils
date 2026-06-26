@@ -50,9 +50,11 @@ def rdfize(data) -> Graph:
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
-@prefix spdx: <http://spdx.org/rdf/terms/> .
 @prefix biotools: <https://bio.tools/> .
+@prefix scicrunch: <https://scicrunch.org/resolver/> .
 @prefix debianmed: <https://salsa.debian.org/med-team/> .
+@prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
+@prefix guix: <https://packages.guix.gnu.org/packages/> .
 """
 
     triples = ""
@@ -72,8 +74,6 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} schema:license "{data["license"]}" .\n'
         if "version" in data.keys():
             triples += f'{package_uri} schema:softwareVersion "{data["version"]}" .\n'
-        if biotools_id:
-            triples += f'{package_uri} spdx:builtFrom "{biotools_id}" .\n'
         if description:
             triples += f'{package_uri} schema:description "{description}" .\n'
         if "homepage" in data.keys():
@@ -87,11 +87,32 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} schema:citation "{doi}" .\n'
 
         # process identifiers
+       #if "registries" in data.keys():
+          #  for e in data["registries"]:
+             #   if "name" in e.keys() and "entry" in e.keys():
+                #    id = f"{e['name'].lower()}:{e['entry']}"
+                 #   triples += f'{package_uri} schema:identifier "{id}" .\n'
+
+    # process identifiers
         if "registries" in data.keys():
             for e in data["registries"]:
                 if "name" in e.keys() and "entry" in e.keys():
-                    id = f"{e['name'].lower()}:{e['entry']}"
-                    triples += f'{package_uri} schema:identifier "{id}" .\n'
+                    if e["entry"] == "atac, meryl" and e["name"] == "conda:bioconda":
+                        print("test")
+                        for id in e["entry"].split(", "):
+                            triples += f'{package_uri} schema:identifier bioconda:{id} .\n'
+                if e["name"] == "bio.tools":
+                    triples += f'{package_uri} schema:identifier biotools:{e["entry"].lower()} .\n'
+                #elif e["name"] == "OMICtools":
+                    #continue
+                elif e["name"] == "conda:bioconda" and e["entry"] != "atac, meryl":
+                    triples += f'{package_uri} schema:identifier bioconda:{e["entry"]} .\n'
+                elif e["name"] == "SciCrunch":
+                    triples += f'{package_uri} schema:identifier scicrunch:{e["entry"]} .\n'
+                elif e["name"] == "guix":
+                    triples += f'{package_uri} schema:identifier guix:{e["entry"]} .\n'
+                else:
+                    triples += f'{package_uri} schema:identifier "{e["name"].lower()}:{e["entry"]}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
