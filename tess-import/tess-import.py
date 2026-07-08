@@ -84,9 +84,7 @@ def build_entry(list_item, detail):
         if op.get("preferred_label")
     ]
 
-    resource_type = detail.get("resource_type", []) if detail else []
-    nodes = detail.get("nodes", []) if detail else []
-    keywords = detail.get("keywords", []) if detail else []
+    detail_fields = detail or {}
 
     return {
         "source": "TESS",
@@ -98,9 +96,20 @@ def build_entry(list_item, detail):
         "tools": tools,
         "scientific_topics": topics,
         "operations": ops,
-        "resource_type": resource_type,
-        "nodes": nodes,
-        "keywords": keywords,
+        "resource_type": detail_fields.get("resource_type", []),
+        "nodes": detail_fields.get("nodes", []),
+        "keywords": detail_fields.get("keywords", []),
+        "authors": detail_fields.get("authors", []),
+        "contributors": detail_fields.get("contributors", []),
+        "licence": detail_fields.get("licence", ""),
+        "difficulty_level": detail_fields.get("difficulty_level", ""),
+        "target_audience": detail_fields.get("target_audience", []),
+        "prerequisites": detail_fields.get("prerequisites", ""),
+        "contact": detail_fields.get("contact", ""),
+        "date_published": detail_fields.get("date_published", ""),
+        "status": detail_fields.get("status", ""),
+        "syllabus": detail_fields.get("syllabus", ""),
+        "learning_objectives": detail_fields.get("learning_objectives", ""),
         "date_created": list_item.get("remote_created_date", ""),
         "date_updated": list_item.get("remote_updated_date", ""),
     }
