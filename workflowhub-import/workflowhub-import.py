@@ -15,10 +15,12 @@ WORKFLOWHUB_BASE = "https://workflowhub.eu"
 PER_PAGE = 100
 
 
-def clean():
-    for data_file in glob.glob(r"data/*/*.workflowhub.json"):
+def clean(data_base="."):
+    data_glob = os.path.join(data_base, "data/*/*.workflowhub.json")
+    for data_file in glob.glob(data_glob):
         os.remove(data_file)
-    for import_file in glob.glob(r"imports/workflowhub/*.workflowhub.json"):
+    import_glob = os.path.join(data_base, "imports/workflowhub/*.workflowhub.json")
+    for import_file in glob.glob(import_glob):
         os.remove(import_file)
 
 
@@ -160,8 +162,8 @@ def build_workflow_entry(wf_id, attr):
     }
 
 
-def retrieve(max_workflows=None):
-    workflowhub_directory = os.path.join("imports", "workflowhub")
+def retrieve(max_workflows=None, data_base="."):
+    workflowhub_directory = os.path.join(data_base, "imports", "workflowhub")
     os.makedirs(workflowhub_directory, exist_ok=True)
 
     # Load galaxy_codex tools for Suite ID → bio.tool ID mapping
@@ -234,18 +236,32 @@ def retrieve(max_workflows=None):
 
     # Write per-tool workflowhub JSONs — store only workflow IDs
     matched_count = 0
+    wf_id_to_data_tools = {}
     for bt_id in sorted(tool_to_wf_ids.keys()):
-        directory = os.path.join("data", bt_id)
+        directory = os.path.join(data_base, "data", bt_id)
         if not os.path.isdir(directory):
             continue
 
         wf_ids = sorted(set(tool_to_wf_ids[bt_id]))
+
+        for wf_id in wf_ids:
+            wf_id_to_data_tools.setdefault(wf_id, []).append(bt_id)
 
         data_save_path = os.path.join(directory, f"{bt_id}.workflowhub.json")
         with open(data_save_path, "w") as f:
             json.dump(wf_ids, f, sort_keys=True, indent=4, separators=(",", ": "))
         print(f"matched tool #{matched_count + 1}: {bt_id} ({len(wf_ids)} workflows)")
         matched_count += 1
+
+    for entry in all_entries:
+        wf_id = entry["id"]
+        if wf_id in wf_id_to_data_tools:
+            entry["mapped_tools"] = sorted(wf_id_to_data_tools[wf_id])
+            save_path = os.path.join(workflowhub_directory, f"{wf_id}.workflowhub.json")
+            with open(save_path, "w") as f:
+                json.dump(
+                    entry, f, sort_keys=True, indent=4, separators=(",", ": ")
+                )
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
@@ -276,7 +292,13 @@ if __name__ == "__main__":
         default=None,
         help="Run with a limited number of workflows (default: 100)",
     )
+    parser.add_argument(
+        "--content-dir",
+        type=str,
+        default=".",
+        help="Path to the content directory containing a data/ subfolder (default: current dir)",
+    )
     args = parser.parse_args()
 
-    clean()
-    retrieve(max_workflows=args.test)
+    clean(data_base=args.content_dir)
+    retrieve(max_workflows=args.test, data_base=args.content_dir)
