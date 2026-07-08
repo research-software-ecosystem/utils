@@ -256,13 +256,12 @@ def retrieve(max_workflows=None, data_base="."):
 
     for entry in all_entries:
         wf_id = entry["id"]
-        if wf_id in wf_id_to_data_tools:
-            entry["mapped_tools"] = sorted(wf_id_to_data_tools[wf_id])
-            save_path = os.path.join(workflowhub_directory, f"{wf_id}.workflowhub.json")
-            with open(save_path, "w") as f:
-                json.dump(
-                    entry, f, sort_keys=True, indent=4, separators=(",", ": ")
-                )
+        entry["mapped_tools"] = sorted(wf_id_to_data_tools.get(wf_id, []))
+        save_path = os.path.join(workflowhub_directory, f"{wf_id}.workflowhub.json")
+        with open(save_path, "w") as f:
+            json.dump(
+                entry, f, sort_keys=True, indent=4, separators=(",", ": ")
+            )
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
