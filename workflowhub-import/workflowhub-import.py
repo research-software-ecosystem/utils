@@ -157,8 +157,6 @@ def build_workflow_entry(wf_id, attr):
         "doi": doi,
         "workflow_class": engine,
         "projects": [],
-        "keep": True,
-        "deprecated": False,
     }
 
 
