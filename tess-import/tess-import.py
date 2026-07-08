@@ -15,10 +15,12 @@ TESS_BASE = "https://tess.elixir-europe.org"
 PER_PAGE = 100
 
 
-def clean():
-    for data_file in glob.glob(r"data/*/*.tess.json"):
+def clean(data_base="."):
+    data_glob = os.path.join(data_base, "data/*/*.tess.json")
+    for data_file in glob.glob(data_glob):
         os.remove(data_file)
-    for import_file in glob.glob(r"imports/tess/*.tess.json"):
+    import_glob = os.path.join(data_base, "imports/tess/*.tess.json")
+    for import_file in glob.glob(import_glob):
         os.remove(import_file)
 
 
@@ -104,8 +106,8 @@ def build_entry(list_item, detail):
     }
 
 
-def retrieve(max_items=None):
-    tess_directory = os.path.join("imports", "tess")
+def retrieve(max_items=None, data_base="."):
+    tess_directory = os.path.join(data_base, "imports", "tess")
     os.makedirs(tess_directory, exist_ok=True)
 
     print("Fetching training materials from TESS API...")
@@ -160,17 +162,32 @@ def retrieve(max_items=None):
     print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
 
     matched_count = 0
+    mid_to_data_tools = {}
     for bt_id in sorted(tool_to_mids.keys()):
-        directory = os.path.join("data", bt_id)
+        directory = os.path.join(data_base, "data", bt_id)
         if not os.path.isdir(directory):
             continue
 
         mids = sorted(set(tool_to_mids[bt_id]))
+
+        for mid in mids:
+            mid_to_data_tools.setdefault(mid, []).append(bt_id)
+
         data_save_path = os.path.join(directory, f"{bt_id}.tess.json")
         with open(data_save_path, "w") as f:
             json.dump(mids, f, sort_keys=True, indent=4, separators=(",", ": "))
         print(f"matched tool #{matched_count + 1}: {bt_id} ({len(mids)} trainings)")
         matched_count += 1
+
+    for entry in all_entries:
+        mid = entry["id"]
+        if mid in mid_to_data_tools:
+            entry["mapped_tools"] = sorted(mid_to_data_tools[mid])
+            save_path = os.path.join(tess_directory, f"{mid}.tess.json")
+            with open(save_path, "w") as f:
+                json.dump(
+                    entry, f, sort_keys=True, indent=4, separators=(",", ": ")
+                )
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
@@ -209,7 +226,13 @@ if __name__ == "__main__":
         default=None,
         help="Run with a limited number of materials (default: 100)",
     )
+    parser.add_argument(
+        "--content-dir",
+        type=str,
+        default=".",
+        help="Path to the content directory containing a data/ subfolder (default: current dir)",
+    )
     args = parser.parse_args()
 
-    clean()
-    retrieve(max_items=args.test)
+    clean(data_base=args.content_dir)
+    retrieve(max_items=args.test, data_base=args.content_dir)

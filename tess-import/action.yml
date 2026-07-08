@@ -23,5 +23,5 @@ runs:
 
     - name: import TESS data using the API
       run: |
-        python ${{ github.action_path }}/tess-import.py
+        python ${{ github.action_path }}/tess-import.py --content-dir ${{ github.workspace }}
       shell: bash
