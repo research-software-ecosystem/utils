@@ -181,13 +181,12 @@ def retrieve(max_items=None, data_base="."):
 
     for entry in all_entries:
         mid = entry["id"]
-        if mid in mid_to_data_tools:
-            entry["mapped_tools"] = sorted(mid_to_data_tools[mid])
-            save_path = os.path.join(tess_directory, f"{mid}.tess.json")
-            with open(save_path, "w") as f:
-                json.dump(
-                    entry, f, sort_keys=True, indent=4, separators=(",", ": ")
-                )
+        entry["mapped_tools"] = sorted(mid_to_data_tools.get(mid, []))
+        save_path = os.path.join(tess_directory, f"{mid}.tess.json")
+        with open(save_path, "w") as f:
+            json.dump(
+                entry, f, sort_keys=True, indent=4, separators=(",", ": ")
+            )
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
