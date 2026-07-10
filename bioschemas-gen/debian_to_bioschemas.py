@@ -3,7 +3,38 @@ import glob
 import yaml
 from pathlib import Path
 from rdflib import Graph
+#from rdflib import ConjunctiveGraph
 
+edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
+
+kg = Graph()
+kg.parse(edam_version, format="xml")
+
+
+def getEdamUrisFromLabels(edam_labels) -> list:
+    """
+    Get EDAM URIs from EDAM labels.
+    """
+
+    res = []
+
+    for lab in edam_labels:
+        query = """
+    PREFIX edam: <http://edamontology.org/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+    SELECT ?label ?entity WHERE {
+        ?entity rdfs:label '%s' .
+    }
+    """ % (lab)
+
+        q = kg.query(query)
+        for r in q:
+            # uri = r['entity']
+            uri = r["entity"].rsplit("/", 1)[-1]
+            res.append(f"{uri}")
+
+    return res
 
 def getBiotoolsIdFromDebian(debian_data) -> str:
     """
@@ -55,6 +86,7 @@ def rdfize(data) -> Graph:
 @prefix debianmed: <https://salsa.debian.org/med-team/> .
 @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
 @prefix guix: <https://packages.guix.gnu.org/packages/> .
+@prefix edam: <http://edamontology.org/> .
 """
 
     triples = ""
@@ -114,9 +146,34 @@ def rdfize(data) -> Graph:
                 else:
                     triples += f'{package_uri} schema:identifier "{e["name"].lower()}:{e["entry"]}" .\n'
 
-            g = Graph()
-            g.parse(data=prefix + "\n" + triples, format="turtle")
-            print(g.serialize(format="turtle"))
+        if "topics" in data.keys():
+            top = getEdamUrisFromLabels(data["topics"])
+            for t in top:
+                triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
+
+        if "edam_scopes" in data.keys():
+            for edam_scope in data["edam_scopes"]:
+                for section in edam_scope.keys():
+                    if section == "function":
+                        ope = getEdamUrisFromLabels(edam_scope["function"])
+                        for o in ope:
+                            triples += f'{package_uri} schema:featureList edam:{o} .\n'
+
+                    if section == "input" or section == "output":
+                        for item in edam_scope[section]:
+                            for element in item.keys():
+                                if element == "data":
+                                    dat = getEdamUrisFromLabels([item["data"]])
+                                    for d in dat:
+                                        triples += f'{package_uri} schema:additionalType edam:{d} .\n'
+                                if element == "format":
+                                    forma = getEdamUrisFromLabels(item["format"])
+                                    for f in forma:
+                                        triples += f'{package_uri} schema:encodingFormat edam:{f} .\n'      
+
+        g = Graph()
+        g.parse(data=prefix + "\n" + triples, format="turtle")
+        print(g.serialize(format="turtle"))
         return g
 
     except Exception as e:
@@ -206,4 +263,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    # process_tools_by_id("macsyfinder")
+    #process_tools_by_id("macsyfinder")
