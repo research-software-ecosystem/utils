@@ -1,6 +1,6 @@
 import os
 import glob
-from rdflib import ConjunctiveGraph
+from rdflib import Graph
 from tabulate import tabulate
 
 
@@ -20,7 +20,7 @@ def process_tools():
     Go through all debian entries in bioschemas JSON-LD and produce an single RDF file.
     """
     tool_files = get_debian_files_in_repo()
-    rdf_graph = ConjunctiveGraph()
+    rdf_graph = Graph()
 
     for tool_file in tool_files:
         # print(tool_file)
