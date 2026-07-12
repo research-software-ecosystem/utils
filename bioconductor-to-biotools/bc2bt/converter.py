@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Optional
 from bs4 import BeautifulSoup
 from .license_normalizer import normalize_license
-from .doi import get_publication_metadata
 
 # Fields to preserve when updating existing bio.tools entries
 PRESERVED_FIELDS = [
@@ -155,8 +154,8 @@ def extract_publications(citation_html: str) -> list:
         if "doi.org" in href:
             doi = href.split("doi.org/")[-1]
             # not updating the publications for now because this is ignored and overwritten by bio.tools
-            #meta = get_publication_metadata(doi)
-            #publications.append({"doi": doi, "metadata": meta})
+            # meta = get_publication_metadata(doi)
+            # publications.append({"doi": doi, "metadata": meta})
             publications.append({"doi": doi})
 
     return publications

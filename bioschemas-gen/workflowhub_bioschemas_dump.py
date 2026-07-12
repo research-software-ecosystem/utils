@@ -2,7 +2,7 @@ from rdflib import ConjunctiveGraph
 import xml.etree.ElementTree as ET
 import requests
 
-#from tqdm.notebook import tqdm
+# from tqdm.notebook import tqdm
 
 # Get all workflow URLs from the sitemap https://workflowhub.eu/sitemaps/workflows.xml
 # fetch the sitemap and parse it to extract workflow URLs
@@ -60,8 +60,6 @@ def parse_sitemap(xml_path):
     return urls
 
 
-
-
 def retrieve_rdf(url):
     FC_get_md = (
         "https://fair-checker.france-bioinformatique.fr/api/inspect/get_rdf_metadata"
@@ -79,20 +77,21 @@ def retrieve_rdf(url):
 if __name__ == "__main__":
     data = parse_sitemap("workflows_sitemap.xml")
     print("entries:", len(data))
-    #print(data[:3])
+    # print(data[:3])
 
     merged_kg = ConjunctiveGraph()
     counter = 0
     for url in data[1:50]:
-    #for url in data:
-        #print(url)
+        # for url in data:
+        # print(url)
         kg = retrieve_rdf(url["loc"])
-        #print(f"KG has {len(kg)} triples")
+        # print(f"KG has {len(kg)} triples")
         merged_kg += kg
         counter += 1
         print(counter)
 
     print(f"Final merged KG has {len(merged_kg)} triples")
 
-    merged_kg.serialize(destination="../../content/datasets/workflowhub-dump.ttl", format="turtle")
-
+    merged_kg.serialize(
+        destination="../../content/datasets/workflowhub-dump.ttl", format="turtle"
+    )
