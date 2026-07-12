@@ -340,7 +340,7 @@ def rdfize(json_entry):
             for item in entry["documentation"]:
                 if "type" in item.keys() and item["type"]:
                     item["url"] = item["url"].replace("|", "%7C")
-                    if "app.gitter.im" in item["url"]: 
+                    if "app.gitter.im" in item["url"]:
                         continue
                     if "API" in item["type"]:
                         if "hasApiDoc" not in entry.keys():

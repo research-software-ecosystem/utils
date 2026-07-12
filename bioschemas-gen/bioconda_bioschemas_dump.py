@@ -5,6 +5,7 @@ from rdflib import ConjunctiveGraph
 try:
     from tabulate import tabulate
 except ImportError:
+
     def tabulate(rows, headers=()):
         return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 

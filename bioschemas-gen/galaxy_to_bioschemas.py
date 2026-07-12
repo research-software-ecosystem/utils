@@ -61,7 +61,7 @@ def rdfize(data) -> Graph:
     biotools_id = None  # OK
     # biii_id = None # biii_ID
     bioconda_id = None  # OK
-    
+
     workflowhub_ids = []  # OK
     galaxywf_ids = []  # OK
 
@@ -111,23 +111,26 @@ def rdfize(data) -> Graph:
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
             for wf in workflow.keys():
-
-                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/workflows/"):
-                    workflow_id = workflow[wf].strip("https://workflowhub.eu/workflows/")
+                if wf == "link" and workflow[wf].startswith(
+                    "https://workflowhub.eu/workflows/"
+                ):
+                    workflow_id = workflow[wf].strip(
+                        "https://workflowhub.eu/workflows/"
+                    )
                     workflowhub_ids.append("workflowhub:" + workflow_id)
                 if wf == "link" and workflow[wf].startswith("https://usegalaxy"):
-                    #workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
+                    # workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
                     galaxywf_ids.append(workflow[wf])
 
-                #if wf == "link" and workflow[wf].startswith("https://usegalaxy.eu/published/"):
-                    #workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
-                    #galaxywf_ids.append("galaxywf:" + workflow_id)
-                #if wf == "link" and workflow[wf].startswith("https://usegalaxy.org/published/"):
-                    #workflow_id = workflow[wf].strip("https://usegalaxy.org/published/")
-                    #galaxywf_ids.append("galaxywf:" + workflow_id)
-                #if wf == "link" and workflow[wf].startswith("https://usegalaxy.org.au/published/"):
-                    #workflow_id = workflow[wf].strip("https://usegalaxy.org.au/published/")
-                    #galaxywf_ids.append("galaxywf:" + workflow_id)
+                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.eu/published/"):
+                # workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
+                # galaxywf_ids.append("galaxywf:" + workflow_id)
+                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.org/published/"):
+                # workflow_id = workflow[wf].strip("https://usegalaxy.org/published/")
+                # galaxywf_ids.append("galaxywf:" + workflow_id)
+                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.org.au/published/"):
+                # workflow_id = workflow[wf].strip("https://usegalaxy.org.au/published/")
+                # galaxywf_ids.append("galaxywf:" + workflow_id)
 
     # if "bio.tool_description" in data.keys():
     # biotools_desc = data["bio.tool_description"]
@@ -148,14 +151,14 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
             if biotools_id:
-                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
+                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if bioconda_id:
-                triples += f'{package_uri} schema:identifier {bioconda_id} .\n'
+                triples += f"{package_uri} schema:identifier {bioconda_id} .\n"
 
             for ope in edam_operations:
                 triples += f"{package_uri} schema:featureList {ope} .\n"
             for top in edam_topics:
-                triples += f'{package_uri} schema:applicationSubCategory {top} .\n'
+                triples += f"{package_uri} schema:applicationSubCategory {top} .\n"
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
 
@@ -270,4 +273,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    #process_tools_by_id("deseq2")
+    # process_tools_by_id("deseq2")

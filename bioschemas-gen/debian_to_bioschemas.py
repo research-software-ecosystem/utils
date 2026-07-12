@@ -3,7 +3,7 @@ import glob
 import yaml
 from pathlib import Path
 from rdflib import Graph
-#from rdflib import ConjunctiveGraph
+# from rdflib import ConjunctiveGraph
 
 edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
 
@@ -35,6 +35,7 @@ def getEdamUrisFromLabels(edam_labels) -> list:
             res.append(f"{uri}")
 
     return res
+
 
 def getBiotoolsIdFromDebian(debian_data) -> str:
     """
@@ -91,7 +92,6 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    biotools_id = getBiotoolsIdFromDebian(data)
     dois = getCitationFromDebian(data)
     description = getDescriptionFromDebian(data)
 
@@ -119,37 +119,43 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} schema:citation "{doi}" .\n'
 
         # process identifiers
-       #if "registries" in data.keys():
-          #  for e in data["registries"]:
-             #   if "name" in e.keys() and "entry" in e.keys():
-                #    id = f"{e['name'].lower()}:{e['entry']}"
-                 #   triples += f'{package_uri} schema:identifier "{id}" .\n'
+        # if "registries" in data.keys():
+        #  for e in data["registries"]:
+        #   if "name" in e.keys() and "entry" in e.keys():
+        #    id = f"{e['name'].lower()}:{e['entry']}"
+        #   triples += f'{package_uri} schema:identifier "{id}" .\n'
 
-    # process identifiers
+        # process identifiers
         if "registries" in data.keys():
             for e in data["registries"]:
                 if "name" in e.keys() and "entry" in e.keys():
                     if e["entry"] == "atac, meryl" and e["name"] == "conda:bioconda":
                         print("test")
                         for id in e["entry"].split(", "):
-                            triples += f'{package_uri} schema:identifier bioconda:{id} .\n'
+                            triples += (
+                                f"{package_uri} schema:identifier bioconda:{id} .\n"
+                            )
                 if e["name"] == "bio.tools":
-                    triples += f'{package_uri} schema:identifier biotools:{e["entry"].lower()} .\n'
-                #elif e["name"] == "OMICtools":
-                    #continue
+                    triples += f"{package_uri} schema:identifier biotools:{e['entry'].lower()} .\n"
+                # elif e["name"] == "OMICtools":
+                # continue
                 elif e["name"] == "conda:bioconda" and e["entry"] != "atac, meryl":
-                    triples += f'{package_uri} schema:identifier bioconda:{e["entry"]} .\n'
+                    triples += (
+                        f"{package_uri} schema:identifier bioconda:{e['entry']} .\n"
+                    )
                 elif e["name"] == "SciCrunch":
-                    triples += f'{package_uri} schema:identifier scicrunch:{e["entry"]} .\n'
+                    triples += (
+                        f"{package_uri} schema:identifier scicrunch:{e['entry']} .\n"
+                    )
                 elif e["name"] == "guix":
-                    triples += f'{package_uri} schema:identifier guix:{e["entry"]} .\n'
+                    triples += f"{package_uri} schema:identifier guix:{e['entry']} .\n"
                 else:
                     triples += f'{package_uri} schema:identifier "{e["name"].lower()}:{e["entry"]}" .\n'
 
         if "topics" in data.keys():
             top = getEdamUrisFromLabels(data["topics"])
             for t in top:
-                triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
+                triples += f"{package_uri} schema:applicationSubCategory edam:{t} .\n"
 
         if "edam_scopes" in data.keys():
             for edam_scope in data["edam_scopes"]:
@@ -157,7 +163,7 @@ def rdfize(data) -> Graph:
                     if section == "function":
                         ope = getEdamUrisFromLabels(edam_scope["function"])
                         for o in ope:
-                            triples += f'{package_uri} schema:featureList edam:{o} .\n'
+                            triples += f"{package_uri} schema:featureList edam:{o} .\n"
 
                     if section == "input" or section == "output":
                         for item in edam_scope[section]:
@@ -165,11 +171,11 @@ def rdfize(data) -> Graph:
                                 if element == "data":
                                     dat = getEdamUrisFromLabels([item["data"]])
                                     for d in dat:
-                                        triples += f'{package_uri} schema:additionalType edam:{d} .\n'
+                                        triples += f"{package_uri} schema:additionalType edam:{d} .\n"
                                 if element == "format":
                                     forma = getEdamUrisFromLabels(item["format"])
                                     for f in forma:
-                                        triples += f'{package_uri} schema:encodingFormat edam:{f} .\n'      
+                                        triples += f"{package_uri} schema:encodingFormat edam:{f} .\n"
 
         g = Graph()
         g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -263,4 +269,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    #process_tools_by_id("macsyfinder")
+    # process_tools_by_id("macsyfinder")
