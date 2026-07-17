@@ -64,13 +64,11 @@ def rdfize(data) -> Graph:
     #edam_operations = []
     #edam_topics = []
     #keywords = []
-    i = 0
 
     try:
 
         for entry in data:
-            i += 1
-            print("\n\n" + str(i) + " - " + entry["name"] + " - " + entry["id"] + "\n\n")
+
             ## Minimum
             if "link" in entry.keys():
                 package_uri = f'<{entry["link"]}>'
