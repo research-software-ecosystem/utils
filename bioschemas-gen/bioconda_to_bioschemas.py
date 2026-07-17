@@ -41,6 +41,33 @@ def getMaintainers(bioconda_data) -> list:
                 res.append(id)
     return res
 
+def getDownloadUrl(bioconda_data) -> list:
+  """
+  Get URLs from the bioconda data.
+  """
+  res = []
+  if 'source' in bioconda_data.keys():
+    if not isinstance(bioconda_data['source'], dict):
+        print(f"WARNING: source is not a dictionary: {bioconda_data['source']}")
+    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], list):
+        for url in bioconda_data['source']['url']:
+            res.append(url)
+    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], str):
+            res.append(bioconda_data['source']['url'])
+  return res
+  
+def getDependencies(bioconda_data) -> list:
+  """
+  Get host dependencies from the bioconda data.
+  """
+  res = []
+  if 'requirements' in bioconda_data.keys():
+    if 'host' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['host']:
+      for pkg in bioconda_data['requirements']['host']:
+        pkg = pkg.split(' ', 1)[0]
+        res.append(pkg)
+  return res
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -59,7 +86,7 @@ def rdfize(data) -> Graph:
     doc_url = None
     home = None
     version = None
-    download_url = []
+    download_urls = []
 
     if "about" in data.keys():
         if "summary" in data["about"].keys():
@@ -77,23 +104,10 @@ def rdfize(data) -> Graph:
         if "version" in data["package"].keys():
             version = data["package"]["version"]
 
-    if "source" in data.keys():
-        if isinstance(data["source"], list):
-            for source in data["source"]:
-                if not isinstance(source, dict):
-                    print(f"WARNING: source is not a dict: {source}")
-                    continue
-                if "url" in source.keys():
-                    download_url.append(source["url"])
-        else:
-            if not isinstance(data["source"], dict):
-                print(f"WARNING: source is not a dict: {data['source']}")
-                return Graph()
-            if "url" in data["source"].keys():
-                download_url.append(data["source"]["url"])
-
     biotools_id = getBiotoolsId(data)
     dois = getCitation(data)
+    download_urls = getDownloadUrl(data)
+    dependencies = getDependencies(data)
 
     try:
         if name:
@@ -125,8 +139,11 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:author "{maintainer}" .\n'
                 triples += f'{package_uri} schema:maintainer "{maintainer}" .\n'
 
-            for url in download_url:
+            for url in download_urls:
                 triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
+    
+            for dependency in dependencies:
+                triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -238,4 +255,5 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
+    # process_tools_by_id("bioconductor-xcms")
     # process_tools_by_id("macsyfinder")
