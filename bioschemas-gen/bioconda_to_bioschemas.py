@@ -48,7 +48,7 @@ def rdfize(data) -> Graph:
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
 @prefix biotools: <https://bio.tools/> .
-@prefix bioconda: <https://bioconda.github.io/recipes/> .
+@prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
 """
 
     triples = ""
@@ -105,7 +105,6 @@ def rdfize(data) -> Graph:
             if license:
                 triples += f'{package_uri} schema:license "{license}" .\n'
             if biotools_id:
-                # triples += f"{package_uri} spdx:builtFrom {biotools_id} .\n"
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if doc_url:
                 triples += f'{package_uri} schema:softwareHelp "{doc_url}" .\n'

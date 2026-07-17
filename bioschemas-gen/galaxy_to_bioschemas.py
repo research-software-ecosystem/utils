@@ -3,11 +3,10 @@ import glob
 import json
 from pathlib import Path
 from rdflib import Graph
-from rdflib import ConjunctiveGraph
 
 edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
 
-kg = ConjunctiveGraph()
+kg = Graph()
 kg.parse(edam_version, format="xml")
 
 
@@ -43,7 +42,7 @@ def rdfize(data) -> Graph:
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
     @prefix schema: <http://schema.org/> .
     @prefix biotools: <https://bio.tools/> .
-    @prefix bioconda: <https://bioconda.github.io/recipes/> .
+    @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
     @prefix galaxytool: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
     @prefix galaxywf: <https://usegalaxy.eu/published/> .
     @prefix workflowhub: <https://workflowhub.eu/workflows/> .
@@ -52,22 +51,22 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    name = None  # OK
-    desc = None  # OK
-    url = None  # OK
+    name = None
+    desc = None
+    url = None
     # owner = None # Suite_owner -> author, contributor, primaryContact?
-    version = None  # OK
+    version = None
 
-    biotools_id = None  # OK
+    biotools_id = None
     # biii_id = None # biii_ID
-    bioconda_id = None  # OK
+    bioconda_id = None
 
-    workflowhub_ids = []  # OK
-    galaxywf_ids = []  # OK
+    workflowhub_ids = []
+    galaxywf_ids = []
 
-    edam_operations = []  # OK
-    edam_topics = []  # OK
-    keywords = []  # OK
+    edam_operations = []
+    edam_topics = []
+    keywords = []
     # help = [] # Related_Tutorials -> many many GTN links
     # workflows = [] # Related_Workflows : 'link' (ex. many WfHub or usegalaxy refs)
 
@@ -93,8 +92,6 @@ def rdfize(data) -> Graph:
         )  # see pharokka package bioconda ID
 
     if "EDAM_operations" in data.keys():
-        # for operation in data["EDAM_operations"]:
-        # op = getEdamUrisFromSingleLabel(operation)
         ope = getEdamUrisFromLabels(data["EDAM_operations"])
         for o in ope:
             edam_operations.append("edam:" + o)

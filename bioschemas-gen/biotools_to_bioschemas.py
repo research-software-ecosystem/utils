@@ -1,7 +1,7 @@
 import json
 import os
 import glob
-from rdflib import ConjunctiveGraph
+from rdflib import Graph
 
 
 def rdfize(json_entry):
@@ -390,7 +390,7 @@ def process_tools_by_id(id="SPROUT"):
                 dest = os.path.join(directory, tpe_id + ".bioschemas.jsonld")
 
                 jsonld = rdfize(tool)
-                temp_graph = ConjunctiveGraph()
+                temp_graph = Graph()
                 temp_graph.parse(data=jsonld, format="json-ld")
                 temp_graph.serialize(
                     format="json-ld",
@@ -419,7 +419,7 @@ def process_tools():
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         jsonld = rdfize(tool)
-        temp_graph = ConjunctiveGraph()
+        temp_graph = Graph()
         temp_graph.parse(data=jsonld, format="json-ld")
         temp_graph.serialize(
             format="json-ld",

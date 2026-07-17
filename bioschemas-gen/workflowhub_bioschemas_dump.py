@@ -1,4 +1,4 @@
-from rdflib import ConjunctiveGraph
+from rdflib import Graph
 import xml.etree.ElementTree as ET
 import requests
 
@@ -64,7 +64,7 @@ def retrieve_rdf(url):
     FC_get_md = (
         "https://fair-checker.france-bioinformatique.fr/api/inspect/get_rdf_metadata"
     )
-    kg = ConjunctiveGraph()
+    kg = Graph()
     res = requests.get(url=FC_get_md, params={"url": url})
     try:
         kg.parse(data=res.text, format="json-ld")
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     print("entries:", len(data))
     # print(data[:3])
 
-    merged_kg = ConjunctiveGraph()
+    merged_kg = Graph()
     counter = 0
     for url in data[1:50]:
         # for url in data:
