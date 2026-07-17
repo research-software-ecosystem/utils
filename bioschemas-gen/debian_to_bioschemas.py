@@ -91,7 +91,6 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    biotools_id = getBiotoolsIdFromDebian(data)
     dois = getCitationFromDebian(data)
     description = getDescriptionFromDebian(data)
 
