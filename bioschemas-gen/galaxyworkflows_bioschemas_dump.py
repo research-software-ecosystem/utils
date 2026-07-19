@@ -1,6 +1,5 @@
 
 #from pathlib import Path
-from urllib import response
 
 #from matplotlib.pylab import rint
 from rdflib import Graph
