@@ -17,6 +17,15 @@ def sanitize_html(text):
     return soup.get_text()
 
 
+def parse_datetime(value):
+    if isinstance(value, (int, float)):
+        return datetime.datetime.fromtimestamp(value)
+    try:
+        return datetime.datetime.fromisoformat(value)
+    except ValueError:
+        return datetime.datetime.fromtimestamp(float(value))
+
+
 # Intially due to SSL errors
 # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -453,12 +462,12 @@ def rdfize_bioschema_tool(json_entry):
 
         for item in entry["created"]:
             if item["value"]:
-                date = datetime.datetime.fromisoformat(item["value"])
+                date = parse_datetime(item["value"])
                 out["dateCreated"] = str(date.isoformat())
 
         for item in entry["changed"]:
             if item["value"]:
-                date = datetime.datetime.fromisoformat(item["value"])
+                date = parse_datetime(item["value"])
                 out["dateModified"] = str(date.isoformat())
 
         for item in entry["field_is_dependent_of"]:
@@ -760,12 +769,12 @@ def rdfize(json_entry):
 
         for item in entry["created"]:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = parse_datetime(item["value"])
                 entry["dateCreated"] = str(date.isoformat())
 
         for item in entry["changed"]:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = parse_datetime(item["value"])
                 entry["dateModified"] = str(date.isoformat())
 
     except KeyError as e:

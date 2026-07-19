@@ -41,32 +41,41 @@ def getMaintainers(bioconda_data) -> list:
                 res.append(id)
     return res
 
+
 def getDownloadUrl(bioconda_data) -> list:
-  """
-  Get URLs from the bioconda data.
-  """
-  res = []
-  if 'source' in bioconda_data.keys():
-    if not isinstance(bioconda_data['source'], dict):
-        print(f"WARNING: source is not a dictionary: {bioconda_data['source']}")
-    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], list):
-        for url in bioconda_data['source']['url']:
-            res.append(url)
-    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], str):
-            res.append(bioconda_data['source']['url'])
-  return res
-  
+    """
+    Get URLs from the bioconda data.
+    """
+    res = []
+    if "source" in bioconda_data.keys():
+        if not isinstance(bioconda_data["source"], dict):
+            print(f"WARNING: source is not a dictionary: {bioconda_data['source']}")
+        elif "url" in bioconda_data["source"].keys() and isinstance(
+            bioconda_data["source"]["url"], list
+        ):
+            for url in bioconda_data["source"]["url"]:
+                res.append(url)
+        elif "url" in bioconda_data["source"].keys() and isinstance(
+            bioconda_data["source"]["url"], str
+        ):
+            res.append(bioconda_data["source"]["url"])
+    return res
+
+
 def getDependencies(bioconda_data) -> list:
-  """
-  Get host dependencies from the bioconda data.
-  """
-  res = []
-  if 'requirements' in bioconda_data.keys():
-    if 'host' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['host']:
-      for pkg in bioconda_data['requirements']['host']:
-        pkg = pkg.split(' ', 1)[0]
-        res.append(pkg)
-  return res
+    """
+    Get host dependencies from the bioconda data.
+    """
+    res = []
+    if "requirements" in bioconda_data.keys():
+        if (
+            "host" in bioconda_data["requirements"].keys()
+            and bioconda_data["requirements"]["host"]
+        ):
+            for pkg in bioconda_data["requirements"]["host"]:
+                pkg = pkg.split(" ", 1)[0]
+                res.append(pkg)
+    return res
 
 
 def rdfize(data) -> Graph:
@@ -141,7 +150,7 @@ def rdfize(data) -> Graph:
 
             for url in download_urls:
                 triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
-    
+
             for dependency in dependencies:
                 triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
 
