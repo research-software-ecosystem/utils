@@ -2,3 +2,4 @@ requests
 rdflib
 tabulate
 pyyaml
+beautifulsoup4
