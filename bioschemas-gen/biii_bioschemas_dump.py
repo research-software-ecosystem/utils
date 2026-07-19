@@ -22,9 +22,7 @@ def find_metadata_commons_root():
 
 def load_biii_importer():
     importer_path = (
-        Path(__file__).resolve().parents[1]
-        / "biii-import"
-        / "biseEU_LD_export.py"
+        Path(__file__).resolve().parents[1] / "biii-import" / "biseEU_LD_export.py"
     )
     spec = importlib.util.spec_from_file_location("biii_importer", importer_path)
     module = importlib.util.module_from_spec(spec)
