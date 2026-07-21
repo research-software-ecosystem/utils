@@ -85,7 +85,7 @@ def rdfize(data) -> Graph:
             ## Recommended
             if "id" in entry.keys():
                 triples += f'{package_uri} schema:identifier "{entry["id"]}" .\n'
-                print(entry["id"])
+                #print(entry["id"])
             
             if "doi" in entry.keys():
                 triples += f'{package_uri} schema:citation "{entry["doi"]}" .\n'
