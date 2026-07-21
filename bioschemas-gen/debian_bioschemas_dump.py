@@ -1,5 +1,6 @@
 import os
 import glob
+import shutil
 from rdflib import Graph
 from tabulate import tabulate
 
@@ -31,6 +32,7 @@ def process_tools():
         destination="../../content/datasets/debian-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
+    shutil.copy("../../content/datasets/debian-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
 
     show_stats(rdf_graph)
 

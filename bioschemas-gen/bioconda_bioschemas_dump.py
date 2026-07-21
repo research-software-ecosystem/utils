@@ -1,5 +1,6 @@
 import os
 import glob
+import shutil
 from rdflib import Graph
 
 try:
@@ -44,6 +45,8 @@ def process_tools():
         destination="../../content/datasets/bioconda-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
+    shutil.copy("../../content/datasets/bioconda-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
+ 
 
     show_stats(rdf_graph)
 
