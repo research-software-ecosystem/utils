@@ -1,5 +1,6 @@
 
 #from pathlib import Path
+import shutil
 from urllib import response
 
 #from matplotlib.pylab import rint
@@ -131,6 +132,7 @@ def rdfize(data) -> Graph:
             format="turtle",
             destination="../../content/datasets/galaxyworkflow-dump.ttl",
         )
+        shutil.copy("../../content/datasets/galaxyworkflow-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
 
 
 

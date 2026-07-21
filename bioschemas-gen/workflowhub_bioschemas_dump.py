@@ -1,3 +1,5 @@
+import shutil
+
 from rdflib import ConjunctiveGraph
 import xml.etree.ElementTree as ET
 import requests
@@ -81,8 +83,8 @@ if __name__ == "__main__":
 
     merged_kg = ConjunctiveGraph()
     counter = 0
-    for url in data[1000:1100]:
-    #for url in data:
+    #for url in data[1000:1100]:
+    for url in data:
         # print(url)
         kg = retrieve_rdf(url["loc"])
         # print(f"KG has {len(kg)} triples")
@@ -95,3 +97,5 @@ if __name__ == "__main__":
     merged_kg.serialize(
         destination="../../content/datasets/workflowhub-dump.ttl", format="turtle"
     )
+    shutil.copy("../../content/datasets/galaxyworkflow-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
+ 
