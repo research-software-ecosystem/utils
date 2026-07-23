@@ -40,11 +40,10 @@ def rdfize(data) -> Graph:
     prefix = """
     @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix schema: <http://schema.org/> .
+    @prefix schema: <https://schema.org/> .
     @prefix biotools: <https://bio.tools/> .
     @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
     @prefix galaxytool: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
-    @prefix galaxywf: <https://usegalaxy.eu/published/> .
     @prefix workflowhub: <https://workflowhub.eu/workflows/> .
     @prefix edam: <http://edamontology.org/> .
     """
@@ -63,12 +62,13 @@ def rdfize(data) -> Graph:
 
     workflowhub_ids = []
     galaxywf_ids = []
+    galaxywf_servers = {}
+    galaxywf_servers_list = []
 
     edam_operations = []
     edam_topics = []
     keywords = []
-    # help = [] # Related_Tutorials -> many many GTN links
-    # workflows = [] # Related_Workflows : 'link' (ex. many WfHub or usegalaxy refs)
+
 
     # biotools_name = None
     # biotools_desc = None
@@ -108,26 +108,33 @@ def rdfize(data) -> Graph:
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
             for wf in workflow.keys():
-                if wf == "link" and workflow[wf].startswith(
-                    "https://workflowhub.eu/workflows/"
-                ):
-                    workflow_id = workflow[wf].strip(
-                        "https://workflowhub.eu/workflows/"
-                    )
-                    workflowhub_ids.append("workflowhub:" + workflow_id)
-                if wf == "link" and workflow[wf].startswith("https://usegalaxy"):
-                    # workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
+                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/workflows/"):
+                    server = workflow[wf].split("/")[0] + "//" + workflow[wf].split("/")[2]
+
+                    workflow_id = workflow[wf].strip("https://workflowhub.eu/workflows/")
                     galaxywf_ids.append(workflow[wf])
 
-                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.eu/published/"):
-                # workflow_id = workflow[wf].strip("https://usegalaxy.eu/published/")
-                # galaxywf_ids.append("galaxywf:" + workflow_id)
-                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.org/published/"):
-                # workflow_id = workflow[wf].strip("https://usegalaxy.org/published/")
-                # galaxywf_ids.append("galaxywf:" + workflow_id)
-                # if wf == "link" and workflow[wf].startswith("https://usegalaxy.org.au/published/"):
-                # workflow_id = workflow[wf].strip("https://usegalaxy.org.au/published/")
-                # galaxywf_ids.append("galaxywf:" + workflow_id)
+                    galaxywf_servers[workflow[wf]] = server
+                    
+                    if server not in galaxywf_servers_list:
+                        galaxywf_servers_list.append(server)
+
+
+                if wf == "link" and workflow[wf].startswith("https://usegalaxy"):
+                    server = workflow[wf].split("/")[0] + "//" + workflow[wf].split("/")[2]
+                    workflow_id = workflow[wf].strip(server + "/published/")
+                    galaxywf_ids.append(workflow[wf])
+                    
+                    galaxywf_servers[workflow[wf]] = server
+                    
+                    if server not in galaxywf_servers_list:
+                        galaxywf_servers_list.append(server)
+
+                #if wf == "link" and workflow[wf].startswith("https://usegalaxy.org.au/published/"):
+                #    workflow_id = workflow[wf].strip("https://usegalaxy.org.au/published/")
+                #    galaxywf_ids.append("galaxywf:" + workflow_id)
+                #    if "https://usegalaxy.org.au" not in galaxywf_servers:
+                #        galaxywf_servers.append("https://usegalaxy.org.au")
 
     # if "bio.tool_description" in data.keys():
     # biotools_desc = data["bio.tool_description"]
@@ -159,10 +166,18 @@ def rdfize(data) -> Graph:
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
 
-            for workflowhub_id in workflowhub_ids:
-                triples += f'{package_uri} schema:isPartOf "{workflowhub_id}" .\n'
+            #for workflowhub_id in workflowhub_ids:
+            #    triples += f'{package_uri} schema:isPartOf <{workflowhub_id}> .\n'
+            #    triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[workflowhub_id]}> .\n'
+
             for galaxywf_id in galaxywf_ids:
-                triples += f'{package_uri} schema:isPartOf "{galaxywf_id}" .\n'
+                triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
+                triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[galaxywf_id]}> .\n'
+                
+
+            for server in galaxywf_servers_list:
+                triples += f'<{server}> rdf:type schema:WebSite .\n'
+
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -270,4 +285,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    # process_tools_by_id("deseq2")
+    #process_tools_by_id("amrfinderplus")

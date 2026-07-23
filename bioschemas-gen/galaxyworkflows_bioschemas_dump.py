@@ -37,7 +37,6 @@ def getEdamUrisFromLabels(edam_labels) -> list :
     q = kg.query(query)
     for r in q:
         uri = r['entity'].rsplit('/', 1)[-1]
-        #url.rsplit('/', 1)
         res.append(f'{uri}')
 
   return res
@@ -54,10 +53,9 @@ def rdfize(data) -> Graph:
 
     prefix = """
     @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix schema: <http://schema.org/> .
-    @prefix spdx: <http://spdx.org/rdf/terms/> .
+    @prefix schema: <https://schema.org/> .
     @prefix biotools: <https://bio.tools/> .
+    @prefix edam: <http://edamontology.org/> .
     """
 
     triples = ""
@@ -65,6 +63,8 @@ def rdfize(data) -> Graph:
     #edam_operations = []
     #edam_topics = []
     #keywords = []
+
+    galaxywf_servers_list = []
 
     try:
 
@@ -75,7 +75,20 @@ def rdfize(data) -> Graph:
                 package_uri = f'<{entry["link"]}>'
                 triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
                 triples += f'{package_uri} schema:url "{entry["link"]}" .\n'
-            
+
+                if entry["link"].startswith("https://workflowhub.eu/workflows/"):
+                    server = "https://workflowhub.eu"
+                    triples += f'{package_uri} schema:isPartOf <{server}> .\n'
+                    triples += f'<{server}> rdf:type schema:WebSite .\n'
+
+
+
+                if entry["link"].startswith("https://usegalaxy"):
+                    server = entry["link"].split("/")[0] + "//" + entry["link"].split("/")[2]
+                    triples += f'{package_uri} schema:isPartOf <{server}> .\n'
+                    triples += f'<{server}> rdf:type schema:WebSite .\n'
+
+
             if "name" in entry.keys():
                 triples += f"{package_uri} schema:name " + json.dumps(entry["name"]) + " .\n"
 
@@ -103,15 +116,18 @@ def rdfize(data) -> Graph:
 
             if "edam_operation" in entry.keys():
                 ope = getEdamUrisFromLabels(entry["edam_operation"])
+                #print(entry["edam_operation"])#print(ope) 
                 for o in ope:
+                    #print(o)
                     #edam_operations.append("edam:" + o)
-                    triples += f'{package_uri} schema:featureList "{o}" .\n'
+                    triples += f'{package_uri} schema:featureList edam:{o} .\n'
 
             if "edam_topic" in entry.keys():
                 top = getEdamUrisFromLabels(entry["edam_topic"])
                 for t in top:
+                    print(t)
                     #edam_topics.append("edam:" + t)
-                    triples += f'{package_uri} schema:applicationSubCategory "{t}" .\n'
+                    triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
 
             ## Optional
             if "create_time" in entry.keys():
@@ -145,4 +161,4 @@ if __name__ == "__main__":
     url = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/workflows.json"
     data = get_metadata(url)
     rdfize(data)
-    #rdfize(data[1:1000])
+    #rdfize(data[1:100])
