@@ -2,7 +2,6 @@ import os
 import glob
 from rdflib import Graph
 from tabulate import tabulate
-import shutil
 
 
 def get_biocontainers_files_in_repo():
@@ -39,7 +38,6 @@ def process_tools():
         destination="../../content/datasets/biocontainers-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
-    shutil.copy("../../content/datasets/biocontainers-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
 
     show_stats(rdf_graph)
 

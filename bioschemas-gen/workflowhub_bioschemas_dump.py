@@ -1,5 +1,3 @@
-import shutil
-
 from rdflib import ConjunctiveGraph
 import xml.etree.ElementTree as ET
 import requests
@@ -96,6 +94,4 @@ if __name__ == "__main__":
 
     merged_kg.serialize(
         destination="../../content/datasets/workflowhub-dump.ttl", format="turtle"
-    )
-    shutil.copy("../../content/datasets/galaxyworkflow-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
- 
+    ) 

@@ -1,6 +1,5 @@
 import os
 import glob
-import shutil
 from rdflib import ConjunctiveGraph
 from tabulate import tabulate
 
@@ -39,7 +38,6 @@ def process_tools():
         destination="../../content/datasets/bioschemas-dump.ttl",
         # destination=os.path.join(directory, tpe_id + "bioschemas.jsonld")
     )
-    shutil.copy("../../content/datasets/bioschemas-dump.ttl", "../../RSEc_SPARQL_endpoint/data/")
 
     show_stats(rdf_graph)
 
