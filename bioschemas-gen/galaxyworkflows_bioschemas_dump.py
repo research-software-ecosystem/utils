@@ -52,7 +52,7 @@ def rdfize(data) -> Graph:
 
     prefix = """
     @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-    @prefix schema: <https://schema.org/> .
+    @prefix schema: <http://schema.org/> .
     @prefix biotools: <https://bio.tools/> .
     @prefix edam: <http://edamontology.org/> .
     """

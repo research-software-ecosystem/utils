@@ -19,7 +19,7 @@ def rdfize(json_entry):
                 "biotools": "https://bio.tools/ontology/",
                 "edam": "http://edamontology.org/",
                 "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-                "sc": "https://schema.org/",
+                "sc": "http://schema.org/",
                 "dct": "http://purl.org/dc/terms/",
                 "bsc": "http://bioschemas.org/",
                 "bsct": "http://bioschemas.org/types/",
