@@ -42,6 +42,7 @@ def rdfize(data) -> Graph:
     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
     @prefix schema: <http://schema.org/> .
     @prefix biotools: <https://bio.tools/> .
+    @prefix bioschemas: <http://bioschemas.org/> .
     @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
     @prefix galaxytool: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
     @prefix workflowhub: <https://workflowhub.eu/workflows/> .
@@ -50,60 +51,66 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
+    ## Mandatory
     name = None
-    desc = None
+    description = None
     url = None
-    # owner = None # Suite_owner -> author, contributor, primaryContact?
+
+    ## Recommended
+    edam_topics = [] # applicationSubCategory
+    edam_operations = [] #featureList
     version = None
 
-    biotools_id = None
-    # biii_id = None # biii_ID
-    bioconda_id = None
-
-    workflowhub_ids = []
-    galaxywf_ids = []
-    galaxywf_servers = {}
-    galaxywf_servers_list = []
-
-    edam_operations = []
-    edam_topics = []
+    ## Optional
+    code_repository = None
+    date_created = None
+    output_format = [] # encodingFormat, biochemas:output
+    tool_ids = []  # hasPart
+    biotools_id = None # identifier
+    # biii_id = None # identifier
+    bioconda_id = None # identifier
+    galaxywf_ids = [] # isPartOf
+    galaxywf_servers = {} # isPartOf
+    galaxywf_servers_list = [] # WebSite
     keywords = []
 
-
-    # biotools_name = None
-    # biotools_desc = None
-
-    # Tool_ids = [] # see for ex. bedtools suite ++
-    # Suite_source
-
+    ## Mandatory
     if "Suite_ID" in data.keys():
         name = data["Suite_ID"]
     if "Description" in data.keys():
-        desc = data["Description"]
-    if "Homepage" in data.keys():
-        url = data["Homepage"]
+        description = data["Description"]
+    if "Suite_source" in data.keys():
+        url = data["Suite_source"]
+
+    ## Recommended  
+    if "EDAM_topics" in data.keys():
+        top = getEdamUrisFromLabels(data["EDAM_topics"])
+        for t in top:
+            edam_topics.append("edam:" + t)  
+    if "EDAM_operations" in data.keys():
+        ope = getEdamUrisFromLabels(data["EDAM_operations"])
+        for o in ope:
+            edam_operations.append("edam:" + o)        
     if "Suite_version" in data.keys():
         version = data["Suite_version"]
+
+    ## Optional  
+    if "Homepage" in data.keys():
+        code_repository = data["Homepage"]
+    if "Suite_first_commit_date" in data.keys():
+        date_created = data["Suite_first_commit_date"]
+    if "Tool_output_formats" in data.keys():
+        for of in data["Tool_output_formats"]:
+            output_format.append(of)
+    if "Tool_IDs" in data.keys():
+        for tid in data["Tool_IDs"]:
+            tool_ids.append(tid)
     if "bio.tool_ID" in data.keys():
         biotools_id = "biotools:" + data["bio.tool_ID"]
     if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
         bioconda_id = (
             "bioconda:" + data["Suite_conda_package"].strip()
         )  # see pharokka package bioconda ID
-
-    if "EDAM_operations" in data.keys():
-        ope = getEdamUrisFromLabels(data["EDAM_operations"])
-        for o in ope:
-            edam_operations.append("edam:" + o)
-
-    if "EDAM_topics" in data.keys():
-        top = getEdamUrisFromLabels(data["EDAM_topics"])
-        for t in top:
-            edam_topics.append("edam:" + t)
-
-    if "ToolShed_categories" in data.keys():
-        for keyword in data["ToolShed_categories"]:
-            keywords.append(keyword)
 
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
@@ -130,53 +137,55 @@ def rdfize(data) -> Graph:
                     if server not in galaxywf_servers_list:
                         galaxywf_servers_list.append(server)
 
-                #if wf == "link" and workflow[wf].startswith("https://usegalaxy.org.au/published/"):
-                #    workflow_id = workflow[wf].strip("https://usegalaxy.org.au/published/")
-                #    galaxywf_ids.append("galaxywf:" + workflow_id)
-                #    if "https://usegalaxy.org.au" not in galaxywf_servers:
-                #        galaxywf_servers.append("https://usegalaxy.org.au")
-
-    # if "bio.tool_description" in data.keys():
-    # biotools_desc = data["bio.tool_description"]
-    # if "bio.tool_name" in data.keys():
-    # name = data["bio.tool_name"]
+    if "ToolShed_categories" in data.keys():
+        for keyword in data["ToolShed_categories"]:
+            keywords.append(keyword)
 
     try:
         if name:
+            ## Mandatory
             package_uri = f"galaxytool:{name}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             triples += f'{package_uri} schema:name "{name}" .\n'
-
-            if desc:
-                triples += f'''{package_uri} schema:description """{desc}""" .\n'''  # see package infernal for ex. of special characters issue
+            if description:
+                triples += f'''{package_uri} schema:description """{description}""" .\n'''  # see package infernal for ex. of special characters issue
             if url:
                 triples += f'{package_uri} schema:url "{url}" .\n'
+
+            ## Recommended
+            for top in edam_topics:
+                triples += f"{package_uri} schema:applicationSubCategory {top} .\n"
+            for ope in edam_operations:
+                triples += f"{package_uri} schema:featureList {ope} .\n"
             if version:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
+            ## Optional
+            if code_repository:
+                triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
+            if date_created:
+                triples += f'{package_uri} schema:dateCreated "{date_created}" .\n'
+            for of in output_format:
+                triples += f'{package_uri} schema:encodingFormat "{of}" .\n'
+                triples += f'{package_uri} bioschemas:output "{of}" .\n'
+#            for tid in tool_ids: 
+#                triples += f"{package_uri} schema:hasPart galaxytool:{tid} .\n"
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if bioconda_id:
                 triples += f"{package_uri} schema:identifier {bioconda_id} .\n"
 
-            for ope in edam_operations:
-                triples += f"{package_uri} schema:featureList {ope} .\n"
-            for top in edam_topics:
-                triples += f"{package_uri} schema:applicationSubCategory {top} .\n"
+            for galaxywf_id in galaxywf_ids:
+                triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
+                triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[galaxywf_id]}> .\n'
+            for server in galaxywf_servers_list:
+                triples += f'<{server}> rdf:type schema:WebSite .\n' 
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
 
             #for workflowhub_id in workflowhub_ids:
             #    triples += f'{package_uri} schema:isPartOf <{workflowhub_id}> .\n'
             #    triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[workflowhub_id]}> .\n'
-
-            for galaxywf_id in galaxywf_ids:
-                triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
-                triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[galaxywf_id]}> .\n'
-                
-
-            for server in galaxywf_servers_list:
-                triples += f'<{server}> rdf:type schema:WebSite .\n'
 
 
             g = Graph()
@@ -285,4 +294,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    #process_tools_by_id("amrfinderplus")
+    # process_tools_by_id("amrfinderplus")

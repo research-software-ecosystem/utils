@@ -4,7 +4,6 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
-
 def getBiotoolsId(bioconda_data) -> str:
     """
     Get the bio.tools ID from the bioconda data.
@@ -15,7 +14,6 @@ def getBiotoolsId(bioconda_data) -> str:
                 if id.lower().startswith("biotools:"):
                     return id
     return None
-
 
 def getCitation(bioconda_data) -> list:
     """
@@ -29,6 +27,17 @@ def getCitation(bioconda_data) -> list:
                     res.append(id)
     return res
 
+def getIdentifiers(bioconda_data) -> list:
+    """
+    Get other identifiers from the bioconda data.
+    """
+    res = []
+    if "extra" in bioconda_data.keys():
+        if "identifiers" in bioconda_data["extra"].keys():
+            for id in bioconda_data["extra"]["identifiers"]:
+                if not id.lower().startswith("biotools:") and not id.lower().startswith("doi:"):
+                    res.append(id)
+    return res
 
 def getMaintainers(bioconda_data) -> list:
     """
@@ -76,74 +85,100 @@ def rdfize(data) -> Graph:
 @prefix schema: <http://schema.org/> .
 @prefix biotools: <https://bio.tools/> .
 @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
+@prefix debian: <https://salsa.debian.org/med-team/> .
+@prefix galaxytools: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
 """
 
     triples = ""
 
+    ## Mandatory
     name = None
-    desc = None
+    description = None
+    url = None
+
+    ## Recommended
+    #author = getMaintainers(data)
+    citation = getCitation(data)
+    biotools_id = getBiotoolsId(data)
+    other_identifier = getIdentifiers(data)
     license = None
-    doc_url = None
-    home = None
     version = None
-    download_urls = []
+
+    ## Optional
+    alternate_name = None
+    code_repository = None
+    download_urls = getDownloadUrl(data)
+    #dependencies = getDependencies(data)
+    software_help = None
+    maintainer = getMaintainers(data)
 
     if "about" in data.keys():
-        if "summary" in data["about"].keys():
-            desc = data["about"]["summary"]
+        ## Mandatory
+        if "description" in data["about"].keys():
+            description = data["about"]["description"]
+        elif "summary" in data["about"].keys():
+            description = data["about"]["summary"]
+        if "home" in data["about"].keys():
+            url = data["about"]["home"]
+        
+        ## Recommended
         if "license" in data["about"].keys():
             license = data["about"]["license"]
-        if "doc_url" in data["about"].keys():
-            doc_url = data["about"]["doc_url"]
-        if "home" in data["about"].keys():
-            home = data["about"]["home"]
+
+        ## Optional
+        if "summary" in data["about"].keys():
+            alternate_name = data["about"]["summary"]
+        if "software_help" in data["about"].keys():
+            software_help = data["about"]["software_help"]
+
 
     if "package" in data.keys():
+        ## Mandatory
         if "name" in data["package"].keys():
             name = data["package"]["name"]
+
+        ## Recommended
         if "version" in data["package"].keys():
             version = data["package"]["version"]
 
-    biotools_id = getBiotoolsId(data)
-    dois = getCitation(data)
-    download_urls = getDownloadUrl(data)
-    dependencies = getDependencies(data)
-
     try:
         if name:
-            package_uri = f"bioconda:{name}"
-            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            ## Mandatory
+            package_uri = f'bioconda:{name}'
+            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
             triples += f'{package_uri} schema:name "{name}" .\n'
-            if desc:
-                triples += f'{package_uri} schema:description "{desc}" .\n'
+            if description:
+                triples += f'{package_uri} schema:description "{description}" .\n'
+            if url:
+                triples += f'{package_uri} schema:url "{url}" .\n'
+
+            ## Recommended
+            # if author 
+            for doi in citation:
+                triples += f'{package_uri} schema:citation "{doi}" .\n'            
+            if biotools_id:
+                triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
+            for id in other_identifier:
+                triples += f'{package_uri} schema:identifier "{id}" .\n'
             if license:
                 triples += f'{package_uri} schema:license "{license}" .\n'
-            if biotools_id:
-                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
-            if doc_url:
-                triples += f'{package_uri} schema:softwareHelp "{doc_url}" .\n'
-            if home:
-                triples += f'{package_uri} schema:url "{home}" .\n'
             if version:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
-            # process DOIs
-            for doi in dois:
-                triples += f'{package_uri} schema:citation "{doi}" .\n'
-
-            for maintainer in getMaintainers(data):
-                # triples += (
-                #     f"{package_uri} schema:author <https://github.com/{maintainer}> .\n"
-                # )
-                # triples += f"{package_uri} schema:maintainer <https://github.com/{maintainer}> .\n"
-                triples += f'{package_uri} schema:author "{maintainer}" .\n'
-                triples += f'{package_uri} schema:maintainer "{maintainer}" .\n'
-
+            ## Optional
+            if alternate_name:
+                triples += f'{package_uri} schema:alternateName "{alternate_name}" .\n'
+            if code_repository:
+                triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
             for url in download_urls:
                 triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
+            for maint in maintainer:
+                triples += f'{package_uri} schema:maintainer "{maint}" .\n'
+            if software_help:
+                triples += f'{package_uri} schema:softwareHelp "{software_help}" .\n'
     
-            for dependency in dependencies:
-                triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
+            #for dependency in dependencies:
+            #   triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -257,3 +292,4 @@ if __name__ == "__main__":
     process_tools()
     # process_tools_by_id("bioconductor-xcms")
     # process_tools_by_id("macsyfinder")
+    # process_tools_by_id("bowtie2")

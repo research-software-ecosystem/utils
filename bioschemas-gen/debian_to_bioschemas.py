@@ -81,6 +81,7 @@ def rdfize(data) -> Graph:
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
+@prefix bioschemas: <http://bioschemas.org/> .
 @prefix biotools: <https://bio.tools/> .
 @prefix scicrunch: <https://scicrunch.org/resolver/> .
 @prefix debianmed: <https://salsa.debian.org/med-team/> .
@@ -92,69 +93,56 @@ def rdfize(data) -> Graph:
     triples = ""
 
     dois = getCitationFromDebian(data)
-    description = getDescriptionFromDebian(data)
+    #description = getDescriptionFromDebian(data)
 
     try:
+        ## Mandatory
         if "package" in data.keys():
             package_uri = f"debianmed:{data['package']}"
-            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
             triples += f'{package_uri} schema:name "{data["package"]}" .\n'
-            # if "description" in data.keys() :
-            #   triples += f'{package_uri} schema:description "{data["description"]}" .\n'
+        if "homepage" in data.keys():  
+            triples += f'{package_uri} schema:url "{data["homepage"]}" .\n'
+        #if description:
+        #    triples += f'{package_uri} schema:description "{description}" .\n'
+
+        ## Recommended & Optional
+        if "topics" in data.keys():
+            top = getEdamUrisFromLabels(data["topics"])
+            for t in top:
+                triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
+        for doi in dois:
+            triples += f'{package_uri} schema:citation "{doi}" .\n'
         if "license" in data.keys():
             triples += f'{package_uri} schema:license "{data["license"]}" .\n'
         if "version" in data.keys():
             triples += f'{package_uri} schema:softwareVersion "{data["version"]}" .\n'
-        if description:
-            triples += f'{package_uri} schema:description "{description}" .\n'
-        if "homepage" in data.keys():
-            triples += f'{package_uri} schema:url "{data["homepage"]}" .\n'
-        if "tags" in data.keys():
-            for kw in data["tags"]:
-                if "tag" in kw.keys():
-                    triples += f'{package_uri} schema:keywords "{kw["tag"]}" .\n'
-        # process DOIs
-        for doi in dois:
-            triples += f'{package_uri} schema:citation "{doi}" .\n'
-
-        # process identifiers
-        # if "registries" in data.keys():
-        #  for e in data["registries"]:
-        #   if "name" in e.keys() and "entry" in e.keys():
-        #    id = f"{e['name'].lower()}:{e['entry']}"
-        #   triples += f'{package_uri} schema:identifier "{id}" .\n'
 
         # process identifiers
         if "registries" in data.keys():
             for e in data["registries"]:
                 if "name" in e.keys() and "entry" in e.keys():
                     if e["entry"] == "atac, meryl" and e["name"] == "conda:bioconda":
-                        print("test")
                         for id in e["entry"].split(", "):
                             triples += (
-                                f"{package_uri} schema:identifier bioconda:{id} .\n"
+                                f'{package_uri} schema:identifier bioconda:{id} .\n'
                             )
                 if e["name"] == "bio.tools":
-                    triples += f"{package_uri} schema:identifier biotools:{e['entry'].lower()} .\n"
+                    triples += f'{package_uri} schema:identifier biotools:{e["entry"].lower()} .\n'
                 # elif e["name"] == "OMICtools":
                 # continue
                 elif e["name"] == "conda:bioconda" and e["entry"] != "atac, meryl":
                     triples += (
-                        f"{package_uri} schema:identifier bioconda:{e['entry']} .\n"
+                        f'{package_uri} schema:identifier bioconda:{e["entry"]} .\n'
                     )
                 elif e["name"] == "SciCrunch":
                     triples += (
-                        f"{package_uri} schema:identifier scicrunch:{e['entry']} .\n"
+                        f'{package_uri} schema:identifier scicrunch:{e["entry"]} .\n'
                     )
                 elif e["name"] == "guix":
-                    triples += f"{package_uri} schema:identifier guix:{e['entry']} .\n"
+                    triples += f'{package_uri} schema:identifier guix:{e["entry"]} .\n'
                 else:
                     triples += f'{package_uri} schema:identifier "{e["name"].lower()}:{e["entry"]}" .\n'
-
-        if "topics" in data.keys():
-            top = getEdamUrisFromLabels(data["topics"])
-            for t in top:
-                triples += f"{package_uri} schema:applicationSubCategory edam:{t} .\n"
 
         if "edam_scopes" in data.keys():
             for edam_scope in data["edam_scopes"]:
@@ -162,19 +150,39 @@ def rdfize(data) -> Graph:
                     if section == "function":
                         ope = getEdamUrisFromLabels(edam_scope["function"])
                         for o in ope:
-                            triples += f"{package_uri} schema:featureList edam:{o} .\n"
+                            triples += f'{package_uri} schema:featureList edam:{o} .\n'
 
-                    if section == "input" or section == "output":
+                    if section == "input":
                         for item in edam_scope[section]:
                             for element in item.keys():
                                 if element == "data":
                                     dat = getEdamUrisFromLabels([item["data"]])
                                     for d in dat:
-                                        triples += f"{package_uri} schema:additionalType edam:{d} .\n"
+                                        triples += f'{package_uri} schema:additionalType edam:{d} .\n'
+                                        triples += f'{package_uri} bioschemas:input edam:{d} .\n'
                                 if element == "format":
                                     forma = getEdamUrisFromLabels(item["format"])
                                     for f in forma:
-                                        triples += f"{package_uri} schema:encodingFormat edam:{f} .\n"
+                                        triples += f'{package_uri} schema:encodingFormat edam:{f} .\n'
+                                        triples += f'{package_uri} bioschemas:input edam:{f} .\n'
+
+                    if section == "output":
+                        for item in edam_scope[section]:
+                            for element in item.keys():
+                                if element == "data":
+                                    dat = getEdamUrisFromLabels([item["data"]])
+                                    for d in dat:
+                                        triples += f'{package_uri} schema:additionalType edam:{d} .\n'
+                                        triples += f'{package_uri} bioschemas:output edam:{d} .\n'
+                                if element == "format":
+                                    forma = getEdamUrisFromLabels(item["format"])
+                                    for f in forma:
+                                        triples += f'{package_uri} schema:encodingFormat edam:{f} .\n'
+                                        triples += f'{package_uri} bioschemas:output edam:{f} .\n'
+        if "tags" in data.keys():
+            for kw in data["tags"]:
+                if "tag" in kw.keys():
+                    triples += f'{package_uri} schema:keywords "{kw["tag"]}" .\n'
 
         g = Graph()
         g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -268,4 +276,4 @@ def process_tools():
 if __name__ == "__main__":
     clean()
     process_tools()
-    # process_tools_by_id("macsyfinder")
+    #process_tools_by_id("bowtie2")
