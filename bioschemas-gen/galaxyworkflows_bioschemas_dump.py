@@ -59,12 +59,6 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    #edam_operations = []
-    #edam_topics = []
-    #keywords = []
-
-    galaxywf_servers_list = []
-
     try:
 
         for entry in data:
@@ -75,70 +69,59 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
                 triples += f'{package_uri} schema:url "{entry["link"]}" .\n'
 
-                if entry["link"].startswith("https://workflowhub.eu/workflows/"):
-                    server = "https://workflowhub.eu"
-                    triples += f'{package_uri} schema:isPartOf <{server}> .\n'
-                    triples += f'<{server}> rdf:type schema:WebSite .\n'
+                if "name" in entry.keys():
+                    triples += f"{package_uri} schema:name " + json.dumps(entry["name"]) + " .\n"
 
+                if "description" in entry.keys():
+                    triples += f"{package_uri} schema:description " + json.dumps(entry["description"]) + " .\n"
 
-
-                if entry["link"].startswith("https://usegalaxy"):
-                    server = entry["link"].split("/")[0] + "//" + entry["link"].split("/")[2]
-                    triples += f'{package_uri} schema:isPartOf <{server}> .\n'
-                    triples += f'<{server}> rdf:type schema:WebSite .\n'
-
-
-            if "name" in entry.keys():
-                triples += f"{package_uri} schema:name " + json.dumps(entry["name"]) + " .\n"
-
-            if "description" in entry.keys():
-                triples += f"{package_uri} schema:description " + json.dumps(entry["description"]) + " .\n"
-
-
-            ## Recommended
-            if "id" in entry.keys():
-                triples += f'{package_uri} schema:identifier "{entry["id"]}" .\n'
-                #print(entry["id"])
+                ## Recommended
+                # if "id" in entry.keys():
+                #     triples += f'{package_uri} schema:identifier "{entry["id"]}" .\n'
+                
+                if "doi" in entry.keys():
+                    triples += f'{package_uri} schema:citation "{entry["doi"]}" .\n'
             
-            if "doi" in entry.keys():
-                triples += f'{package_uri} schema:citation "{entry["doi"]}" .\n'
-        
-            if "latest_version" in entry.keys():
-                triples += f'{package_uri} schema:softwareVersion "{entry["latest_version"]}" .\n'
+                if "latest_version" in entry.keys():
+                    triples += f'{package_uri} schema:softwareVersion "{entry["latest_version"]}" .\n'
 
-            if "license" in entry.keys():
-                triples += f'{package_uri} schema:license "{entry["license"]}" .\n'
+                if "license" in entry.keys():
+                    triples += f'{package_uri} schema:license "{entry["license"]}" .\n'
 
-            if "creators" in entry.keys():
-                for creator in entry["creators"]:
-                    triples += f'{package_uri} schema:author "{creator}" .\n'
+                if "creators" in entry.keys():
+                    for creator in entry["creators"]:
+                        triples += f'{package_uri} schema:author "{creator}" .\n'
 
-            if "edam_operation" in entry.keys():
-                ope = getEdamUrisFromLabels(entry["edam_operation"])
-                #print(entry["edam_operation"])#print(ope) 
-                for o in ope:
-                    #print(o)
-                    #edam_operations.append("edam:" + o)
-                    triples += f'{package_uri} schema:featureList edam:{o} .\n'
+                if "edam_operation" in entry.keys():
+                    ope = getEdamUrisFromLabels(entry["edam_operation"])
+                    for o in ope:
+                        triples += f'{package_uri} schema:featureList edam:{o} .\n'
 
-            if "edam_topic" in entry.keys():
-                top = getEdamUrisFromLabels(entry["edam_topic"])
-                for t in top:
-                    print(t)
-                    #edam_topics.append("edam:" + t)
-                    triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
+                if "edam_topic" in entry.keys():
+                    top = getEdamUrisFromLabels(entry["edam_topic"])
+                    for t in top:
+                        triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
 
-            ## Optional
-            if "create_time" in entry.keys():
-                triples += f'{package_uri} schema:dateCreated "{entry["create_time"]}" .\n'
+                ## Optional
+                if "create_time" in entry.keys():
+                    triples += f'{package_uri} schema:dateCreated "{entry["create_time"]}" .\n'
 
-            if "update_time" in entry.keys():
-                triples += f'{package_uri} schema:dateModified "{entry["update_time"]}" .\n'
+                if "update_time" in entry.keys():
+                    triples += f'{package_uri} schema:dateModified "{entry["update_time"]}" .\n'
 
-            if "tags" in entry.keys():
-                for tag in entry["tags"]:
-                    triples += f'{package_uri} schema:keywords "{tag}" .\n'
-        
+                if "source" in entry.keys():
+                    if entry["source"] == "WorkflowHub":
+                        server = "https://workflowhub.eu"
+                        triples += f'{package_uri} schema:isPartOf <{server}> .\n'
+                        triples += f'<{server}> rdf:type schema:WebSite .\n'
+                    elif entry["source"].startswith("https://"):
+                        server = entry["source"]
+                        triples += f'{package_uri} schema:isPartOf <{server}> .\n'
+                        triples += f'<{server}> rdf:type schema:WebSite .\n'
+
+                if "tags" in entry.keys():
+                    for tag in entry["tags"]:
+                        triples += f'{package_uri} schema:keywords "{tag}" .\n'
     
         g = Graph()
         g.parse(data=prefix+"\n"+triples, format="turtle")
