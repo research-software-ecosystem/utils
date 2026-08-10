@@ -3,11 +3,8 @@ import glob
 import json
 from pathlib import Path
 from rdflib import Graph
+import pandas as pd
 
-edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
-
-kg = Graph()
-kg.parse(edam_version, format="xml")
 
 
 def getEdamUrisFromLabels(edam_labels) -> list:
@@ -35,6 +32,24 @@ def getEdamUrisFromLabels(edam_labels) -> list:
 
     return res
 
+def getGalaxyServers(tool_data) -> list:
+    """
+    Get Galaxy servers list where given tool is available.
+    """
+
+    res = []
+    keystart = "Number_of_tools_on_"
+
+    for k in tool_data.keys():
+        if k.startswith(keystart) and tool_data[k] > 0:
+            server = k.split(keystart)[-1]
+            if server_dict[server]:
+                if server not in res:
+                    res.append(server_dict[server])
+            else:
+                print(f"WARNING: Galaxy instance {server} not found in servers list.")
+
+    return res
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -70,8 +85,6 @@ def rdfize(data) -> Graph:
     # biii_id = None # identifier
     bioconda_id = None # identifier
     galaxywf_ids = [] # isPartOf
-    galaxywf_servers = {} # isPartOf
-    galaxywf_servers_list = [] # WebSite
     keywords = []
 
     ## Mandatory
@@ -115,27 +128,8 @@ def rdfize(data) -> Graph:
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
             for wf in workflow.keys():
-                if wf == "link" and workflow[wf].startswith("https://workflowhub.eu/workflows/"):
-                    server = workflow[wf].split("/")[0] + "//" + workflow[wf].split("/")[2]
-
-                    workflow_id = workflow[wf].strip("https://workflowhub.eu/workflows/")
+                if wf == "link":
                     galaxywf_ids.append(workflow[wf])
-
-                    galaxywf_servers[workflow[wf]] = server
-                    
-                    if server not in galaxywf_servers_list:
-                        galaxywf_servers_list.append(server)
-
-
-                if wf == "link" and workflow[wf].startswith("https://usegalaxy"):
-                    server = workflow[wf].split("/")[0] + "//" + workflow[wf].split("/")[2]
-                    workflow_id = workflow[wf].strip(server + "/published/")
-                    galaxywf_ids.append(workflow[wf])
-                    
-                    galaxywf_servers[workflow[wf]] = server
-                    
-                    if server not in galaxywf_servers_list:
-                        galaxywf_servers_list.append(server)
 
     if "ToolShed_categories" in data.keys():
         for keyword in data["ToolShed_categories"]:
@@ -177,15 +171,14 @@ def rdfize(data) -> Graph:
 
             for galaxywf_id in galaxywf_ids:
                 triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
-                triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[galaxywf_id]}> .\n'
-            for server in galaxywf_servers_list:
-                triples += f'<{server}> rdf:type schema:WebSite .\n' 
+
+            for galaxy_server in getGalaxyServers(data):
+                triples += f'{package_uri} schema:isPartOf <{galaxy_server}> .\n'
+                triples += f'<{galaxy_server}> rdf:type schema:WebSite .\n'
+
+            # for server in server_dict.values():
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
-
-            #for workflowhub_id in workflowhub_ids:
-            #    triples += f'{package_uri} schema:isPartOf <{workflowhub_id}> .\n'
-            #    triples += f'{package_uri} schema:isPartOf <{galaxywf_servers[workflowhub_id]}> .\n'
 
 
             g = Graph()
@@ -215,7 +208,6 @@ def process_tools_by_id(id="SPROUT"):
     for tool_file in tool_files:
         if id in tool_file:
             path = Path(tool_file)
-            #     #tool = yaml.safe_load(path.read_text(encoding="utf-8"))
             tool = json.loads(path.read_text(encoding="utf-8"))
 
             tool_id = None
@@ -258,7 +250,6 @@ def process_tools():
     tool_files = get_galaxy_files_in_repo()
     for tool_file in tool_files:
         path = Path(tool_file)
-        # tool = yaml.safe_load(path.read_text(encoding="utf-8"))
         tool = json.loads(path.read_text(encoding="utf-8"))
 
         tool_id = None
@@ -292,6 +283,16 @@ def process_tools():
 
 
 if __name__ == "__main__":
+
+    edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
+    kg = Graph()
+    kg.parse(edam_version, format="xml")
+
+    server_table = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/sources/data/available_public_servers.csv"
+    df = pd.read_table(server_table)
+
+    server_dict = pd.Series(df.url.values,index=df.name).to_dict()
+    server_dict = {k.replace(' ','_'):v for k,v in server_dict.items()}
+
     clean()
     process_tools()
-    # process_tools_by_id("amrfinderplus")
