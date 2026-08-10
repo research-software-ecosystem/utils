@@ -69,7 +69,8 @@ def rdfize(data) -> Graph:
     try:
         if "name" in data.keys():
             package_uri = f"biocontainers:{data['name']}"
-            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            # triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
             if "description" in data.keys():
                 triples += (
@@ -89,7 +90,8 @@ def rdfize(data) -> Graph:
                 )
 
             if biotools_id:
-                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
+                # triples += f"{package_uri} schema:identifier {biotools_id} .\n"
+                triples += f"{package_uri} schema:isBasedOn {biotools_id} .\n"
             if "home_url" in data.keys():
                 triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
             if "keywords" in data.keys():

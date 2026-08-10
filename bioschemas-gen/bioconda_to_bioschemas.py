@@ -145,7 +145,8 @@ def rdfize(data) -> Graph:
         if name:
             ## Mandatory
             package_uri = f'bioconda:{name}'
-            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            # triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            triples += f'{package_uri} rdf:type schema:SoftwareSourceCode .\n'
             triples += f'{package_uri} schema:name "{name}" .\n'
             if description:
                 triples += f'{package_uri} schema:description "{description}" .\n'
@@ -157,7 +158,8 @@ def rdfize(data) -> Graph:
             for doi in citation:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'            
             if biotools_id:
-                triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
+                # triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
+                triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
             for id in other_identifier:
                 triples += f'{package_uri} schema:identifier "{id}" .\n'
             if license:
