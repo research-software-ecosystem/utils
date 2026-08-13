@@ -12,8 +12,14 @@ def get_debian_files_in_repo():
         if len(filename_ext) == 3 and filename_ext[2] == "jsonld":
             tools.append(data_file)
     print(f"found {len(tools)} bioschemas descriptors")
+    with open(
+        "../../content/datasets/debian_bioschemas_files_list.txt",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        for tool in tools:
+            f.write(f"{tool}\n")
     return tools
-
 
 def process_tools():
     """
