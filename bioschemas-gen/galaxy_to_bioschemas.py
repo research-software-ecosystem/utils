@@ -24,7 +24,7 @@ def getEdamUrisFromLabels(edam_labels) -> list:
     }
     """ % (lab)
 
-        q = kg.query(query)
+        q = edam_kg.query(query)
         for r in q:
             # uri = r['entity']
             uri = r["entity"].rsplit("/", 1)[-1]
@@ -285,8 +285,8 @@ def process_tools():
 if __name__ == "__main__":
 
     edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
-    kg = Graph()
-    kg.parse(edam_version, format="xml")
+    edam_kg = Graph()
+    edam_kg.parse(edam_version, format="xml")
 
     server_table = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/sources/data/available_public_servers.csv"
     df = pd.read_table(server_table)
