@@ -144,7 +144,7 @@ def rdfize(data) -> Graph:
             if description:
                 triples += f'''{package_uri} schema:description """{description}""" .\n'''  # see package infernal for ex. of special characters issue
             if url:
-                triples += f'{package_uri} schema:url "{url}" .\n'
+                triples += f'{package_uri} schema:url <{url}> .\n'
 
             ## Recommended
             for top in edam_topics:
@@ -156,7 +156,7 @@ def rdfize(data) -> Graph:
 
             ## Optional
             if code_repository:
-                triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
+                triples += f'{package_uri} schema:codeRepository <{code_repository}> .\n'
             if date_created:
                 triples += f'{package_uri} schema:dateCreated "{date_created}" .\n'
             for of in output_format:

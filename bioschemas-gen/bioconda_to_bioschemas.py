@@ -159,7 +159,7 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'            
             if biotools_id:
                 # triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
-                triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
+                triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
             for id in other_identifier:
                 triples += f'{package_uri} schema:identifier "{id}" .\n'
             if license:
@@ -173,11 +173,11 @@ def rdfize(data) -> Graph:
             if code_repository:
                 triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
             for url in download_urls:
-                triples += f'{package_uri} schema:downloadUrl "{url}" .\n'
+                triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
             for maint in maintainer:
                 triples += f'{package_uri} schema:maintainer "{maint}" .\n'
             if software_help:
-                triples += f'{package_uri} schema:softwareHelp "{software_help}" .\n'
+                triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
     
             #for dependency in dependencies:
             #   triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
@@ -291,7 +291,7 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    process_tools()
+    #process_tools()
     # process_tools_by_id("bioconductor-xcms")
-    # process_tools_by_id("macsyfinder")
+    process_tools_by_id("macsyfinder")
     # process_tools_by_id("bowtie2")

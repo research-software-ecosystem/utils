@@ -102,7 +102,7 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
             triples += f'{package_uri} schema:name "{data["package"]}" .\n'
         if "homepage" in data.keys():  
-            triples += f'{package_uri} schema:url "{data["homepage"]}" .\n'
+            triples += f'{package_uri} schema:url <{data["homepage"]}> .\n'
         #if description:
         #    triples += f'{package_uri} schema:description "{description}" .\n'
 
@@ -129,7 +129,7 @@ def rdfize(data) -> Graph:
                             )
                 if e["name"] == "bio.tools":
                     triples += f'{package_uri} schema:identifier biotools:{e["entry"].lower()} .\n'
-                # elif e["name"] == "OMICtools":
+                # elif e["name"] == "OMICtools": OMICtools website doesn't exist anymore, is kept as string identifier
                 # continue
                 elif e["name"] == "conda:bioconda" and e["entry"] != "atac, meryl":
                     triples += (

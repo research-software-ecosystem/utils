@@ -93,7 +93,7 @@ def rdfize(data) -> Graph:
                 # triples += f"{package_uri} schema:identifier {biotools_id} .\n"
                 triples += f"{package_uri} schema:isBasedOn {biotools_id} .\n"
             if "home_url" in data.keys():
-                triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
+                triples += f'{package_uri} schema:url <{data["home_url"]}> .\n'
             if "keywords" in data.keys():
                 for keyword in data["keywords"]:
                     triples += f'{package_uri} schema:keywords "{keyword}" .\n'
@@ -193,5 +193,5 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    process_tools()
-    # process_tools_by_id("macsyfinder")
+    #process_tools()
+    process_tools_by_id("macsyfinder")
