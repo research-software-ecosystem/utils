@@ -145,8 +145,8 @@ def rdfize(data) -> Graph:
         if name:
             ## Mandatory
             package_uri = f'bioconda:{name}'
-            # triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
-            triples += f'{package_uri} rdf:type schema:SoftwareSourceCode .\n'
+            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            # triples += f'{package_uri} rdf:type schema:SoftwareSourceCode .\n'
             triples += f'{package_uri} schema:name "{name}" .\n'
             if description:
                 triples += f'{package_uri} schema:description "{description}" .\n'
@@ -158,8 +158,8 @@ def rdfize(data) -> Graph:
             for doi in citation:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'            
             if biotools_id:
-                # triples += f'{package_uri} schema:identifier "{biotools_id}" .\n'
-                triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
+                triples += f'{package_uri} schema:identifier biotools:{biotools_id} .\n'
+                #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
             for id in other_identifier:
                 triples += f'{package_uri} schema:identifier "{id}" .\n'
             if license:
@@ -238,6 +238,7 @@ def process_tools_by_id(id="SPROUT"):
                     format="turtle",
                     destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
                 )
+                print(temp_graph.serialize(format="turtle"))
 
 
 def clean():
@@ -287,11 +288,12 @@ def process_tools():
                 format="turtle",
                 destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
             )
+            print(temp_graph.serialize(format="turtle"))
 
 
 if __name__ == "__main__":
     clean()
-    #process_tools()
+    process_tools()
     # process_tools_by_id("bioconductor-xcms")
-    process_tools_by_id("macsyfinder")
+    # process_tools_by_id("macsyfinder")
     # process_tools_by_id("bowtie2")
