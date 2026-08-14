@@ -4,6 +4,7 @@ import glob
 import json
 from pathlib import Path
 from rdflib import Graph
+import requests
 
 
 def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
@@ -26,7 +27,17 @@ def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
                 print(f"WARNING: identifier is not a string: {id}")
     return None
 
-
+def biotools_id_exists(biotools_id, timeout=5):
+    """Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
+    id = biotools_id.lower().split("biotools:", 1)[-1]
+    print(id)
+    api_url = f"https://bio.tools/api/tool/{id}/?format=json"
+    try:
+        r = requests.get(api_url, timeout=timeout)
+        return r.status_code == 200
+    except requests.RequestException:
+        return False
+    
 def getCitationFromBioContainers(biocontainers_data) -> list:
     """
     Get DOIs from the biocontainers data.
@@ -194,5 +205,8 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    process_tools()
+    #process_tools()
     #process_tools_by_id("macsyfinder")
+    check_biotools_id = biotools_id_exists("bctools")
+    print(check_biotools_id)
+    
