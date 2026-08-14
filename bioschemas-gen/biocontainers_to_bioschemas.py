@@ -27,15 +27,17 @@ def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
                 print(f"WARNING: identifier is not a string: {id}")
     return None
 
-def biotools_id_exists(biotools_id, timeout=5):
-    """Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-    id = biotools_id.lower().split("biotools:", 1)[-1]
-    print(id)
-    api_url = f"https://bio.tools/api/tool/{id}/?format=json"
+def urlExists(url, timeout=5):
+    #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
+    """Check if a URL exists """
+    #id = biotools_id.lower().split("biotools:", 1)[-1]
+    #print(id)
+    #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
     try:
-        r = requests.get(api_url, timeout=timeout)
+        r = requests.get(url, timeout=timeout)
         return r.status_code == 200
     except requests.RequestException:
+        print(f"WARNING: URL {url} does not exist. \n")
         return False
     
 def getCitationFromBioContainers(biocontainers_data) -> list:
@@ -74,7 +76,18 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    biotools_id = getBiotoolsIdFromBioContainers(data)
+    biotools_id = getBiotoolsIdFromBioContainers(data) 
+    #print(f"biotools_id: {biotools_id}")
+    #print(data)
+
+    if biotools_id:
+        biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
+        api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
+        print(api_url)
+        if not urlExists(api_url):
+            print(f"WARNING: biotools ID {biotools_id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
+            biotools_id = None
+
     dois = getCitationFromBioContainers(data)
 
     try:
@@ -103,8 +116,8 @@ def rdfize(data) -> Graph:
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
                 #triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
-            if "home_url" in data.keys():
-                triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
+            if "home_url" in data.keys() and urlExists(data["home_url"]):
+                triples += f'{package_uri} schema:url <{data["home_url"]}> .\n'
             if "keywords" in data.keys():
                 for keyword in data["keywords"]:
                     triples += f'{package_uri} schema:keywords "{keyword}" .\n'
@@ -136,7 +149,11 @@ def process_tools_by_id(id="SPROUT"):
     tool_files = get_biotools_files_in_repo()
 
     for tool_file in tool_files:
-        if id in tool_file:
+        tool_name = os.path.basename(tool_file).split('.')[0]
+        tool_id = Path(tool_file).stem
+        #print(id)
+        #print(tool_name)
+        if id == tool_name:
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
@@ -205,8 +222,8 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    #process_tools()
-    #process_tools_by_id("macsyfinder")
-    check_biotools_id = biotools_id_exists("bctools")
-    print(check_biotools_id)
-    
+    process_tools()
+    # tool = "bam2fasta"
+
+    # process_tools_by_id(tool)
+

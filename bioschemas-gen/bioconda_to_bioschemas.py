@@ -1,5 +1,6 @@
 import os
 import glob
+import requests
 import yaml
 from pathlib import Path
 from rdflib import Graph
@@ -15,6 +16,20 @@ def getBiotoolsId(bioconda_data) -> str:
                     return id
     return None
 
+def urlExists(url, timeout=5):
+    #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
+    """Check if a URL exists """
+    #id = biotools_id.lower().split("biotools:", 1)[-1]
+    #print(id)
+    #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
+    try:
+        r = requests.get(url, timeout=timeout)
+        return r.status_code == 200
+    except requests.RequestException:
+        print(f"WARNING: URL {url} does not exist. \n") 
+        return False
+
+    
 def getCitation(bioconda_data) -> list:
     """
     Get DOIs from the bioconda data.
@@ -99,7 +114,20 @@ def rdfize(data) -> Graph:
     ## Recommended
     #author = getMaintainers(data)
     citation = getCitation(data)
+
     biotools_id = getBiotoolsId(data)
+
+    #print(f"biotools_id: {biotools_id}")
+    #print(data)
+
+    if biotools_id:
+        biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
+        api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
+        print(api_url)
+        if not urlExists(api_url):
+            print(f"WARNING: biotools ID {biotools_id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
+            biotools_id = None
+
     other_identifier = getIdentifiers(data)
     license = None
     version = None
@@ -173,11 +201,13 @@ def rdfize(data) -> Graph:
             if code_repository:
                 triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
             for url in download_urls:
-                triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
+                if urlExists(software_help):
+                    triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
             for maint in maintainer:
                 triples += f'{package_uri} schema:maintainer "{maint}" .\n'
             if software_help:
-                triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
+                if urlExists(software_help):
+                    triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
     
             #for dependency in dependencies:
             #   triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
@@ -209,7 +239,18 @@ def process_tools_by_id(id="SPROUT"):
     tool_files = get_biotools_files_in_repo()
 
     for tool_file in tool_files:
-        if id in tool_file:
+        #tool_name = os.path.basename(tool_file).split('.')[0]
+
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
+
+        tool_id = Path(tool_file).stem
+        #print(id)
+        #print(tool_name)
+        if id == tool_name:
+
+    #for tool_file in tool_files:
+        #if id in tool_file:
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
@@ -295,5 +336,5 @@ if __name__ == "__main__":
     clean()
     process_tools()
     # process_tools_by_id("bioconductor-xcms")
-    # process_tools_by_id("macsyfinder")
+    #process_tools_by_id("bam2fasta")
     # process_tools_by_id("bowtie2")
