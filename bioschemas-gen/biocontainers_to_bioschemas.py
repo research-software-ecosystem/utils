@@ -69,8 +69,8 @@ def rdfize(data) -> Graph:
     try:
         if "name" in data.keys():
             package_uri = f"biocontainers:{data['name']}"
-            # triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
-            triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
+            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
+            #triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
             if "description" in data.keys():
                 triples += (
@@ -90,10 +90,10 @@ def rdfize(data) -> Graph:
                 )
 
             if biotools_id:
-                # triples += f"{package_uri} schema:identifier {biotools_id} .\n"
-                triples += f"{package_uri} schema:isBasedOn {biotools_id} .\n"
+                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
+                #triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
             if "home_url" in data.keys():
-                triples += f'{package_uri} schema:url <{data["home_url"]}> .\n'
+                triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
             if "keywords" in data.keys():
                 for keyword in data["keywords"]:
                     triples += f'{package_uri} schema:keywords "{keyword}" .\n'
@@ -148,6 +148,7 @@ def process_tools_by_id(id="SPROUT"):
                     format="turtle",
                     destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
                 )
+                print(temp_graph.serialize(format="turtle"))
 
 
 def clean():
@@ -168,7 +169,6 @@ def process_tools():
         path = Path(tool_file)
         tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-        print(tool_file)
         tool_id = tool["name"]
         tpe_id = tool_id.lower()
         directory = os.path.join("..", "..", "content", "data", tpe_id)
@@ -189,9 +189,10 @@ def process_tools():
                 format="turtle",
                 destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
             )
+            print(temp_graph.serialize(format="turtle"))
 
 
 if __name__ == "__main__":
     clean()
-    #process_tools()
-    process_tools_by_id("macsyfinder")
+    process_tools()
+    #process_tools_by_id("macsyfinder")
