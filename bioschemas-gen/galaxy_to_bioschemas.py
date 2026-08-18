@@ -22,7 +22,7 @@ def getEdamUrisFromLabels(edam_labels) -> list:
     SELECT ?label ?entity WHERE {
         ?entity rdfs:label '%s' .
     }
-    """ % (lab)
+    """ %(lab)
 
         q = edam_kg.query(query)
         for r in q:
@@ -62,6 +62,7 @@ def rdfize(data) -> Graph:
     @prefix galaxytool: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
     @prefix workflowhub: <https://workflowhub.eu/workflows/> .
     @prefix edam: <http://edamontology.org/> .
+    @prefix biii: <https://biii.eu/> .
     """
 
     triples = ""
@@ -82,7 +83,7 @@ def rdfize(data) -> Graph:
     output_format = [] # encodingFormat, biochemas:output
     tool_ids = []  # hasPart
     biotools_id = None # identifier
-    # biii_id = None # identifier
+    biii_id = None # identifier
     bioconda_id = None # identifier
     galaxywf_ids = [] # isPartOf
     keywords = []
@@ -118,8 +119,10 @@ def rdfize(data) -> Graph:
     if "Tool_IDs" in data.keys():
         for tid in data["Tool_IDs"]:
             tool_ids.append(tid)
-    if "bio.tool_ID" in data.keys():
+    if "bio.tool_ID" in data.keys() and data["bio.tool_ID"]:
         biotools_id = "biotools:" + data["bio.tool_ID"]
+    if "biii_ID" in data.keys() and data["biii_ID"]:
+        biii_id = "biii:" + data["biii_ID"]
     if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
         bioconda_id = (
             "bioconda:" + data["Suite_conda_package"].strip()
@@ -168,9 +171,13 @@ def rdfize(data) -> Graph:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if bioconda_id:
                 triples += f"{package_uri} schema:identifier {bioconda_id} .\n"
+            if biii_id:
+                triples += f"{package_uri} schema:identifier {biii_id} .\n"
 
             for galaxywf_id in galaxywf_ids:
                 triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
+                #if galaxywf_id.startswith("https://workflowhub.eu/"):
+                    #triples += f'<https://workflowhub.eu/> rdf:type schema:Website .\n'
 
             for galaxy_server in getGalaxyServers(data):
                 triples += f'{package_uri} schema:isPartOf <{galaxy_server}> .\n'
@@ -296,3 +303,4 @@ if __name__ == "__main__":
 
     clean()
     process_tools()
+    #process_tools_by_id("segmetrics")
