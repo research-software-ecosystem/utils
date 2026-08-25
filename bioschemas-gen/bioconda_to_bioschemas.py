@@ -186,7 +186,7 @@ def rdfize(data) -> Graph:
             for doi in citation:
                 triples += f'{package_uri} schema:citation "{doi}" .\n'            
             if biotools_id:
-                triples += f'{package_uri} schema:identifier biotools:{biotools_id} .\n'
+                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
                 #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
             for id in other_identifier:
                 triples += f'{package_uri} schema:identifier "{id}" .\n'
