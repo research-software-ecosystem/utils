@@ -1,4 +1,15 @@
-pandas
-matplotlib
-upsetplot
+# upsetplot 0.9.0 (July 2023) is the latest release and is unmaintained against
+# both of these upper bounds, so they are pinned rather than floated:
+#   numpy >= 2  -> upsetplot passes 1-element arrays as text coordinates,
+#                  raising "only 0-dimensional arrays can be converted to
+#                  Python scalars" when the figure is drawn.
+#   pandas >= 3 -> upsetplot styles the plot with chained
+#                  `styles[col].fillna(..., inplace=True)`, which silently
+#                  no-ops under Copy-on-Write, leaving edgecolor as NaN and
+#                  raising "Invalid RGBA argument: nan".
+# Drop the bounds once upsetplot ships a release that handles both.
+numpy<2
+pandas>=2.0,<3
+matplotlib>=3.6,<3.10
+upsetplot==0.9.0
 tabulate
