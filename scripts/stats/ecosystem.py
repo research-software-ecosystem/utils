@@ -41,9 +41,7 @@ NATIVE_SOURCES = (
 # .bioschemas.jsonld file is a 1:1 conversion of the bio.tools record, so
 # counting it as a source double-counts bio.tools and inflates every
 # intersection it appears in. Included only with --include-derived.
-DERIVED_SOURCES = (
-    ("Bioschemas", ("*.bioschemas.jsonld",)),
-)
+DERIVED_SOURCES = (("Bioschemas", ("*.bioschemas.jsonld",)),)
 
 # WorkflowHub is an RSEc source, but it currently deposits nothing per tool --
 # only the bulk dumps under datasets/ -- so it has no pattern to match and is
@@ -83,7 +81,7 @@ def describe(combination, source_names):
     if not present:
         return "(no source)"
     if len(present) == 1:
-        return "%s only" % present[0]
+        return f"{present[0]} only"
     return " + ".join(present)
 
 
@@ -95,7 +93,7 @@ def build_table(data_path, sources):
     for tool_id, files in tool_folders(data_path):
         rows[tool_id] = sources_present(files, sources)
     if not rows:
-        sys.exit("no tool folders found under %s" % data_path)
+        sys.exit(f"no tool folders found under {data_path}")
     return pd.DataFrame.from_dict(rows, orient="index", columns=source_names)
 
 
@@ -106,7 +104,7 @@ def write_summary_md(path, df, counts):
     lines = [
         "# RSEc contents summary",
         "",
-        "%d tool folders, %d sources." % (total, len(source_names)),
+        f"{total} tool folders, {len(source_names)} sources.",
         "",
         "## Tools per source",
         "",
@@ -115,7 +113,7 @@ def write_summary_md(path, df, counts):
     ]
     for name in source_names:
         hits = int(df[name].sum())
-        lines.append("| %s | %d | %.1f%% |" % (name, hits, 100.0 * hits / total))
+        lines.append(f"| {name} | {hits} | {100.0 * hits / total:.1f}% |")
     lines += [
         "",
         "## Tools per number of sources",
@@ -125,9 +123,7 @@ def write_summary_md(path, df, counts):
     ]
     degrees = df.sum(axis=1).value_counts().sort_index()
     for degree, tools in degrees.items():
-        lines.append(
-            "| %d | %d | %.1f%% |" % (int(degree), int(tools), 100.0 * tools / total)
-        )
+        lines.append(f"| {int(degree)} | {int(tools)} | {100.0 * tools / total:.1f}% |")
     lines += [
         "",
         "## Source combinations",
@@ -136,7 +132,7 @@ def write_summary_md(path, df, counts):
         "| --- | --- |",
     ]
     for combination, tools in counts.sort_values(ascending=False).items():
-        lines.append("| %s | %d |" % (describe(combination, source_names), int(tools)))
+        lines.append(f"| {describe(combination, source_names)} | {int(tools)} |")
     with open(path, "w") as summary_file:
         summary_file.write("\n".join(lines) + "\n")
 
@@ -187,7 +183,7 @@ def write_counts_csv(path, df):
         writer.writerow(["source", "tools", "share"])
         for name in df.columns:
             hits = int(df[name].sum())
-            writer.writerow([name, hits, "%.4f" % (float(hits) / total)])
+            writer.writerow([name, hits, f"{float(hits) / total:.4f}"])
 
 
 def write_detailed_md(path, df):
@@ -206,7 +202,7 @@ def write_upset_png(path, counts, min_subset_size):
     drawn = counts[counts >= min_subset_size]
     omitted = counts[counts < min_subset_size]
     if drawn.empty:
-        sys.exit("no source combination reaches --min-subset-size=%d" % min_subset_size)
+        sys.exit(f"no source combination reaches --min-subset-size={min_subset_size}")
     figure = pyplot.figure(figsize=(16, 8))
     upset_plot(drawn, fig=figure, show_counts=True, sort_by="cardinality")
     pyplot.savefig(path, dpi=150, bbox_inches="tight")
@@ -243,16 +239,16 @@ def main():
 
     data_path = os.path.join(args.path, "data")
     if not os.path.isdir(data_path):
-        sys.exit("no data/ folder in %s" % args.path)
+        sys.exit(f"no data/ folder in {args.path}")
     report_path = os.path.join(args.path, "report")
     os.makedirs(report_path, exist_ok=True)
 
     sources = NATIVE_SOURCES + (DERIVED_SOURCES if args.include_derived else ())
     df = build_table(data_path, sources)
     counts = df.groupby(list(df.columns)).size()
-    print("%d tool folders, %d sources" % (len(df), len(df.columns)))
+    print(f"{len(df)} tool folders, {len(df.columns)} sources")
     for name in df.columns:
-        print("  %-15s %6d" % (name, int(df[name].sum())))
+        print(f"  {name:<15} {int(df[name].sum()):6d}")
 
     write_summary_md(os.path.join(report_path, "summary.md"), df, counts)
     write_summary_json(os.path.join(report_path, "summary.json"), df, counts)
@@ -263,12 +259,13 @@ def main():
     drawn, omitted, tools_omitted = write_upset_png(
         os.path.join(report_path, "global_upset.png"), counts, args.min_subset_size
     )
-    print("plotted %d of %d source combinations" % (drawn, drawn + omitted))
+    print(f"plotted {drawn} of {drawn + omitted} source combinations")
     if omitted:
         print(
-            "omitted %d combinations below --min-subset-size=%d, covering %d tools; "
-            "the per-source totals in the figure are for plotted combinations only"
-            % (omitted, args.min_subset_size, tools_omitted)
+            f"omitted {omitted} combinations below "
+            f"--min-subset-size={args.min_subset_size}, covering {tools_omitted} "
+            "tools; the per-source totals in the figure are for plotted "
+            "combinations only"
         )
 
 
