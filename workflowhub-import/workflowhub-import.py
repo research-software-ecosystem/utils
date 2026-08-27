@@ -5,13 +5,13 @@ import os
 import sys
 import time
 
-
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.metadata import normalize_version_fields
 
 WORKFLOWHUB_BASE = "https://workflowhub.eu"
+BIOTOOLS_PREFIX = "https://bio.tools/"
 PER_PAGE = 100
 
 
@@ -70,30 +70,83 @@ def fetch_workflow_detail(workflow_id):
 
 
 def extract_tools_from_detail(attr):
-    """Extract tools from both curated annotations and Galaxy internals.steps."""
+    """Collect the raw tool references WorkflowHub exposes, for provenance.
+
+    These are recorded as-is in imports/, and are deliberately not used to
+    decide what gets written under data/ -- see resolve_biotools_ids.
+    """
     tools = set()
 
-    # Source 1: curated bio.tools annotations from the tools field
+    # Source 1: curated annotations from the tools field
     for t in attr.get("tools", []):
-        name = t.get("name", "").strip()
+        name = (t.get("name") or "").strip()
         if name:
             tools.add(name.lower())
-        tid = t.get("id", "")
-        if tid.startswith("https://bio.tools/"):
-            bt = tid.replace("https://bio.tools/", "").strip()
+        tid = (t.get("id") or "").strip()
+        if tid.startswith(BIOTOOLS_PREFIX):
+            bt = tid[len(BIOTOOLS_PREFIX) :].strip().strip("/")
             if bt:
                 tools.add(bt.lower())
 
-    # Source 2: Galaxy tool IDs from step descriptions
+    # Source 2: Galaxy tool IDs from step descriptions. Steps that are
+    # subworkflows or annotations carry an empty description, which is not a
+    # tool reference.
     internals = attr.get("internals", {})
-    steps = internals.get("steps")
-    if steps is not None:
-        for step in steps:
-            desc = step.get("description")
-            if desc is not None:
-                tools.add(shorten_tool_id(desc).lower())
+    for step in internals.get("steps") or []:
+        desc = (step.get("description") or "").strip()
+        if desc:
+            tools.add(shorten_tool_id(desc).lower())
 
-    return list(tools)
+    # Sorted so that re-running the importer against unchanged upstream data
+    # produces byte-identical files instead of a reshuffled list.
+    return sorted(tools)
+
+
+def resolve_biotools_ids(attr, tool_to_biotool):
+    """Resolve a workflow's tool references to bio.tools IDs.
+
+    Only two things count as an identification:
+
+      * a curated WorkflowHub annotation, which states the bio.tools URL
+        outright;
+      * a Galaxy tool ID that galaxy_codex maps to a bio.tools ID.
+
+    Anything else is dropped rather than guessed. Falling back to the raw tool
+    name would assert a link nobody has made: WorkflowHub 2239 annotates the
+    tool named "Tiara" with https://bio.tools/tiara-metagenomics, so treating
+    the display name as an identifier would also claim the unrelated bio.tools
+    entry "tiara".
+
+    Returns (annotated_ids, mapped_ids, unresolved_references).
+    """
+    annotated = set()
+    unresolved = set()
+
+    for t in attr.get("tools", []):
+        tid = (t.get("id") or "").strip()
+        if tid.startswith(BIOTOOLS_PREFIX):
+            bt = tid[len(BIOTOOLS_PREFIX) :].strip().strip("/").lower()
+            if bt:
+                annotated.add(bt)
+                continue
+        name = (t.get("name") or "").strip().lower()
+        if name:
+            unresolved.add(name)
+
+    mapped = set()
+    internals = attr.get("internals", {})
+    for step in internals.get("steps") or []:
+        desc = (step.get("description") or "").strip()
+        if not desc:
+            continue
+        galaxy_id = shorten_tool_id(desc).lower()
+        biotool_id = tool_to_biotool.get(galaxy_id)
+        if biotool_id:
+            mapped.add(biotool_id)
+        else:
+            unresolved.add(galaxy_id)
+
+    return annotated, mapped, unresolved
 
 
 def build_workflow_entry(wf_id, attr):
@@ -191,8 +244,9 @@ def retrieve(max_workflows=None, data_base="."):
 
     all_entries = []
     tool_to_wf_ids = {}
+    stat_annotated = 0
     stat_mapped = 0
-    stat_fallback = 0
+    stat_unresolved = set()
     stat_unique_tools = set()
     stat_engines = {}
     stat_engine_tools = {}
@@ -212,14 +266,16 @@ def retrieve(max_workflows=None, data_base="."):
         with open(save_path, "w") as f:
             json.dump(wf_cleaned, f, sort_keys=True, indent=4, separators=(",", ": "))
 
-        # Map each workflow tool to bio.tool ID and record the workflow ID
-        for tool_name in entry.get("tools", []):
-            bt_id = tool_to_biotool.get(tool_name.lower())
-            if bt_id:
-                stat_mapped += 1
-            else:
-                bt_id = tool_name.lower()
-                stat_fallback += 1
+        # Record the workflow against every bio.tools ID we can actually
+        # identify. References that resolve to no bio.tools ID are counted and
+        # then dropped -- never turned into a directory name.
+        annotated, mapped, unresolved = resolve_biotools_ids(attr, tool_to_biotool)
+        stat_annotated += len(annotated)
+        stat_mapped += len(mapped)
+        stat_unresolved.update(unresolved)
+
+        biotools_ids = annotated | mapped
+        for bt_id in sorted(biotools_ids):
             stat_unique_tools.add(bt_id)
             if bt_id not in tool_to_wf_ids:
                 tool_to_wf_ids[bt_id] = []
@@ -229,7 +285,7 @@ def retrieve(max_workflows=None, data_base="."):
         stat_engines[engine] = stat_engines.get(engine, 0) + 1
         if engine not in stat_engine_tools:
             stat_engine_tools[engine] = set()
-        stat_engine_tools[engine].update(entry.get("tools", []))
+        stat_engine_tools[engine].update(biotools_ids)
 
         time.sleep(0.2)
 
@@ -237,10 +293,14 @@ def retrieve(max_workflows=None, data_base="."):
 
     # Write per-tool workflowhub JSONs — store only workflow IDs
     matched_count = 0
+    no_directory = []
     wf_id_to_data_tools = {}
     for bt_id in sorted(tool_to_wf_ids.keys()):
+        if not bt_id:
+            continue
         directory = os.path.join(data_base, "data", bt_id)
         if not os.path.isdir(directory):
+            no_directory.append(bt_id)
             continue
 
         wf_ids = sorted(set(tool_to_wf_ids[bt_id]))
@@ -259,17 +319,23 @@ def retrieve(max_workflows=None, data_base="."):
         entry["mapped_tools"] = sorted(wf_id_to_data_tools.get(wf_id, []))
         save_path = os.path.join(workflowhub_directory, f"{wf_id}.workflowhub.json")
         with open(save_path, "w") as f:
-            json.dump(
-                entry, f, sort_keys=True, indent=4, separators=(",", ": ")
-            )
+            json.dump(entry, f, sort_keys=True, indent=4, separators=(",", ": "))
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
     print(f"  workflows processed: {len(all_entries)}")
-    print(f"  unique tool names found: {len(stat_unique_tools)}")
-    print(f"  tool occurrences via galaxy_codex mapping: {stat_mapped}")
-    print(f"  tool occurrences via raw-name fallback: {stat_fallback}")
+    print(f"  unique bio.tools IDs identified: {len(stat_unique_tools)}")
+    print(f"  occurrences from curated bio.tools annotations: {stat_annotated}")
+    print(f"  occurrences via galaxy_codex mapping: {stat_mapped}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
+    print(
+        f"  identified but absent from data/: {len(no_directory)}"
+        + (f" (e.g. {', '.join(no_directory[:5])})" if no_directory else "")
+    )
+    print(
+        f"  references dropped, no bio.tools ID: {len(stat_unresolved)} distinct "
+        "(not written to data/)"
+    )
     print("\n  Workflow engine distribution:")
     for engine in sorted(
         stat_engines.keys(), key=lambda e: stat_engines[e], reverse=True
@@ -277,7 +343,10 @@ def retrieve(max_workflows=None, data_base="."):
         wf_count = stat_engines[engine]
         tool_count = len(stat_engine_tools[engine])
         pct = wf_count / len(all_entries) * 100
-        print(f"    {engine}: {wf_count} workflows ({pct:.0f}%), {tool_count} tools")
+        print(
+            f"    {engine}: {wf_count} workflows ({pct:.0f}%), "
+            f"{tool_count} bio.tools IDs"
+        )
 
 
 if __name__ == "__main__":
