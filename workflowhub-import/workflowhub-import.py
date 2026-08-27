@@ -14,6 +14,54 @@ WORKFLOWHUB_BASE = "https://workflowhub.eu"
 BIOTOOLS_PREFIX = "https://bio.tools/"
 PER_PAGE = 100
 
+# A full run makes one request per workflow, ~1500 of them. At that count a
+# single unretried failure is close to inevitable, and it used to abort the
+# whole import: a read timeout on workflow 1115 of 1531 lost 13 minutes of work
+# because nothing had been committed yet.
+TIMEOUT = (10, 60)  # (connect, read); a flat 30s read was too tight
+RETRY_ATTEMPTS = 5
+RETRY_BACKOFF = 4  # seconds, doubling: 4, 8, 16, 32
+RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+MAX_RETRY_AFTER = 120  # ignore an implausibly long Retry-After
+MAX_SKIPPED_FRACTION = 0.02  # refuse to commit an import missing more than this
+
+# Reused so that ~1500 requests share one TLS connection.
+SESSION = requests.Session()
+
+
+def get_with_retries(url, description):
+    """GET a URL, retrying transient failures with exponential backoff.
+
+    Deliberately a plain loop over requests rather than an HTTPAdapter with a
+    urllib3 Retry: the failure that matters here is a read timeout, and
+    HTTPAdapter(max_retries=<int>) builds Retry(read=False), which by design
+    never retries a request whose data reached the server. Doing it here also
+    keeps the dependency surface to requests alone, and logs every attempt.
+
+    Returns the response, or None once the attempts are exhausted.
+    """
+    for attempt in range(1, RETRY_ATTEMPTS + 1):
+        delay = RETRY_BACKOFF * 2 ** (attempt - 1)
+        try:
+            response = SESSION.get(url, timeout=TIMEOUT)
+        except requests.RequestException as exc:
+            reason = str(exc) or type(exc).__name__
+        else:
+            if response.status_code not in RETRY_STATUSES:
+                return response
+            reason = f"HTTP {response.status_code}"
+            retry_after = response.headers.get("Retry-After", "")
+            if retry_after.strip().isdigit():
+                delay = min(int(retry_after), MAX_RETRY_AFTER)
+
+        if attempt == RETRY_ATTEMPTS:
+            print(f"  WARNING: {description} failed after {attempt} attempts: {reason}")
+            return None
+        print(f"  {description} failed ({reason}); retrying in {delay}s")
+        time.sleep(delay)
+
+    return None
+
 
 def clean(data_base="."):
     data_glob = os.path.join(data_base, "data/*/*.workflowhub.json")
@@ -32,7 +80,11 @@ def fetch_all_workflow_ids(max_workflows=None):
     while True:
         url = f"{WORKFLOWHUB_BASE}/workflows.json?page={page}&per_page={PER_PAGE}"
         print(f"  fetching page {page}")
-        resp = requests.get(url, timeout=30)
+        resp = get_with_retries(url, f"workflow list page {page}")
+        if resp is None:
+            # An incomplete list would silently shrink the import, so stop here
+            # rather than proceed with a truncated set of workflow IDs.
+            sys.exit(f"could not fetch workflow list page {page}")
         resp.raise_for_status()
         data = resp.json()
 
@@ -62,11 +114,17 @@ def shorten_tool_id(tool):
 def fetch_workflow_detail(workflow_id):
     """Fetch detailed workflow JSON."""
     url = f"{WORKFLOWHUB_BASE}/workflows/{workflow_id}.json"
-    resp = requests.get(url, timeout=30)
+    resp = get_with_retries(url, f"workflow {workflow_id}")
+    if resp is None:
+        return None
     if resp.status_code != 200:
         print(f"  WARNING: failed to fetch workflow {workflow_id}: {resp.status_code}")
         return None
-    return resp.json()
+    try:
+        return resp.json()
+    except ValueError as exc:
+        print(f"  WARNING: workflow {workflow_id} returned invalid JSON: {exc}")
+        return None
 
 
 def extract_tools_from_detail(attr):
@@ -222,11 +280,16 @@ def retrieve(max_workflows=None, data_base="."):
 
     # Load galaxy_codex tools for Suite ID → bio.tool ID mapping
     print("Loading galaxy_codex tools...")
-    resp = requests.get(
+    resp = get_with_retries(
         "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/tools.json",
-        timeout=30,
+        "galaxy_codex tools.json",
     )
-    galaxy_tools = json.loads(resp.text)
+    if resp is None:
+        # Without this mapping every Galaxy tool ID would go unresolved, so the
+        # import would quietly produce far fewer files than it should.
+        sys.exit("could not fetch galaxy_codex tools.json")
+    resp.raise_for_status()
+    galaxy_tools = resp.json()
 
     tool_to_biotool = {}
     for tool in galaxy_tools:
@@ -290,6 +353,25 @@ def retrieve(max_workflows=None, data_base="."):
         time.sleep(0.2)
 
     print(f"\nSaved {len(all_entries)} workflow files to imports/workflowhub/")
+
+    # clean() has already deleted the previous import, and the caller commits
+    # whatever is left in the working tree -- deletions included. So a run that
+    # quietly lost a chunk of WorkflowHub would commit the removal of those
+    # tools' files. Retrying absorbs a transient blip; a real outage has to fail
+    # loudly here instead, before anything is committed.
+    skipped = len(workflow_ids) - len(all_entries)
+    if skipped:
+        fraction = skipped / len(workflow_ids)
+        print(
+            f"WARNING: {skipped} of {len(workflow_ids)} workflows could not be "
+            f"fetched ({fraction:.1%})"
+        )
+        if fraction > MAX_SKIPPED_FRACTION:
+            sys.exit(
+                f"aborting: more than {MAX_SKIPPED_FRACTION:.0%} of workflows are "
+                "missing, so committing this import would delete data that is "
+                "still on WorkflowHub"
+            )
 
     # Write per-tool workflowhub JSONs — store only workflow IDs
     matched_count = 0
