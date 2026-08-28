@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
-
 import fnmatch
 import glob
-import os
+import http.client
 import json
-import urllib.request
+import os
 import urllib.error
+import urllib.request
 
 TOOLS_CONTENT_PATH = "data/"
 OPENEBENCH_METRICS_ENDPOINT = "https://openebench.bsc.es/monitor/metrics/"
@@ -117,8 +116,11 @@ def main():
     metrics = get_metrics()
 
     if metrics is None:
-        print("Failed to retrieve metrics, exiting")
-        return
+        raise SystemExit(
+            "failed to retrieve metrics from OpenEBench; clean() has already "
+            "removed the previous import, so exiting non-zero to keep the "
+            "caller from committing the deletion of every metrics file"
+        )
 
     # namespaces seen per tool, to tell a deleted bio.tools entry apart from a
     # package that bio.tools simply never listed
@@ -192,8 +194,8 @@ def get_metrics():
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
         return None
-    except Exception as e:
-        print(f"Unexpected error reading metrics: {e}")
+    except (OSError, http.client.HTTPException, ValueError) as e:
+        print(f"Unexpected error reading metrics: {type(e).__name__}: {e}")
         return None
 
 
