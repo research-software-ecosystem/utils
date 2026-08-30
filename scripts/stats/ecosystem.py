@@ -35,6 +35,7 @@ NATIVE_SOURCES = (
     ("BIII", ("*.neubias.raw.json", "*.biii.json")),
     ("Galaxy", ("*.galaxy.json",)),
     ("Debian Med", ("*.debian.yaml",)),
+    ("WorkflowHub", ("*.workflowhub.json",)),
 )
 
 # Representations the RSEc generates *from* the sources above. A
@@ -42,10 +43,6 @@ NATIVE_SOURCES = (
 # counting it as a source double-counts bio.tools and inflates every
 # intersection it appears in. Included only with --include-derived.
 DERIVED_SOURCES = (("Bioschemas", ("*.bioschemas.jsonld",)),)
-
-# WorkflowHub is an RSEc source, but it currently deposits nothing per tool --
-# only the bulk dumps under datasets/ -- so it has no pattern to match and is
-# deliberately absent from NATIVE_SOURCES. Add it here once per-tool records land.
 
 # Files that are not metadata records: pre-edit copies kept by the importers.
 IGNORED_SUFFIXES = (".backup",)
