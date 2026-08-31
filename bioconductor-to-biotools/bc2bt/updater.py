@@ -186,10 +186,13 @@ class Updater:
             if field in bioc_data:
                 merged_data[field] = bioc_data[field]
 
-        # Merge collectionID: ensure "BioConductor" is included
-        existing_collections = set(existing_data.get("collectionID", []))
-        existing_collections.add("BioConductor")
-        merged_data["collectionID"] = sorted(list(existing_collections))
+        # Merge collectionID: ensure "BioConductor" is included, but do not add
+        # it alongside a differently-cased spelling the entry already carries
+        # (e.g. "Bioconductor"), which would leave the tool in the collection twice.
+        existing_collections = list(existing_data.get("collectionID", []))
+        if not any(c.casefold() == "bioconductor" for c in existing_collections):
+            existing_collections.append("BioConductor")
+        merged_data["collectionID"] = sorted(set(existing_collections))
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would update: {existing_path}")
