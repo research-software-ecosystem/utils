@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 from bs4 import BeautifulSoup
 from .license_normalizer import normalize_license
+from .biotools_license import to_biotools_license
 
 # Fields to preserve when updating existing bio.tools entries
 PRESERVED_FIELDS = [
@@ -84,6 +85,74 @@ def get_biotools_id(data: dict) -> str:
     return f"bioconductor-{data['Package'].lower()}"
 
 
+# Source tarballs for the release the importer reads: bioconductor-import
+# fetches .../packages/json/<version>/bioc/packages.json, so every package that
+# reaches this converter is a software package and this one base applies.
+BIOCONDUCTOR_RELEASE_BASE = "https://bioconductor.org/packages/release/bioc/"
+
+
+def parse_description_urls(raw: str) -> list:
+    """Split a DESCRIPTION ``URL`` field into individual URLs.
+
+    R packages routinely list several, comma or whitespace separated, and the
+    field is free text, so anything that is not an http(s) URL is dropped
+    rather than guessed at. Of the 2,418 packages in Bioconductor 3.23, 1,256
+    list one URL, 156 list two or three, and 1,006 list none.
+
+    Emitting the raw field as a single ``url`` is what drew
+    ``"This is not a valid URL: https://github.com/HelBor/wpm, https://..."``
+    from the bio.tools API for 165 tools.
+
+    >>> parse_description_urls("https://github.com/HelBor/wpm, https://bioconductor.org/packages/wpm")
+    ['https://github.com/HelBor/wpm', 'https://bioconductor.org/packages/wpm']
+    >>> parse_description_urls("")
+    []
+    >>> parse_description_urls("see the vignette")
+    []
+    """
+    if not raw:
+        return []
+    urls, seen = [], set()
+    for part in re.split(r"[,\s]+", raw.strip()):
+        candidate = part.strip().rstrip(".,;")
+        if candidate.startswith(("http://", "https://")) and candidate not in seen:
+            seen.add(candidate)
+            urls.append(candidate)
+    return urls
+
+
+def build_download(bioc_data: dict) -> list:
+    """Build the ``download`` list, or an empty list if there is nothing valid.
+
+    Packages listing no URL fall back to the source tarball, whose path
+    Bioconductor already supplies in ``source.ver`` (e.g.
+    ``src/contrib/wpm_1.22.0.tar.gz``), so the version is never guessed. 34
+    packages in 3.23 carry no ``source.ver`` either; those get no download
+    entry, which leaves whatever bio.tools already holds untouched, because
+    updater.py copies a field only when it is present here.
+
+    >>> build_download({"URL": "https://github.com/HelBor/wpm"})
+    [{'type': 'Source code', 'url': 'https://github.com/HelBor/wpm'}]
+    >>> build_download({"URL": "", "source.ver": "src/contrib/a4_1.60.0.tar.gz"})[0]["url"]
+    'https://bioconductor.org/packages/release/bioc/src/contrib/a4_1.60.0.tar.gz'
+    >>> build_download({})
+    []
+    """
+    urls = parse_description_urls(bioc_data.get("URL", ""))
+    if urls:
+        return [{"type": "Source code", "url": url} for url in urls]
+
+    source_ver = (bioc_data.get("source.ver") or "").strip()
+    if source_ver:
+        return [
+            {
+                "type": "Source code",
+                "url": BIOCONDUCTOR_RELEASE_BASE + source_ver.lstrip("/"),
+            }
+        ]
+    return []
+
+
 def convert_package(
     bioc_data: dict,
     citation_html: Optional[str] = None,
@@ -114,16 +183,26 @@ def convert_package(
                 "url": f"https://bioconductor.org/packages/{package_name}",
             }
         ],
-        "download": [{"type": "Source code", "url": f"{bioc_data.get('URL', '')}"}],
         "homepage": f"https://bioconductor.org/packages/{package_name}",
         "language": ["R"],
-        "license": normalize_license(bioc_data.get("License", "")),
         "name": package_name,
         "operatingSystem": ["Linux", "Mac", "Windows"],
         "owner": "bioconductor_import",
         "toolType": ["Command-line tool", "Library"],
         "version": [bioc_data.get("Version", "")],
     }
+
+    # Both fields are omitted rather than written empty or null. updater.py
+    # copies a field only when it is present here, so omitting one keeps
+    # whatever bio.tools already holds, whereas a null licence or a blank
+    # download URL makes the API reject the entire record.
+    download = build_download(bioc_data)
+    if download:
+        result["download"] = download
+
+    license_id = to_biotools_license(normalize_license(bioc_data.get("License", "")))
+    if license_id:
+        result["license"] = license_id
 
     # Extract publications from citation HTML if provided
     if citation_html:
