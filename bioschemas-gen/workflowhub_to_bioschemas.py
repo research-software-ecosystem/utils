@@ -5,30 +5,6 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
-# def getBiotoolsId(bioconda_data) -> str:
-#     """
-#     Get the bio.tools ID from the bioconda data.
-#     """
-#     if "extra" in bioconda_data.keys():
-#         if "identifiers" in bioconda_data["extra"].keys():
-#             for id in bioconda_data["extra"]["identifiers"]:
-#                 if id.lower().startswith("biotools:"):
-#                     return id
-#     return None
-
-# def urlExists(url, timeout=5):
-#     #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-#     """Check if a URL exists """
-#     #id = biotools_id.lower().split("biotools:", 1)[-1]
-#     #print(id)
-#     #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
-#     try:
-#         r = requests.get(url, timeout=timeout)
-#         return r.status_code == 200
-#     except requests.RequestException:
-#         print(f"WARNING: URL {url} does not exist. \n") 
-#         return False
-
 def getEdamUrisFromLabels(edam_labels) -> list:
     """
     Get EDAM URIs from EDAM labels.
@@ -76,7 +52,7 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
             triples += f'{package_uri} dcterms:conformsTo "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE" .\n'
         
-        if "description" in data.keys(): ## special characters, ex. in workflow 104
+        if "description" in data.keys(): ## OJO special characters, ex. in workflow 104
                 triples += (
                     f"{package_uri} schema:description "
                     + json.dumps(data["description"])
