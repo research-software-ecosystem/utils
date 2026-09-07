@@ -93,15 +93,28 @@ def identity_biotoolsID_unprefixed(json_data: dict) -> Optional[str]:
     return None
 
 
+# Bioconductor mints a DOI per package, 10.18129/B9.bioc.<pkg>. It identifies a
+# package, not a work, and every converted record carries one, so using it as an
+# identity key would match unrelated packages to each other.
+logger = logging.getLogger(__name__)
+
+
+PLACEHOLDER_DOI = re.compile(r"^10\.18129/B9\.bioc\.", re.IGNORECASE)
+
+
 def identity_doi(json_data: dict) -> Optional[FrozenSet[str]]:
-    """Return the publication DOIs of the bio.tools tool from JSON."""
+    """Return the set of real publication DOIs, placeholders excluded."""
     dois = set()
-    publications = json_data.get("publication", [])
+    publications = json_data.get("publication") or []
     for pub in publications:
-        doi = pub.get("doi")
-        if doi:
-            dois.add(doi)
+        doi = (pub.get("doi") or "").strip()
+        if doi and not PLACEHOLDER_DOI.match(doi):
+            dois.add(doi.lower())
     return frozenset(dois) if dois else None
+
+
+def _name_key(json_data: dict) -> str:
+    return (json_data.get("name") or "").strip().lower()
 
 
 def identity_name_homepage(json_data: dict) -> Optional[Tuple]:
@@ -202,11 +215,16 @@ def build_identity_index(
     return identity_values, identity_indices
 
 
+DOI_ONLY_METHODS = {"doi"}
+
+
 def find_matches_optimized(
     identity_values1: dict,
     identity_values2: dict,
     identity_indices2: dict,
     identity_methods: List[str],
+    json_data1: dict | None = None,
+    json_data2: dict | None = None,
 ) -> tuple:
     """
     Find matches between two datasets using pre-computed indices.
@@ -218,11 +236,27 @@ def find_matches_optimized(
         identity_methods: List of identity methods to use
 
     Returns:
-        Tuple of (match_results, match_registry1, match_registry2, matched_files1, matched_files2)
+        Tuple of (match_results, match_registry1, match_registry2, matched_files1,
+        matched_files2, conflicts)
+
+    Two rules keep an ambiguous match from becoming a silent mis-merge:
+
+    * a match supported only by a shared DOI is rejected unless the two records
+      also agree on name. Sharing a reference means "cites the same paper", not
+      "is the same software" -- Bioconductor methylation packages all cite the
+      same few methods papers, and treating that as identity merged them into
+      each other;
+    * when more than one candidate verifies, nothing is matched and the clash is
+      reported. Previously the loop broke on the first candidate to verify, and
+      since candidates were held in a set of path strings the winner varied with
+      PYTHONHASHSEED from one run to the next.
     """
     match_results = defaultdict(lambda: defaultdict(set))
     matched_files1 = set()
     matched_files2 = set()
+    conflicts = []
+    json_data1 = json_data1 or {}
+    json_data2 = json_data2 or {}
 
     match_registry1 = {method: {} for method in identity_methods}
     match_registry2 = {method: {} for method in identity_methods}
@@ -272,8 +306,9 @@ def find_matches_optimized(
         if not candidates:
             continue
 
-        # Verify matches for candidates
-        for file2 in candidates:
+        # Verify every candidate, deterministically, before choosing.
+        verified = []
+        for file2 in sorted(candidates):
             if file2 not in identity_values2:
                 continue
 
@@ -295,19 +330,58 @@ def find_matches_optimized(
                 else:
                     match_found[method] = bool(id1 == id2)
 
-                if match_found[method]:
-                    match_registry1[method][file1] = True
-                    match_registry2[method][file2] = True
+            supporting = {m for m, ok in match_found.items() if ok}
+            if not supporting:
+                continue
 
-            # If any method matched, record it
-            if any(match_found.values()):
-                for method in identity_methods:
-                    if match_found[method]:
-                        match_results[method][file1].add(file2)
+            # A shared reference alone is not identity: require the names to
+            # agree as well before accepting a DOI-only match.
+            if supporting <= DOI_ONLY_METHODS:
+                name1 = _name_key(json_data1.get(file1) or {})
+                name2 = _name_key(json_data2.get(file2) or {})
+                if not name1 or not name2 or name1 != name2:
+                    conflicts.append(
+                        {
+                            "file1": file1,
+                            "file2": file2,
+                            "reason": "shared DOI only, names differ",
+                            "methods": sorted(supporting),
+                        }
+                    )
+                    continue
 
-                matched_files1.add(file1)
-                matched_files2.add(file2)
-                break  # Stop after finding first match
+            verified.append((file2, match_found, sorted(supporting)))
+
+        if not verified:
+            continue
+
+        if len(verified) > 1:
+            # Ambiguous. Report it rather than letting iteration order decide.
+            conflicts.append(
+                {
+                    "file1": file1,
+                    "candidates": [v[0] for v in verified],
+                    "reason": "multiple candidates verified",
+                    "methods": sorted({m for v in verified for m in v[2]}),
+                }
+            )
+            continue
+
+        file2, match_found, _ = verified[0]
+        for method in identity_methods:
+            if match_found[method]:
+                match_results[method][file1].add(file2)
+                match_registry1[method][file1] = True
+                match_registry2[method][file2] = True
+
+        matched_files1.add(file1)
+        matched_files2.add(file2)
+
+    if conflicts:
+        logger.info(
+            f"{len(conflicts)} ambiguous pairings were left unmatched; "
+            "see the conflicts entry in the match results"
+        )
 
     return (
         match_results,
@@ -315,6 +389,7 @@ def find_matches_optimized(
         match_registry2,
         matched_files1,
         matched_files2,
+        conflicts,
     )
 
 
@@ -418,10 +493,20 @@ def compare_files(
 
     # Find matches using optimized algorithm
     logging.info("Finding matches...")
-    match_results, match_registry1, match_registry2, matched_files1, matched_files2 = (
-        find_matches_optimized(
-            identity_values1, identity_values2, identity_indices2, identity_methods
-        )
+    (
+        match_results,
+        match_registry1,
+        match_registry2,
+        matched_files1,
+        matched_files2,
+        conflicts,
+    ) = find_matches_optimized(
+        identity_values1,
+        identity_values2,
+        identity_indices2,
+        identity_methods,
+        json_data1,
+        json_data2,
     )
 
     # Calculate unmatched files
@@ -432,8 +517,9 @@ def compare_files(
         "match_results": {
             k: {f: list(v) for f, v in v.items()} for k, v in match_results.items()
         },
-        "only_in_files1": list(only_in_files1),
-        "only_in_files2": list(only_in_files2),
+        "only_in_files1": sorted(only_in_files1),
+        "only_in_files2": sorted(only_in_files2),
+        "conflicts": conflicts,
     }
 
     # Print summary

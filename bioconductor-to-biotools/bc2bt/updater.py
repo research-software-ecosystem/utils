@@ -4,6 +4,7 @@ Updater module for creating and updating bio.tools entries based on match result
 
 import json
 import shutil
+from collections import defaultdict
 import logging
 from pathlib import Path
 
@@ -245,7 +246,10 @@ class Updater:
             "updated": [],
             "skipped": [],
             "errors": [],
+            "conflicts": [],
         }
+
+        summary["conflicts"].extend(match_results.get("conflicts", []))
 
         # Files that exist only in dataset 2 (converted files) need to be created
         for new_file_path in match_results.get("only_in_files2", []):
@@ -262,15 +266,49 @@ class Updater:
         for method_results in match_results.get("match_results", {}).values():
             matched_files1.update(method_results.keys())
 
-        # Build mapping from converted files to existing files
-        conversion_to_existing = {}
-        for method, method_results in match_results.get("match_results", {}).items():
+        # Build the pairing both ways round. The previous version kept a single
+        # converted -> existing dict and let a later write replace an earlier
+        # one, so when several converted packages pointed at the same entry the
+        # last one applied decided its contents -- and dict order came from a
+        # set of path strings, i.e. from PYTHONHASHSEED. That is how
+        # ARRmNormalization came to hold minfi's, then derfinder's, then
+        # sesame's metadata on successive runs. Ambiguity is now refused and
+        # reported instead of resolved arbitrarily.
+        converted_to_existing = defaultdict(set)
+        existing_to_converted = defaultdict(set)
+        for method_results in match_results.get("match_results", {}).values():
             for existing_file, converted_files in method_results.items():
                 for converted_file in converted_files:
-                    conversion_to_existing[converted_file] = existing_file
+                    converted_to_existing[converted_file].add(existing_file)
+                    existing_to_converted[existing_file].add(converted_file)
+
+        pairs = []
+        for converted_file in sorted(converted_to_existing):
+            targets = converted_to_existing[converted_file]
+            if len(targets) > 1:
+                summary["conflicts"].append(
+                    {
+                        "converted": converted_file,
+                        "existing": sorted(targets),
+                        "reason": "one converted package matched several entries",
+                    }
+                )
+                continue
+            existing_file = next(iter(targets))
+            sources = existing_to_converted[existing_file]
+            if len(sources) > 1:
+                summary["conflicts"].append(
+                    {
+                        "existing": existing_file,
+                        "converted": sorted(sources),
+                        "reason": "several converted packages matched one entry",
+                    }
+                )
+                continue
+            pairs.append((converted_file, existing_file))
 
         # Update matched entries
-        for converted_file, existing_file in conversion_to_existing.items():
+        for converted_file, existing_file in pairs:
             try:
                 updated_path = self.update_entry(existing_file, converted_file)
                 summary["updated"].append(
