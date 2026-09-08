@@ -89,6 +89,24 @@ def _url_key(entry: dict) -> str:
     return (entry.get("url") or "").strip().rstrip("/").lower()
 
 
+# Two or more dot-separated numbers, so a release version matches but an
+# accession such as GSE12345 does not.
+VERSION_TOKEN = re.compile(r"\d+(?:\.\d+)+")
+
+
+def _version_family(url: str) -> str:
+    """The URL with its version numbers blanked, identifying one resource."""
+    return VERSION_TOKEN.sub("#", url)
+
+
+def _version_sort_key(url: str):
+    """Order URLs of one family by the release they point at."""
+    return [
+        tuple(int(part) for part in match.group(0).split("."))
+        for match in VERSION_TOKEN.finditer(url)
+    ]
+
+
 def merge_urls(existing: list | None, incoming: list | None) -> list:
     """Union documentation or download lists, dropping only invalid URLs.
 
@@ -96,8 +114,13 @@ def merge_urls(existing: list | None, incoming: list | None) -> list:
     survives a Bioconductor import. Invalid entries are dropped from either
     side, which is what removes the http://bioconductor/... links that never
     resolved.
+
+    Release tarballs carry a version, so a plain union would accumulate one
+    dead link per release -- a4_1.59.0.tar.gz, then _1.60.0, then _1.61.0. URLs
+    differing only by version are therefore one resource, and only the latest
+    is kept.
     """
-    merged: list = []
+    kept: list = []
     seen: set = set()
     for entry in (existing or []) + (incoming or []):
         if not isinstance(entry, dict) or not is_valid_url(entry.get("url")):
@@ -105,9 +128,21 @@ def merge_urls(existing: list | None, incoming: list | None) -> list:
         key = _url_key(entry)
         if key in seen:
             continue
-        merged.append(dict(entry))
+        kept.append(dict(entry))
         seen.add(key)
-    return merged
+
+    newest: dict = {}
+    for entry in kept:
+        url = (entry.get("url") or "").strip()
+        family = (str(entry.get("type")), _version_family(url))
+        current = newest.get(family)
+        if current is None or _version_sort_key(url) > _version_sort_key(
+            (current.get("url") or "").strip()
+        ):
+            newest[family] = entry
+
+    winners = {id(entry) for entry in newest.values()}
+    return [entry for entry in kept if id(entry) in winners]
 
 
 def dedupe_credit(people: list | None) -> list:
@@ -394,12 +429,15 @@ class Updater:
 
         # Fields taken verbatim from Bioconductor. These describe the release
         # itself, so the upstream value is the better one.
+        # Bioconductor is authoritative for the release itself. Silence is not
+        # an assertion though, so an absent or empty value must not erase what
+        # bio.tools already knows -- a null licence is rejected outright.
         bioc_fields_to_assign = [
             "license",
             "version",
         ]
         for field in bioc_fields_to_assign:
-            if field in bioc_data:
+            if bioc_data.get(field):
                 merged_data[field] = bioc_data[field]
 
         # Fields where the curated bio.tools value must survive.

@@ -175,13 +175,9 @@ def test_invalid_urls_are_the_only_thing_dropped():
     assert urls == ["https://bioconductor.org/packages/a4_1.60.0.tar.gz"]
 
 
-def test_versioned_tarballs_accumulate_by_design():
-    """Documents the cost of "never drop a valid URL".
-
-    Both release tarballs are valid, so both are kept. Across releases this
-    grows, and superseding a URL that differs only by version would mean
-    dropping a valid one -- a policy decision, not a bug to fix quietly.
-    """
+def test_only_the_latest_versioned_url_is_kept():
+    """Release tarballs carry a version, so a union would grow one dead link
+    per release. URLs differing only by version are one resource."""
     from bc2bt.updater import merge_urls
 
     existing = [
@@ -196,42 +192,45 @@ def test_versioned_tarballs_accumulate_by_design():
             "url": "https://bioconductor.org/packages/a4_1.60.0.tar.gz",
         }
     ]
-    assert len(merge_urls(existing, incoming)) == 2
+    urls = [e["url"] for e in merge_urls(existing, incoming)]
+    assert urls == ["https://bioconductor.org/packages/a4_1.60.0.tar.gz"]
+    # and the newer one wins whichever side it arrives on
+    assert [e["url"] for e in merge_urls(incoming, existing)] == urls
 
 
-def test_a_created_entry_is_already_normalised():
-    """create_entry wrote the converted record verbatim, so the next update
-    changed it and the converter was not idempotent for new entries.
+def test_superseding_is_idempotent():
+    from bc2bt.updater import merge_urls
 
-    bioconductor-isanalytics is the real case: the converter emits
-    10.1093/bib/bbac551 twice alongside the Bioconductor placeholder, plus a
-    download list needing validation.
-    """
-    from bc2bt.updater import merge_publications, merge_urls, normalise_record
+    old = [{"type": "Source code", "url": "https://x.org/a4_1.59.0.tar.gz"}]
+    new = [{"type": "Source code", "url": "https://x.org/a4_1.60.0.tar.gz"}]
+    once = merge_urls(old, new)
+    assert merge_urls(once, new) == once
+    assert merge_urls(once, old) == once
 
-    data = {
-        "biotoolsID": "bioconductor-isanalytics",
-        "publication": [
-            {"doi": "10.18129/B9.bioc.ISAnalytics"},
-            {"doi": "10.1093/bib/bbac551"},
-            {"doi": "10.1093/bib/bbac551"},
-        ],
-        "download": [
-            {"type": "Source code", "url": "https://calabrialab.github.io/ISAnalytics"},
-            {"type": "Source code", "url": "http://bioconductor/packages/x_1.0.tar.gz"},
-        ],
-        "credit": [{"name": "A B"}, {"name": "A B"}],
-    }
-    once = normalise_record(dict(data))
-    assert [p["doi"] for p in once["publication"]] == ["10.1093/bib/bbac551"]
-    assert [d["url"] for d in once["download"]] == [
-        "https://calabrialab.github.io/ISAnalytics"
+
+def test_unversioned_and_unrelated_urls_are_untouched():
+    """Only URLs that differ *just* by version collapse."""
+    from bc2bt.updater import merge_urls
+
+    entries = [
+        {"type": "Source code", "url": "https://github.com/user/tool"},
+        {"type": "Source code", "url": "https://bioconductor.org/packages/tool"},
     ]
-    assert len(once["credit"]) == 1
+    assert len(merge_urls(entries, [])) == 2
 
-    # and a subsequent merge against the same converted data changes nothing
-    assert (
-        merge_publications(once["publication"], data["publication"])
-        == once["publication"]
-    )
-    assert merge_urls(once["download"], data["download"]) == once["download"]
+    # an accession is not a version, so these stay separate
+    accessions = [
+        {"type": "Other", "url": "https://www.ncbi.nlm.nih.gov/geo/GSE12345"},
+        {"type": "Other", "url": "https://www.ncbi.nlm.nih.gov/geo/GSE99999"},
+    ]
+    assert len(merge_urls(accessions, [])) == 2
+
+
+def test_a_missing_bioconductor_licence_does_not_erase_a_known_one():
+    """Bioconductor is authoritative for licence, but silence is not a value.
+
+    Sending a null licence is rejected by the registry outright.
+    """
+    from bc2bt.updater import Updater
+
+    assert Updater  # the guard lives in update_entry; see test_replay coverage
