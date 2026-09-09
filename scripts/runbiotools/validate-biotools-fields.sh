@@ -38,12 +38,29 @@ for file in "$@"; do
     cat "$file" > new.json
     
     for field in "${PROTECTED_FIELDS[@]}"; do
-      old_val=$(jq -r ".$field // empty" old.json 2>/dev/null)
-      new_val=$(jq -r ".$field // empty" new.json 2>/dev/null)
-      if [ "$old_val" != "$new_val" ]; then
-        echo "::error file=$file::Protected field '$field' was modified (old: '$old_val', new: '$new_val')"
-        failed=true
+      # Wrapping the value in an array keeps "absent" distinguishable from
+      # "present but null" -- `.field // empty` renders both as the empty
+      # string, so a field being added or removed would go unnoticed.
+      old_val=$(jq -c --arg f "$field" 'if has($f) then [.[$f]] else "absent" end' old.json)
+      new_val=$(jq -c --arg f "$field" 'if has($f) then [.[$f]] else "absent" end' new.json)
+      [ "$old_val" = "$new_val" ] && continue
+
+      # collectionID is append-only rather than frozen: an importer may add its
+      # own collection -- bc2bt adds "BioConductor" by design, which is a real
+      # change on 212 of the entries it updates -- but nothing may drop a
+      # collection an entry already carries.
+      if [ "$field" = "collectionID" ]; then
+        removed=$(jq -rn --slurpfile a old.json --slurpfile b new.json \
+          '(($a[0].collectionID // []) - ($b[0].collectionID // [])) | join(", ")')
+        if [ -n "$removed" ]; then
+          echo "::error file=$file::collectionID entries removed: $removed"
+          failed=true
+        fi
+        continue
       fi
+
+      echo "::error file=$file::Protected field '$field' was modified (old: $old_val, new: $new_val)"
+      failed=true
     done
     
     rm -f old.json new.json
