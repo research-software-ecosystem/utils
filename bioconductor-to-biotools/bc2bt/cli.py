@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .converter import batch_convert
-from .mapper import compare_files, IdentityRegistry
+from .mapper import compare_files, IdentityRegistry, write_conflicts_csv
 from .updater import update_entries
 
 
@@ -282,6 +282,7 @@ def sync_command(args=None):
     work_dir = Path(args.work_dir)
     converted_dir = work_dir / "converted"
     results_file = work_dir / "matches.json"
+    conflicts_file = work_dir / "conflicts.csv"
 
     try:
         # Step 1: Convert
@@ -321,6 +322,12 @@ def sync_command(args=None):
         # Save results
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)
+        written = write_conflicts_csv(results.get("conflicts", []), str(conflicts_file))
+        if written:
+            print(
+                f"{written} refused pairings written to: {conflicts_file}\n"
+                "  sorted with the likeliest genuine matches first"
+            )
         print(f"\nResults saved to: {results_file}")
 
         # Print comparison summary

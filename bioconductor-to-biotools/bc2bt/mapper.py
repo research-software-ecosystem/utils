@@ -4,6 +4,7 @@ Mapper module for matching bio.tools entries using configurable identity functio
 
 import os
 import re
+from pathlib import Path
 import json
 import glob
 import logging
@@ -176,6 +177,56 @@ class IdentityRegistry:
         return [m for m in methods if m not in self.functions]
 
 
+def _host(url: str) -> str:
+    if "://" not in (url or ""):
+        return ""
+    return url.split("://", 1)[1].split("/", 1)[0].lower()
+
+
+def _conflict_record(reason, methods, file1, data1, candidates, data2_map):
+    """Describe a refused pairing well enough to review it without opening files.
+
+    A shared citation is not evidence of shared identity, so the useful
+    discriminators are what kind of artefact each record describes and where it
+    lives. MUSCLE is the case in point: bio.tools "MUSCLE (EBI)" is a Web
+    service at ebi.ac.uk and Bioconductor's "muscle" is an R Library, both
+    citing Edgar's 2004 paper. Disjoint toolType and different hosts say
+    "different software" where the names alone suggest the opposite.
+    """
+    record = {
+        "reason": reason,
+        "methods": sorted(methods),
+        "file1": file1,
+        "name1": (data1 or {}).get("name"),
+        "tool_type1": sorted((data1 or {}).get("toolType") or []),
+        "homepage1": (data1 or {}).get("homepage"),
+        "candidates": [],
+    }
+    for file2 in candidates:
+        data2 = data2_map.get(file2) or {}
+        dois1 = identity_doi(data1 or {}) or frozenset()
+        dois2 = identity_doi(data2) or frozenset()
+        types1 = set(record["tool_type1"])
+        types2 = set(data2.get("toolType") or [])
+        record["candidates"].append(
+            {
+                "file2": file2,
+                "name2": data2.get("name"),
+                "tool_type2": sorted(types2),
+                "tool_type_overlap": sorted(types1 & types2),
+                "tool_type_agrees": bool(types1 and types2 and types1 & types2),
+                "homepage2": data2.get("homepage"),
+                "same_homepage_host": bool(
+                    _host(record["homepage1"] or "")
+                    and _host(record["homepage1"] or "")
+                    == _host(data2.get("homepage") or "")
+                ),
+                "shared_dois": sorted(dois1 & dois2),
+            }
+        )
+    return record
+
+
 def build_identity_index(
     json_data_dict: Dict[str, dict], identity_methods: List[str]
 ) -> tuple:
@@ -341,12 +392,14 @@ def find_matches_optimized(
                 name2 = _name_key(json_data2.get(file2) or {})
                 if not name1 or not name2 or name1 != name2:
                     conflicts.append(
-                        {
-                            "file1": file1,
-                            "file2": file2,
-                            "reason": "shared DOI only, names differ",
-                            "methods": sorted(supporting),
-                        }
+                        _conflict_record(
+                            "shared DOI only, names differ",
+                            supporting,
+                            file1,
+                            json_data1.get(file1),
+                            [file2],
+                            json_data2,
+                        )
                     )
                     continue
 
@@ -358,12 +411,14 @@ def find_matches_optimized(
         if len(verified) > 1:
             # Ambiguous. Report it rather than letting iteration order decide.
             conflicts.append(
-                {
-                    "file1": file1,
-                    "candidates": [v[0] for v in verified],
-                    "reason": "multiple candidates verified",
-                    "methods": sorted({m for v in verified for m in v[2]}),
-                }
+                _conflict_record(
+                    "multiple candidates verified",
+                    {m for v in verified for m in v[2]},
+                    file1,
+                    json_data1.get(file1),
+                    [v[0] for v in verified],
+                    json_data2,
+                )
             )
             continue
 
@@ -541,3 +596,103 @@ def compare_files(
             )
 
     return result
+
+
+def _id_stem_matches(existing_id: str, converted_id: str) -> bool:
+    """True when the bio.tools id is the Bioconductor package name.
+
+    The converted id is always bioconductor-<package>, so comparing the stem
+    against the existing id asks "is this entry already this package?" --
+    which is what separates a decorated name from a sibling package.
+    derfinderHelper and derfinder share a citation and every other attribute,
+    but their ids differ, so they stay apart.
+    """
+    stem = converted_id
+    if stem.startswith("bioconductor-"):
+        stem = stem[len("bioconductor-") :]
+    return bool(stem) and stem.lower() == (existing_id or "").lower()
+
+
+def write_conflicts_csv(conflicts: list, path: str) -> int:
+    """Flatten the refused pairings into one row per candidate, for review.
+
+    Sorted by the one signal that discriminates: whether the bio.tools id
+    equals the package name. Where it does, the two records are almost
+    certainly the same software given a decorated bio.tools name --
+    "SynergyFinder Plus (SynergyFinder+)" for synergyfinder, "PAA - Protein
+    Array Analyzer" for PAA -- and those are the rows worth a curator's time.
+
+    toolType and homepage are recorded but deliberately not sorted on. They
+    are strong *negative* evidence: bio.tools "MUSCLE (EBI)" is a Web service
+    at ebi.ac.uk while Bioconductor's "muscle" is an R Library, and that
+    disagreement settles it. They are near-useless as positive evidence,
+    because every pair of Bioconductor R packages agrees on both -- sorting on
+    them puts derfinderHelper vs derfinder at the top and synergyfinder at the
+    bottom, which is precisely backwards.
+    """
+    import csv
+
+    rows = []
+    for conflict in conflicts:
+        for candidate in conflict.get("candidates", []):
+            rows.append(
+                {
+                    "reason": conflict.get("reason"),
+                    "matched_on": ",".join(conflict.get("methods") or []),
+                    "id_stem_matches": _id_stem_matches(
+                        Path(conflict.get("file1", "")).parent.name,
+                        Path(candidate.get("file2", "")).name.replace(
+                            ".biotools.json", ""
+                        ),
+                    ),
+                    "existing_id": Path(conflict.get("file1", "")).parent.name,
+                    "existing_name": conflict.get("name1"),
+                    "existing_tool_type": ",".join(conflict.get("tool_type1") or []),
+                    "existing_homepage": conflict.get("homepage1"),
+                    "converted_id": Path(candidate.get("file2", "")).name.replace(
+                        ".biotools.json", ""
+                    ),
+                    "converted_name": candidate.get("name2"),
+                    "converted_tool_type": ",".join(candidate.get("tool_type2") or []),
+                    "converted_homepage": candidate.get("homepage2"),
+                    "tool_type_agrees": candidate.get("tool_type_agrees"),
+                    "tool_type_overlap": ",".join(
+                        candidate.get("tool_type_overlap") or []
+                    ),
+                    "same_homepage_host": candidate.get("same_homepage_host"),
+                    "shared_dois": ";".join(candidate.get("shared_dois") or []),
+                }
+            )
+    rows.sort(
+        key=lambda r: (
+            not r["id_stem_matches"],
+            not r["tool_type_agrees"],
+            not r["same_homepage_host"],
+            r["existing_id"],
+        )
+    )
+    fieldnames = (
+        list(rows[0])
+        if rows
+        else [
+            "reason",
+            "matched_on",
+            "existing_id",
+            "existing_name",
+            "existing_tool_type",
+            "existing_homepage",
+            "converted_id",
+            "converted_name",
+            "converted_tool_type",
+            "converted_homepage",
+            "tool_type_agrees",
+            "tool_type_overlap",
+            "same_homepage_host",
+            "shared_dois",
+        ]
+    )
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer_ = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer_.writeheader()
+        writer_.writerows(rows)
+    return len(rows)
