@@ -117,6 +117,15 @@ class Updater:
         biotools_id = data["biotoolsID"]
         target_path = Path(target_dir) / biotools_id / f"{biotools_id}.biotools.json"
 
+        # The matcher only pairs converted files against entries it matched,
+        # so an entry registered by another flow (e.g. gh2biotools) can still
+        # reach this branch as "new". Overwriting it would clobber protected
+        # registration fields (owner, additionDate, lastUpdate,
+        # editPermission) — merge into the existing entry instead.
+        if target_path.exists():
+            logger.info(f"Entry already exists, updating instead: {target_path}")
+            return self.update_entry(str(target_path), str(source_path))
+
         if self.dry_run:
             logger.info(f"[DRY RUN] Would create: {target_path}")
             # Also log source copy in dry run mode
