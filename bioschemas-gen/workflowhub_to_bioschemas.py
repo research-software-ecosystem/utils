@@ -51,55 +51,89 @@ def rdfize(data) -> Graph:
             package_uri = f'<{workflow_id}>'
             triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
             triples += f'{package_uri} dcterms:conformsTo "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE" .\n'
+
+        ## Minimum
         
-        if "description" in data.keys(): ## OJO special characters, ex. in workflow 104
-                triples += (
-                    f"{package_uri} schema:description "
-                    + json.dumps(data["description"])
-                    + " .\n"
-                )
+        if "creators" in data.keys():
+            for author in data["creators"]:
+                triples += f'{package_uri} schema:creator "{author}" .\n'
+
+        if "create_time" in data.keys():
+            triples += f'{package_uri} schema:dateCreated "{data["create_time"]}" .\n'
+
+        if "license" in data.keys():
+            triples += f'{package_uri} schema:license "{data["license"]}" .\n'
             
         if "name" in data.keys():
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
+
+        # programmingLanguage 
+
+        # sdPublisher: "source" or "workflow_class"? eg WorkflowHub or Galaxy
+    
         if "link" in data.keys():
             triples += f'{package_uri} schema:url <{data["link"]}> .\n'
 
-        ## Recommended
-        if "creators" in data.keys():
-            for author in data["creators"]:
-                triples += f'{package_uri} schema:author "{author}" .\n'
-        if "doi" in data.keys():
-            triples += f'{package_uri} schema:publication "{data["doi"]}" .\n'
-        if "license" in data.keys():
-            triples += f'{package_uri} schema:license "{data["license"]}" .\n'
         if "latest_version" in data.keys():
-            triples += f'{package_uri} schema:softwareVersion "{data["latest_version"]}" .\n'
-        if "edam_operation" in data.keys():
-            operations = getEdamUrisFromLabels(data["edam_operation"])
-            for operation in operations:
-                triples += f'{package_uri} schema:featureList edam:{operation} .\n'
+            triples += f'{package_uri} schema:version "{data["latest_version"]}" .\n'
+
+        ## Recommended
+
         if "edam_topic" in data.keys():
             topics = getEdamUrisFromLabels(data["edam_topic"])
             for topic in topics:
                 triples += f'{package_uri} schema:applicationSubCategory edam:{topic} .\n'
 
-        ## Optional
-        if "create_time" in data.keys():
-            triples += f'{package_uri} schema:dateCreated "{data["create_time"]}" .\n'
+        if "doi" in data.keys():
+            triples += f'{package_uri} schema:citation "{data["doi"]}" .\n'
 
-        if "update_time" in data.keys():
-            triples += f'{package_uri} schema:dateModified "{data["update_time"]}" .\n'
+        # contributor: a secondary contributor to the CreativeWork or Event
 
-        if "id" in data.keys():
-            triples += f'{package_uri} schema:identifier "{data["id"]}" .\n'
+        # creativeWorkStatus: "active" or "inactive" or "deprecated" or "retired" or "archived"
+
+        if "description" in data.keys(): ## OJO special characters, ex. in workflow 104
+                triples += (
+                    f"{package_uri} schema:description "
+                    + json.dumps(data["description"])
+                    + " .\n"
+                )        
+
+        # documentation: A link to the documentation of the workflow, eg. a GitHub repository or a Zenodo DOI
+
+        if "edam_operation" in data.keys():
+            operations = getEdamUrisFromLabels(data["edam_operation"])
+            for operation in operations:
+                triples += f'{package_uri} schema:featureList edam:{operation} .\n'
+
+        # funding
+
+        if "mapped_tools" in data.keys():
+            for tool in data["mapped_tools"]:
+                triples += f'{package_uri} schema:hasPart "{tool}" .\n'
+
+        # input
+        # isBasedOn
 
         if "tags" in data.keys():
             for tag in data["tags"]:
                 triples += f'{package_uri} schema:keywords "{tag}" .\n'
 
-        if "mapped_tools" in data.keys():
-            for tool in data["mapped_tools"]:
-                triples += f'{package_uri} schema:hasPart "{tool}" .\n'
+        # maintainer
+        # output
+        # producer
+        # publisher
+        # runtimePlatform
+        # sameAs
+        # softwareRequirements
+        # targetProduct
+
+        ## Optional
+ 
+        if "update_time" in data.keys():
+            triples += f'{package_uri} schema:dateModified "{data["update_time"]}" .\n'
+
+        if "id" in data.keys():
+            triples += f'{package_uri} schema:identifier "{data["id"]}" .\n'
 
 
         g = Graph()
@@ -177,7 +211,6 @@ def process_workflows():
         path = Path(workflow_file)
         workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-        #print(workflow_file)
         workflow_id = None
         if "id" in workflow.keys():
             workflow_id = workflow["id"]
@@ -204,7 +237,7 @@ def process_workflows():
                 format="turtle",
                 destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
             )
-            print(temp_graph.serialize(format="turtle"))
+            # print(temp_graph.serialize(format="turtle"))
 
 
 if __name__ == "__main__":
@@ -215,4 +248,4 @@ if __name__ == "__main__":
     edam_kg.parse(edam_version, format="xml")
 
     process_workflows()
-    #process_workflows_by_id("2174")
+    #process_workflows_by_id("1472")
