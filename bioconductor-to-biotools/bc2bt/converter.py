@@ -2,6 +2,7 @@
 Converter module for transforming Bioconductor metadata to bio.tools format.
 """
 
+import logging
 import re
 import json
 from pathlib import Path
@@ -9,6 +10,8 @@ from typing import Optional
 from bs4 import BeautifulSoup
 from .license_normalizer import normalize_license
 from .biotools_license import to_biotools_license
+
+logger = logging.getLogger(__name__)
 
 # Fields to preserve when updating existing bio.tools entries
 PRESERVED_FIELDS = [
@@ -19,6 +22,23 @@ PRESERVED_FIELDS = [
     "editPermission",
     "function",
 ]
+
+
+# biotoolsSchema caps a credit name at 100 characters, and a longer one makes
+# the registry reject the whole record rather than just the field.
+MAX_CREDIT_NAME = 100
+
+# A prose-style Author field often ends with the group's affiliation, appended
+# after the last person and separated by a full stop:
+#   "Sara Aibar, Stein Aerts. Laboratory of Computational Biology. VIB-KU ..."
+# Two word characters are required before the stop so that an initial --
+# "Benjamin R. Holmes" -- is not read as the end of the author list.
+AFFILIATION_TAIL = re.compile(r"(?<=\w\w)\.\s")
+
+# People are separated by commas, or written out with "and" in prose-style
+# fields such as "Celia Fontanillo and Javier De Las Rivas". The lookahead
+# keeps a comma inside a role bracket, "[aut, cre]", from splitting the entry.
+AUTHOR_SEPARATOR = re.compile(r"(?:,|\s+and\s+)(?![^\[]*\])")
 
 
 def process_authors(author_str: str) -> list:
@@ -32,7 +52,15 @@ def process_authors(author_str: str) -> list:
         List of author dictionaries with name, typeEntity, typeRole, and optional orcid
     """
     authors = []
-    author_entries = re.split(r",(?![^\[]*\])", author_str)
+    # Drop a trailing affiliation before splitting: it follows the last person,
+    # so cutting per-entry would leave fragments of it looking like people.
+    # Only for fields with no role brackets. A bracketed field is structured,
+    # and there a full stop is far more likely to be part of a name -- cutting
+    # "Aaron Lun [aut, cre], Genentech, Inc. [cph]" at "Inc. " would discard a
+    # contributor rather than an address.
+    if "[" not in author_str:
+        author_str = AFFILIATION_TAIL.split(author_str, 1)[0]
+    author_entries = AUTHOR_SEPARATOR.split(author_str)
 
     for entry in author_entries:
         entry = entry.strip()
@@ -47,8 +75,24 @@ def process_authors(author_str: str) -> list:
 
         name_match = re.match(r"^[^\[\(<]+", entry)
         if name_match:
+            name = re.sub(r"\s+", " ", name_match.group(0)).strip(" ,;&")
+            if not name:
+                continue
+            if len(name) > MAX_CREDIT_NAME:
+                # An author field with no separators at all, e.g. CRISPRseek's
+                # "Lihua Julie Zhu Paul Scemama Benjamin R. Holmes ...", cannot
+                # be split into people without guessing where each name ends.
+                # Emitting nothing leaves whatever bio.tools already holds in
+                # place; emitting the run would have the registry refuse it.
+                logger.warning(
+                    "Skipping unparseable author name of %d characters: %.60s...",
+                    len(name),
+                    name,
+                )
+                continue
+
             type_role = []
-            author_entry = {"name": name_match.group(0).strip()}
+            author_entry = {"name": name}
 
             if "aut" in roles or "cre" in roles or "ctb" in roles:
                 author_entry["typeEntity"] = "Person"
