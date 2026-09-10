@@ -1,97 +1,84 @@
-from rdflib import ConjunctiveGraph
-import xml.etree.ElementTree as ET
-import requests
+import os
+import glob
+from rdflib import Graph
 
-# from tqdm.notebook import tqdm
+try:
+    from tabulate import tabulate
+except ImportError:
 
-# Get all workflow URLs from the sitemap https://workflowhub.eu/sitemaps/workflows.xml
-# fetch the sitemap and parse it to extract workflow URLs
-response = requests.get("https://workflowhub.eu/sitemaps/workflows.xml")
-sitemap_data = response.text
-# write file on disk
-with open("workflows_sitemap.xml", "w") as f:
-    f.write(sitemap_data)
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
 
-def parse_sitemap(xml_path):
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-
-    # Detect namespace if present
-    ns_uri = root.tag.split("}")[0].strip("{") if "}" in root.tag else ""
-    ns = {"sm": ns_uri} if ns_uri else {}
-
-    urls = []
-
-    # Case 1: regular sitemap (<urlset>)
-    if root.tag.endswith("urlset"):
-        for u in root.findall("sm:url" if ns else "url", ns):
-            loc = u.find("sm:loc" if ns else "loc", ns)
-            lastmod = u.find("sm:lastmod" if ns else "lastmod", ns)
-            urls.append(
-                {
-                    "loc": loc.text.strip() if loc is not None and loc.text else None,
-                    "lastmod": (
-                        lastmod.text.strip()
-                        if lastmod is not None and lastmod.text
-                        else None
-                    ),
-                }
-            )
-
-    # Case 2: sitemap index (<sitemapindex>)
-    elif root.tag.endswith("sitemapindex"):
-        for s in root.findall("sm:sitemap" if ns else "sitemap", ns):
-            loc = s.find("sm:loc" if ns else "loc", ns)
-            lastmod = s.find("sm:lastmod" if ns else "lastmod", ns)
-            urls.append(
-                {
-                    "sitemap": (
-                        loc.text.strip() if loc is not None and loc.text else None
-                    ),
-                    "lastmod": (
-                        lastmod.text.strip()
-                        if lastmod is not None and lastmod.text
-                        else None
-                    ),
-                }
-            )
-
-    return urls
+def get_workflowhub_files_in_repo():
+    workflows = []
+    for data_file in glob.glob(r"../../content/imports/workflowhub/*.workflowhub.jsonld"):
+        filename_ext = os.path.basename(data_file).split(".")
+        if len(filename_ext) == 3 and filename_ext[2] == "jsonld":
+            workflows.append(data_file)
+    print(f"found {len(workflows)} workflowhub descriptors")
+    with open(
+        "../../content/datasets/workflowhub_bioschemas_files_list.txt",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        for workflow in workflows:
+            f.write(f"{workflow}\n")
+    return workflows
 
 
-def retrieve_rdf(url):
-    FC_get_md = (
-        "https://fair-checker.france-bioinformatique.fr/api/inspect/get_rdf_metadata"
+def process_workflows():
+    """
+    Go through all workflowhub entries in bioschemas JSON-LD and produce an single RDF file.
+    """
+    workflow_files = get_workflowhub_files_in_repo()
+    rdf_graph = Graph()
+
+    for workflow_file in workflow_files:
+        rdf_graph.parse(workflow_file, format="json-ld")
+
+    rdf_graph.serialize(
+        format="turtle",
+        destination="../../content/datasets/workflowhub-dump.ttl",
     )
-    kg = ConjunctiveGraph()
-    res = requests.get(url=FC_get_md, params={"url": url})
-    try:
-        kg.parse(data=res.text, format="json-ld")
-    except Exception as e:
-        print(e)
-    print(f"Loaded {len(kg)} RDF triples from {url}")
-    return kg
+ 
+
+    show_stats(rdf_graph)
+
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    } 
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    } 
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
 
 
 if __name__ == "__main__":
-    data = parse_sitemap("workflows_sitemap.xml")
-    print("entries:", len(data))
-    # print(data[:3])
-
-    merged_kg = ConjunctiveGraph()
-    counter = 0
-    #for url in data[1000:1100]:
-    for url in data:
-        # print(url)
-        kg = retrieve_rdf(url["loc"])
-        # print(f"KG has {len(kg)} triples")
-        merged_kg += kg
-        counter += 1
-        print(counter)
-
-    print(f"Final merged KG has {len(merged_kg)} triples")
-
-    merged_kg.serialize(
-        destination="../../content/datasets/workflowhub-dump.ttl", format="turtle"
-    ) 
+    process_workflows()
