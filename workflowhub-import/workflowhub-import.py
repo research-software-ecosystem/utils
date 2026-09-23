@@ -233,10 +233,10 @@ def build_workflow_entry(wf_id, attr):
         creators.append(other)
 
     edam_operations = [
-        op["label"] for op in attr.get("operation_annotations", []) if op.get("label")
+        op["identifier"] for op in attr.get("operation_annotations", []) if op.get("identifier")
     ]
     edam_topics = [
-        t["label"] for t in attr.get("topic_annotations", []) if t.get("label")
+        t["identifier"] for t in attr.get("topic_annotations", []) if t.get("identifier")
     ]
     tags = [w.lower() for w in attr.get("tags", [])]
 
