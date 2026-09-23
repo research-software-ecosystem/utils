@@ -5,30 +5,6 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
-def getEdamUrisFromLabels(edam_labels) -> list:
-    """
-    Get EDAM URIs from EDAM labels.
-    """
-    res = []
-
-    for lab in edam_labels:
-        query = """
-    PREFIX edam: <http://edamontology.org/>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-    SELECT ?label ?entity WHERE {
-        ?entity rdfs:label '%s' .
-    }
-    """ %(lab)
-
-        q = edam_kg.query(query)
-        for r in q:
-            # uri = r['entity']
-            uri = r["entity"].rsplit("/", 1)[-1]
-            res.append(f"{uri}")
-
-    return res
-
 def rdfize(data) -> Graph:
     prefix = """
 @prefix biotools: <https://bio.tools/> .
@@ -80,9 +56,8 @@ def rdfize(data) -> Graph:
         ## Recommended
 
         if "edam_topic" in data.keys():
-            topics = getEdamUrisFromLabels(data["edam_topic"])
-            for topic in topics:
-                triples += f'{package_uri} schema:applicationSubCategory edam:{topic} .\n'
+            for topic in data["edam_topic"]:
+                triples += f'{package_uri} schema:applicationSubCategory <{topic}> .\n'
 
         if "doi" in data.keys():
             triples += f'{package_uri} schema:citation "{data["doi"]}" .\n'
@@ -101,9 +76,8 @@ def rdfize(data) -> Graph:
         # documentation: A link to the documentation of the workflow, eg. a GitHub repository or a Zenodo DOI
 
         if "edam_operation" in data.keys():
-            operations = getEdamUrisFromLabels(data["edam_operation"])
-            for operation in operations:
-                triples += f'{package_uri} schema:featureList edam:{operation} .\n'
+            for operation in data["edam_operation"]:
+                triples += f'{package_uri} schema:featureList <{operation}> .\n'
 
         # funding
 
@@ -237,15 +211,16 @@ def process_workflows():
                 format="turtle",
                 destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
             )
-            # print(temp_graph.serialize(format="turtle"))
+        else:
+            wf_warnings.append(workflow_id)
 
 
 if __name__ == "__main__":
     clean()
-
-    edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
-    edam_kg = Graph()
-    edam_kg.parse(edam_version, format="xml")
+    wf_warnings = []
 
     process_workflows()
     #process_workflows_by_id("1472")
+
+    for wf_id in wf_warnings:
+        print(f"WARNING: No graph generated for workflow {wf_id}")
