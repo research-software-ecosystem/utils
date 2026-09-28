@@ -25,7 +25,15 @@ runs:
     - name: reformat json to a predictable format with jq and sponge
       run: |
         sudo apt-get update -y
-        sudo apt-get install moreutils
-        FILES='data/*/*.biotools.json'
-        for f in $FILES; do jq --indent 4 'walk( if type == "array" then sort else . end )'  $f | sponge $f; echo "processed $f file!"; done
+        sudo apt-get install -y moreutils
+        # NUL-delimited find rather than a glob held in a variable: an unquoted
+        # $FILES silently degraded to the literal pattern whenever nothing
+        # matched, and ~34,000 filenames on one command line risks ARG_MAX.
+        count=0
+        while IFS= read -r -d '' f; do
+          jq --indent 4 'walk( if type == "array" then sort else . end )' "$f" | sponge "$f"
+          count=$((count + 1))
+        done < <(find data -name '*.biotools.json' -print0)
+        echo "reformatted $count files"
+        test "$count" -gt 0
       shell: bash
