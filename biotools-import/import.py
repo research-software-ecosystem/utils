@@ -189,18 +189,23 @@ def install(staged, prune):
     With prune set -- a full, unfiltered crawl, which is authoritative -- records
     for tools the crawl did not return are removed. A filtered crawl speaks only
     for its own collection, so it leaves every other record alone.
+
+    Records are put in place before anything is pruned, so that a failure part
+    way through the move loop has pruned nothing at all. Files not yet reached
+    still hold their previous contents, since a move overwrites rather than
+    unlinks first.
     """
+    for tool_id, staged_path in sorted(staged.items()):
+        directory = os.path.join("data", tool_id)
+        os.makedirs(directory, exist_ok=True)
+        shutil.move(staged_path, os.path.join(directory, f"{tool_id}.biotools.json"))
+
     removed = 0
     if prune:
         for path in glob.glob(os.path.join("data", "*", "*.biotools.json")):
             if os.path.basename(os.path.dirname(path)) not in staged:
                 os.remove(path)
                 removed += 1
-
-    for tool_id, staged_path in sorted(staged.items()):
-        directory = os.path.join("data", tool_id)
-        os.makedirs(directory, exist_ok=True)
-        shutil.move(staged_path, os.path.join(directory, f"{tool_id}.biotools.json"))
     return removed
 
 
