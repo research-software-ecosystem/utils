@@ -8,6 +8,8 @@ of pagination, returned no tools, and exited 0.
 """
 
 import argparse
+import datetime
+import email.utils
 import glob
 import json
 import os
@@ -30,7 +32,12 @@ SSL_VERIFY = True
 TIMEOUT = (10, 60)  # (connect, read)
 RETRY_ATTEMPTS = 5
 RETRY_BACKOFF = 4  # seconds, doubling: 4, 8, 16, 32
-RETRY_STATUSES = frozenset({429, 500, 502, 503, 504, 521, 522, 524})
+# 429 plus the 5xx that mean "ask again later", including the Cloudflare codes
+# for an origin that is down, unreachable or timing out (520, 521, 522, 523,
+# 524). 525 and 526 are TLS misconfigurations at the origin: retrying cannot
+# clear them, so they are deliberately left to fail loudly on the first
+# response rather than after five rounds of backoff.
+RETRY_STATUSES = frozenset({429, 500, 502, 503, 504, 520, 521, 522, 523, 524})
 MAX_RETRY_AFTER = 120
 
 # A full crawl is authoritative, so it prunes records bio.tools no longer
@@ -39,6 +46,28 @@ MAX_RETRY_AFTER = 120
 MAX_DROP = 0.10
 
 SESSION = requests.Session()
+
+
+def retry_after_seconds(value):
+    """How long a Retry-After header asks us to wait.
+
+    RFC 9110 allows either a number of seconds or an HTTP-date, and rate
+    limiters use both. Returns None when the header is absent or unparseable,
+    in which case the caller keeps its own backoff.
+    """
+    value = (value or "").strip()
+    if not value:
+        return None
+    if value.isdigit():
+        return int(value)
+    try:
+        when = email.utils.parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    ahead = (when - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+    return max(0, int(ahead))
 
 
 def get_with_retries(url, params, description):
@@ -66,9 +95,9 @@ def get_with_retries(url, params, description):
             if response.status_code not in RETRY_STATUSES:
                 return response
             reason = f"HTTP {response.status_code}"
-            retry_after = response.headers.get("Retry-After", "")
-            if retry_after.strip().isdigit():
-                delay = min(int(retry_after), MAX_RETRY_AFTER)
+            asked = retry_after_seconds(response.headers.get("Retry-After"))
+            if asked is not None:
+                delay = min(asked, MAX_RETRY_AFTER)
 
         if attempt == RETRY_ATTEMPTS:
             print(f"  ERROR: {description} failed after {attempt} attempts: {reason}")
@@ -100,10 +129,20 @@ def fetch_page(page, filters):
             f"{description} was not JSON (content-type "
             f"{response.headers.get('Content-Type', '?')}); data/ left untouched"
         )
-    if not isinstance(entry, dict) or "list" not in entry:
-        keys = sorted(entry) if isinstance(entry, dict) else type(entry).__name__
+    if not isinstance(entry, dict):
         sys.exit(
-            f"{description} has an unexpected shape ({keys}); data/ left untouched"
+            f"{description} was not an object but a {type(entry).__name__}; "
+            "data/ left untouched"
+        )
+    # Both keys are required. Inferring "that was the last page" from a missing
+    # "next" would let a truncated response end the crawl quietly, and if it
+    # still carried most of the records the drop gate would wave it through and
+    # prune the rest.
+    missing = [key for key in ("list", "next") if key not in entry]
+    if missing:
+        sys.exit(
+            f"{description} is missing {', '.join(missing)} "
+            f"(keys seen: {', '.join(sorted(entry)) or 'none'}); data/ left untouched"
         )
     return entry
 
