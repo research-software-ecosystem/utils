@@ -44,17 +44,23 @@ SOURCES = {
     "biocontainers": (
         "BioContainers",
         [
-            "https://raw.githubusercontent.com/BioContainers/tools-metadata/"
-            "master/annotations.yaml"
+            (
+                "https://raw.githubusercontent.com/BioContainers/tools-metadata/"
+                "master/annotations.yaml"
+            )
         ],
     ),
     "galaxytool": (
         "Galaxy Codex",
         [
-            "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
-            "refs/heads/main/communities/all/resources/tools.json",
-            "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
-            "refs/heads/main/communities/all/resources/workflows.json",
+            (
+                "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
+                "refs/heads/main/communities/all/resources/tools.json"
+            ),
+            (
+                "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
+                "refs/heads/main/communities/all/resources/workflows.json"
+            ),
         ],
     ),
     "debian-med": ("Debian Med (UDD)", ["tcp://udd-mirror.debian.net:5432"]),
@@ -65,8 +71,10 @@ SOURCES = {
         "WorkflowHub",
         [
             "https://workflowhub.eu/workflows.json?page=1",
-            "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
-            "refs/heads/main/communities/all/resources/tools.json",
+            (
+                "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/"
+                "refs/heads/main/communities/all/resources/tools.json"
+            ),
         ],
     ),
 }
@@ -119,7 +127,7 @@ def probe(target):
             # A status line is an answer: the host is up even if the path is
             # unhappy. 5xx, and Cloudflare's 52x, mean it is not serving.
             return (exc.code < 500), f"HTTP {exc.code}"
-        except (urllib.error.URLError, socket.timeout, OSError) as exc:
+        except (TimeoutError, urllib.error.URLError, OSError) as exc:
             return False, f"unreachable: {getattr(exc, 'reason', exc)}"
     return False, "no response to HEAD or GET"
 
@@ -161,7 +169,7 @@ def superseded_by_newer_run():
         runs = api(
             "GET", f"/repos/{REPO}/actions/workflows/{WORKFLOW_FILE}/runs?per_page=1"
         )
-    except Exception as exc:  # never let this check be the thing that breaks
+    except Exception as exc:  # noqa: BLE001 - this check must never be the thing that breaks
         # A 403 here means the calling job is missing `actions: read`, which is
         # a configuration fault rather than a blip, so name what is lost and
         # put it in the summary where someone will see it.
@@ -375,7 +383,7 @@ def main():
     if any((needs.get(job) or {}).get("result") == "failure" for job in SOURCES):
         try:
             ensure_label()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - reporting must survive its own faults
             # Do not abort here: that would skip the summary at exactly the
             # moment the reporting path is in trouble. Opening issues is held
             # back instead, so a run cannot leave unlabelled ones behind.
@@ -387,7 +395,7 @@ def main():
         result = (needs.get(job) or {}).get("result", "missing")
         try:
             rows.append(handle(job, resource, targets, result, label_ready))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - one resource must not hide the rest
             # One resource failing to report must not hide the other eight, nor
             # lose the summary. Record it and carry on; the exit status below
             # still makes the run red.

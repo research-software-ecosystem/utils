@@ -17,7 +17,8 @@ import os
 import re
 import sys
 import unittest
-import unittest.mock as mock
+from typing import ClassVar
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -33,7 +34,7 @@ os.environ.pop("DRY_RUN", None)
 # Never append to the runner's real job summary.
 os.environ.pop("GITHUB_STEP_SUMMARY", None)
 
-import notify_upstream_failures as notifier  # noqa: E402
+import notify_upstream_failures as notifier
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "notify_upstream_failures.py")
@@ -151,8 +152,13 @@ class Verdict(Base):
 class FindIssue(Base):
     """The issues endpoint also returns pull requests."""
 
-    PR = {"number": 5, "title": "import failure: X", "pull_request": {}, "body": ""}
-    ISSUE = {"number": 9, "title": "import failure: X", "body": ""}
+    PR: ClassVar[dict] = {
+        "number": 5,
+        "title": "import failure: X",
+        "pull_request": {},
+        "body": "",
+    }
+    ISSUE: ClassVar[dict] = {"number": 9, "title": "import failure: X", "body": ""}
 
     def test_pull_request_is_never_selected(self):
         self.stub_api(gets={"issues": [self.PR, self.ISSUE]})
@@ -338,7 +344,7 @@ class Manifest(unittest.TestCase):
     """action.yml is the seam between the two repositories; it has to match."""
 
     # Set by the runner for every step, so the action does not pass them.
-    RUNNER_PROVIDED = {
+    RUNNER_PROVIDED: ClassVar[set] = {
         "GITHUB_REPOSITORY",
         "GITHUB_SERVER_URL",
         "GITHUB_RUN_ID",
@@ -356,7 +362,7 @@ class Manifest(unittest.TestCase):
             source = handle.read()
         read = set(re.findall(r'os\.environ\.get\(\s*"([A-Z_]+)"', source))
         block = self.text.split("      env:\n", 1)[1].split("\n      run:", 1)[0]
-        passed = set(re.findall(r"^        ([A-Z_]+):", block, re.M))
+        passed = set(re.findall(r"^        ([A-Z_]+):", block, re.MULTILINE))
         self.assertTrue(read, "no environment reads found; the regex has rotted")
         for name in sorted(read - self.RUNNER_PROVIDED):
             with self.subTest(var=name):
@@ -383,7 +389,9 @@ class Manifest(unittest.TestCase):
         looks is all this repository can do -- and losing `actions: read` only
         degrades the stale-run guard, so it is the easiest one to drop.
         """
-        declared = set(re.findall(r"^#   (\w+):\s+(read|write)\b", self.text, re.M))
+        declared = set(
+            re.findall(r"^#   (\w+):\s+(read|write)\b", self.text, re.MULTILINE)
+        )
         # Matched on the declaration lines, not anywhere in the file: the prose
         # underneath mentions `actions: read` too, and an earlier version of
         # this test passed on that alone after the declaration was deleted.
