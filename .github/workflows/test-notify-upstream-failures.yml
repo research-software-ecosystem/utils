@@ -1,0 +1,35 @@
+name: test notify-upstream-failures
+
+# The notifier is what reports that an import broke, so it should not be the
+# one action here with no tests. The suite is stdlib-only and fully stubbed, so
+# it needs no dependencies and cannot fail because an upstream happens to be
+# down.
+
+on:
+  pull_request:
+    paths:
+      - "notify-upstream-failures/**"
+      - ".github/workflows/test-notify-upstream-failures.yml"
+  push:
+    branches: [main]
+    paths:
+      - "notify-upstream-failures/**"
+      - ".github/workflows/test-notify-upstream-failures.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the tests
+        # The suite also checks the script against action.yml, so it has to run
+        # from within the action's own directory.
+        run: python3 -m unittest discover -s notify-upstream-failures -p 'test_*.py' -v
