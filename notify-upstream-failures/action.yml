@@ -1,0 +1,54 @@
+name: "notify upstream failures"
+description: >-
+  Report why each importer failed, and whether the upstream resource or the
+  importer is to blame, in one tracking issue per resource.
+
+inputs:
+  repo-token:
+    description: "GitHub token used to read, open, comment on and close the tracking issues"
+    required: true
+  job-results:
+    description: >-
+      The calling job's `needs` context, as `${{ toJSON(needs) }}`. Its keys are
+      the importer job names; each is matched against this action's table of
+      upstream resources, and a key with no entry there is reported as unprobed.
+    required: true
+  workflow-file:
+    description: >-
+      Filename of the calling workflow, used to spot that a newer run of it has
+      already started and this one should stay quiet.
+    required: false
+    default: "import.yaml"
+  dry-run:
+    description: "Probe and report, but do not touch any issue."
+    required: false
+    default: "false"
+
+# The calling job must grant these permissions. A job-level `permissions` map
+# sets every scope it does not name to none, and composite actions cannot ask
+# for scopes themselves, so this is the caller's responsibility:
+#
+#   issues:  write   read, open, comment on, close and label the tracking issue
+#   actions: read    list the workflow's runs for the stale-run check
+#
+# Losing `actions: read` does not fail the job: the check catches its own 403,
+# the run continues without stale-run protection, and the step summary says so.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    # No requirements.txt and no install step, unlike the importer actions
+    # here. The script is stdlib-only on purpose: the thing that tells you an
+    # import broke should not have a dependency that can break it.
+    - name: report importer outcomes
+      env:
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
+        JOB_RESULTS: ${{ inputs.job-results }}
+        WORKFLOW_FILE: ${{ inputs.workflow-file }}
+        DRY_RUN: ${{ inputs.dry-run == 'true' && '1' || '0' }}
+      run: python3 ${{ github.action_path }}/notify_upstream_failures.py
+      shell: bash
