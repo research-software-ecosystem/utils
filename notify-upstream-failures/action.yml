@@ -12,9 +12,10 @@ inputs:
     required: true
   job-results:
     description: >-
-      The calling job's `needs` context, as `${{ toJSON(needs) }}`. Its keys are
-      the importer job names; each is matched against this action's table of
-      upstream resources, and a key with no entry there is reported as unprobed.
+      The calling job's `needs` context, passed by the caller as a
+      `toJSON(needs)` expression. Its keys are the importer job names; each is
+      matched against this action's table of upstream resources, and a key with
+      no entry there is reported as unprobed.
     required: true
   workflow-file:
     description: >-
