@@ -24,8 +24,9 @@ inputs:
     default: "import.yaml"
   dry-run:
     description: >-
-      Probe and report, but do not touch any issue. The only way to run
-      without a token.
+      Rehearse: probe for real and read the real issue list, but make no
+      change to any issue. The only way to run without a token, and the
+      report says what a real run would have done.
     required: false
     default: "false"
 

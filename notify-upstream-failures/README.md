@@ -52,7 +52,7 @@ No `actions/checkout` is needed: the action brings its own script.
 | `repo-token` | yes | | Token used for the issue API calls. With no token and `dry-run` off, the action exits non-zero rather than doing nothing quietly. |
 | `job-results` | yes | | `${{ toJSON(needs) }}`. Its keys are matched against the table of upstream resources below. |
 | `workflow-file` | no | `import.yaml` | Filename of the calling workflow, for the stale-run check. |
-| `dry-run` | no | `false` | Probe and report, but touch no issues. The only way to run without a token. |
+| `dry-run` | no | `false` | Rehearse: probe for real and read the real issue list, but change nothing. The only way to run without a token. |
 
 ## Adding an importer
 
@@ -80,5 +80,13 @@ $ python3 -m unittest discover -s notify-upstream-failures -p 'test_*.py' -v
 ```
 
 Stdlib-only and fully stubbed, so the suite is offline and cannot fail because
-an upstream happens to be down. To exercise the real probes, run the script
-with `DRY_RUN=1`, which reports what it would do without touching anything.
+an upstream happens to be down. That is enforced, not merely intended: the
+suite blocks socket connections outright, so a test that forgets to stub
+something fails instead of quietly reaching the network.
+
+To exercise the real probes, run the script with `DRY_RUN=1`. It probes for
+real and reads the real issue list, but suppresses every write, so the report
+says what a real run would have done -- including that an issue is already
+open, or that a recovery would close one. Reads are unauthenticated when no
+token is given, and if the issue list cannot be read the dry run says so and
+carries on rather than failing.

@@ -140,21 +140,29 @@ def probe(target):
 
 
 def api(method, path, payload=None):
-    if DRY_RUN:
+    # Only writes are suppressed in a dry run. Stubbing reads too made the
+    # report wrong in exactly the cases worth rehearsing: with the issue list
+    # always coming back empty, a recovery looked like "nothing to do" and a
+    # failure with an issue already open looked like a fresh create.
+    if DRY_RUN and method != "GET":
         print(
             f"    [dry-run] {method} {path} {json.dumps(payload)[:120] if payload else ''}"
         )
-        return {} if method != "GET" else []
+        return {}
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "rsec-notify",
+    }
+    # A dry run is allowed to have no token; reading public issues does not
+    # need one, and `Bearer ` with nothing after it is rejected outright.
+    if TOKEN:
+        headers["Authorization"] = f"Bearer {TOKEN}"
     request = urllib.request.Request(
         f"{API}{path}",
         method=method,
         data=json.dumps(payload).encode() if payload is not None else None,
-        headers={
-            "Authorization": f"Bearer {TOKEN}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-            "User-Agent": "rsec-notify",
-        },
+        headers=headers,
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         body = response.read()
@@ -229,9 +237,17 @@ def find_issue(title):
     """Look up our open tracking issues, fetching the list at most once."""
     global _OPEN_ISSUES
     if _OPEN_ISSUES is None:
-        _OPEN_ISSUES = api(
-            "GET", f"/repos/{REPO}/issues?state=open&labels={LABEL}&per_page=100"
-        )
+        path = f"/repos/{REPO}/issues?state=open&labels={LABEL}&per_page=100"
+        try:
+            _OPEN_ISSUES = api("GET", path)
+        except Exception as exc:
+            # Unauthenticated reads are rate limited, and a local dry run may
+            # have no network or no real repository. Say so and carry on as
+            # if nothing were open; a real run still propagates the error.
+            if not DRY_RUN:
+                raise
+            print(f"    [dry-run] could not list issues ({exc}); assuming none open")
+            _OPEN_ISSUES = []
     for issue in _OPEN_ISSUES:
         # The issues endpoint returns pull requests as well. Matching one would
         # mean commenting on it and closing it on the recovery path.

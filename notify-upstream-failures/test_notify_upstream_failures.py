@@ -15,6 +15,7 @@ import importlib
 import json
 import os
 import re
+import socket
 import sys
 import unittest
 from typing import ClassVar
@@ -35,6 +36,23 @@ os.environ.pop("DRY_RUN", None)
 os.environ.pop("GITHUB_STEP_SUMMARY", None)
 
 import notify_upstream_failures as notifier
+
+
+def _no_network(*args, **kwargs):
+    """Fail loudly on any real connection.
+
+    "Offline by design" was only a comment until now, and a real GET to
+    api.github.com did slip into one of these tests: it was absorbed by the
+    dry-run fallback, so the suite stayed green while quietly depending on
+    GitHub being up. Every probe and every API call must be stubbed.
+    """
+    raise AssertionError(
+        "the test suite attempted a real network connection; stub it instead"
+    )
+
+
+socket.socket.connect = _no_network
+socket.create_connection = _no_network
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "notify_upstream_failures.py")
@@ -337,9 +355,76 @@ class Credentials(Base):
         notifier.DRY_RUN = True
         notifier.SOURCES = {"x": ("X", ["u"])}
         notifier.probe = lambda target: (True, "HTTP 200")
+        self.stub_api(gets={"issues": []})
         code = self.run_main({"x": "success"})
         self.assertEqual(code, 0)
         self.assertIsNotNone(self.rows)
+
+
+class DryRun(Base):
+    """A dry run must describe what a real run would do, or it misleads.
+
+    These drive the real api(), not the stub, since what is under test is
+    which requests it suppresses.
+    """
+
+    def setUp(self):
+        super().setUp()
+        notifier.DRY_RUN = True
+        notifier.TOKEN = ""
+
+    @staticmethod
+    def urlopen_returning(payload):
+        resp = mock.MagicMock()
+        resp.read.return_value = json.dumps(payload).encode()
+        resp.__enter__.return_value = resp
+        return mock.patch("urllib.request.urlopen", return_value=resp)
+
+    def test_a_read_goes_through(self):
+        with self.urlopen_returning([{"number": 3}]) as opened:
+            self.assertEqual(notifier.api("GET", "/x"), [{"number": 3}])
+        self.assertTrue(opened.called)
+
+    def test_a_write_does_not(self):
+        with self.urlopen_returning({}) as opened:
+            notifier.api("POST", "/x", {"title": "t"})
+        self.assertFalse(opened.called, "a dry run must touch nothing")
+
+    def test_no_authorization_header_without_a_token(self):
+        """`Bearer ` with nothing after it is rejected outright."""
+        with self.urlopen_returning([]) as opened:
+            notifier.api("GET", "/x")
+        self.assertNotIn("Authorization", opened.call_args[0][0].headers)
+
+    def test_an_already_open_issue_is_reported_as_such(self):
+        """This used to say "opened #?": every GET came back empty."""
+        notifier.SOURCES = {"x": ("X", ["u"])}
+        notifier.probe = lambda target: (False, "HTTP 503")
+        issue = {
+            "number": 7,
+            "title": "import failure: X",
+            "body": f"{notifier.MARKER}upstream-unavailable -->",
+        }
+        with self.urlopen_returning([issue]):
+            self.run_main({"x": "failure"})
+        self.assertIn("already open", self.rows[0][4])
+
+    def test_a_recovery_is_reported_as_a_close(self):
+        """And this used to say "nothing to do"."""
+        notifier.SOURCES = {"x": ("X", ["u"])}
+        issue = {"number": 7, "title": "import failure: X", "body": ""}
+        with self.urlopen_returning([issue]):
+            self.run_main({"x": "success"})
+        self.assertIn("closed #7", self.rows[0][4])
+
+    def test_an_unreadable_issue_list_does_not_fail_the_dry_run(self):
+        """No network, no repo, or a rate limit: say so and carry on."""
+        notifier.SOURCES = {"x": ("X", ["u"])}
+        notifier.probe = lambda target: (False, "HTTP 503")
+        with mock.patch("urllib.request.urlopen", side_effect=OSError("no route")):
+            code = self.run_main({"x": "failure"})
+        self.assertEqual(code, 0)
+        self.assertIn("opened", self.rows[0][4])
 
 
 class Drift(Base):
