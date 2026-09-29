@@ -49,16 +49,20 @@ No `actions/checkout` is needed: the action brings its own script.
 
 | input | required | default | |
 | --- | --- | --- | --- |
-| `repo-token` | yes | | Token used for the issue API calls. |
+| `repo-token` | yes | | Token used for the issue API calls. With no token and `dry-run` off, the action exits non-zero rather than doing nothing quietly. |
 | `job-results` | yes | | `${{ toJSON(needs) }}`. Its keys are matched against the table of upstream resources below. |
 | `workflow-file` | no | `import.yaml` | Filename of the calling workflow, for the stale-run check. |
-| `dry-run` | no | `false` | Probe and report, but touch no issues. |
+| `dry-run` | no | `false` | Probe and report, but touch no issues. The only way to run without a token. |
 
 ## Adding an importer
 
 Add an entry to `SOURCES` in `notify_upstream_failures.py`, keyed by the job
 name in the calling workflow, with the URLs that importer actually fetches.
 Use a `tcp://host:port` target for a resource that is not HTTP.
+
+Name the endpoint, not the host. A site's front page can be perfectly healthy
+while the API behind it is not, and telling those apart is the whole job; a
+target that is only a site root is rejected by the tests.
 
 Every target must answer for the verdict to be `needs-attention`: an importer
 that reads two resources fails if either is down, so one reachable host is not

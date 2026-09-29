@@ -5,7 +5,10 @@ description: >-
 
 inputs:
   repo-token:
-    description: "GitHub token used to read, open, comment on and close the tracking issues"
+    description: >-
+      GitHub token used to read, open, comment on and close the tracking
+      issues. Genuinely required: with no token and dry-run off, the action
+      exits non-zero rather than quietly probing nothing and finishing green.
     required: true
   job-results:
     description: >-
@@ -20,7 +23,9 @@ inputs:
     required: false
     default: "import.yaml"
   dry-run:
-    description: "Probe and report, but do not touch any issue."
+    description: >-
+      Probe and report, but do not touch any issue. The only way to run
+      without a token.
     required: false
     default: "false"
 

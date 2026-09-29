@@ -295,6 +295,53 @@ class Resilience(Base):
         self.assertNotEqual(self.writes(), [])
 
 
+class Credentials(Base):
+    """A missing token must fail loudly, not turn into a quiet dry run."""
+
+    def test_no_token_and_no_dry_run_refuses_to_run(self):
+        """Otherwise the run probes nothing, opens nothing and exits green.
+
+        That is indistinguishable from a healthy week, which is the one
+        outcome this script must never fake.
+        """
+        notifier.TOKEN = ""
+        notifier.DRY_RUN = False
+        notifier.SOURCES = {"x": ("X", ["u"])}
+        self.stub_api()
+        code = self.run_main({"x": "failure"})
+        self.assertEqual(code, 1)
+        self.assertIsNone(self.rows, "it must refuse before reporting anything")
+        self.assertEqual(self.calls, [], "and before calling the API")
+
+    def test_an_empty_token_does_not_imply_dry_run(self):
+        """The derivation itself, not just main()'s guard.
+
+        DRY_RUN is computed at import time, so the test above -- which assigns
+        notifier.DRY_RUN directly -- passes just as happily with the old
+        `or not TOKEN` fallback restored. This one reloads with the token
+        actually empty, which is the only way to see that expression.
+        """
+        os.environ["GITHUB_TOKEN"] = ""
+        try:
+            importlib.reload(notifier)
+            self.assertEqual(notifier.TOKEN, "")
+            self.assertFalse(
+                notifier.DRY_RUN, "a missing token must not silently mean dry-run"
+            )
+        finally:
+            os.environ["GITHUB_TOKEN"] = "x"
+            importlib.reload(notifier)
+
+    def test_an_explicit_dry_run_needs_no_token(self):
+        notifier.TOKEN = ""
+        notifier.DRY_RUN = True
+        notifier.SOURCES = {"x": ("X", ["u"])}
+        notifier.probe = lambda target: (True, "HTTP 200")
+        code = self.run_main({"x": "success"})
+        self.assertEqual(code, 0)
+        self.assertIsNotNone(self.rows)
+
+
 class Drift(Base):
     """SOURCES and the calling workflow must not quietly diverge.
 
@@ -338,6 +385,23 @@ class Drift(Base):
         for name, (_, targets) in notifier.SOURCES.items():
             with self.subTest(source=name):
                 self.assertTrue(targets)
+
+    def test_no_target_is_a_bare_site_root(self):
+        """A host's front page can be healthy while the importer's endpoint
+
+        is not, and the whole point of the probe is to tell those apart. Every
+        target must therefore name a path the importer itself fetches.
+        """
+        importlib.reload(notifier)
+        for name, (_, targets) in notifier.SOURCES.items():
+            for target in targets:
+                if target.startswith("tcp://"):
+                    continue
+                with self.subTest(source=name, target=target):
+                    path = target.split("://", 1)[1].partition("/")[2]
+                    self.assertTrue(
+                        path.strip("/"), f"{target} probes only the site root"
+                    )
 
 
 class Manifest(unittest.TestCase):

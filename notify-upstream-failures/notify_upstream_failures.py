@@ -38,9 +38,11 @@ SOURCES = {
         "Bioconda",
         ["https://codeload.github.com/bioconda/bioconda-recipes/zip/master"],
     ),
-    # biii-import runs with `-td https://biii.eu`; the http:// form in its
-    # source is an RDF namespace, not a fetch target.
-    "biii": ("BIII", ["https://biii.eu/"]),
+    # biii-import runs with `-td https://biii.eu` and fetches the software
+    # list view from it; the http:// form in its source is an RDF namespace,
+    # not a fetch target. Probing the site root instead would call a broken
+    # Drupal view "reachable" while the front page still served fine.
+    "biii": ("BIII", ["https://biii.eu/soft/?_format=json"]),
     "biocontainers": (
         "BioContainers",
         [
@@ -93,7 +95,12 @@ RUN_URL = f"{SERVER}/{REPO}/actions/runs/{RUN_ID}" if RUN_ID else "(no run url)"
 # Which workflow the stale-run check lists runs of. An input rather than a
 # constant: this action lives in utils, and the workflow calling it does not.
 WORKFLOW_FILE = os.environ.get("WORKFLOW_FILE") or "import.yaml"
-DRY_RUN = os.environ.get("DRY_RUN") == "1" or not TOKEN
+# Only the explicit input turns this on. It used to fall back to `not TOKEN`,
+# which quietly turned a missing credential into a run that probed nothing,
+# printed simulated issue creations and finished green -- the configuration
+# fault hidden by the very thing meant to surface faults. main() now refuses
+# to run without a token instead.
+DRY_RUN = os.environ.get("DRY_RUN") == "1"
 
 # Set when the stale-run check could not run. Reported with the outcomes: a
 # missing `actions: read` in the caller degrades the guard silently, and the
@@ -360,6 +367,13 @@ def main():
     needs = json.loads(os.environ.get("JOB_RESULTS") or "{}")
     if not needs:
         sys.exit("JOB_RESULTS is empty; nothing to report")
+    if not DRY_RUN and not TOKEN:
+        sys.exit(
+            "no GITHUB_TOKEN: pass `repo-token` to the action, or set "
+            "`dry-run: true` to report without touching issues. Refusing to "
+            "continue, because a silent no-op here looks exactly like a run "
+            "with nothing to report."
+        )
 
     rows = []
     failures = []
@@ -424,7 +438,7 @@ def write_summary(rows):
     lines = [
         "## Importer outcomes",
         "",
-        "| importer | job | upstream check | verdict | action |",
+        "| importer | result | upstream check | verdict | action |",
         "| --- | --- | --- | --- | --- |",
     ]
     for job, result, summary, verdict, action in rows:
