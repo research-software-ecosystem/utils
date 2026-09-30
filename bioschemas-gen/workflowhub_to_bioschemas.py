@@ -1,0 +1,226 @@
+import os
+import glob
+import json
+import yaml
+from pathlib import Path
+from rdflib import Graph
+
+def rdfize(data) -> Graph:
+    prefix = """
+@prefix biotools: <https://bio.tools/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix edam: <http://edamontology.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix workflowhub: <https://workflowhub.eu/workflows/> .
+"""
+
+    triples = ""
+
+    workflow_id = None 
+    if "link" in data.keys():
+        workflow_id = data["link"]
+
+    try:
+        if workflow_id:
+            package_uri = f'<{workflow_id}>'
+            triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
+            triples += f'{package_uri} dcterms:conformsTo "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE" .\n'
+
+        ## Minimum
+        
+        if "creators" in data.keys():
+            for author in data["creators"]:
+                triples += f'{package_uri} schema:creator "{author}" .\n'
+
+        if "create_time" in data.keys():
+            triples += f'{package_uri} schema:dateCreated "{data["create_time"]}" .\n'
+
+        if "license" in data.keys():
+            triples += f'{package_uri} schema:license "{data["license"]}" .\n'
+            
+        if "name" in data.keys():
+            triples += f'{package_uri} schema:name "{data["name"]}" .\n'
+
+        # programmingLanguage 
+
+        # sdPublisher: "source" or "workflow_class"? eg WorkflowHub or Galaxy
+    
+        if "link" in data.keys():
+            triples += f'{package_uri} schema:url <{data["link"]}> .\n'
+
+        if "latest_version" in data.keys():
+            triples += f'{package_uri} schema:version "{data["latest_version"]}" .\n'
+
+        ## Recommended
+
+        if "edam_topic" in data.keys():
+            for topic in data["edam_topic"]:
+                triples += f'{package_uri} schema:applicationSubCategory <{topic}> .\n'
+
+        if "doi" in data.keys():
+            triples += f'{package_uri} schema:citation "{data["doi"]}" .\n'
+
+        # contributor: a secondary contributor to the CreativeWork or Event
+
+        # creativeWorkStatus: "active" or "inactive" or "deprecated" or "retired" or "archived"
+
+        if "description" in data.keys(): ## OJO special characters, ex. in workflow 104
+                triples += (
+                    f"{package_uri} schema:description "
+                    + json.dumps(data["description"])
+                    + " .\n"
+                )        
+
+        # documentation: A link to the documentation of the workflow, eg. a GitHub repository or a Zenodo DOI
+
+        if "edam_operation" in data.keys():
+            for operation in data["edam_operation"]:
+                triples += f'{package_uri} schema:featureList <{operation}> .\n'
+
+        # funding
+
+        if "mapped_tools" in data.keys():
+            for tool in data["mapped_tools"]:
+                triples += f'{package_uri} schema:hasPart "{tool}" .\n'
+
+        # input
+        # isBasedOn
+
+        if "tags" in data.keys():
+            for tag in data["tags"]:
+                triples += f'{package_uri} schema:keywords "{tag}" .\n'
+
+        # maintainer
+        # output
+        # producer
+        # publisher
+        # runtimePlatform
+        # sameAs
+        # softwareRequirements
+        # targetProduct
+
+        ## Optional
+ 
+        if "update_time" in data.keys():
+            triples += f'{package_uri} schema:dateModified "{data["update_time"]}" .\n'
+
+        if "id" in data.keys():
+            triples += f'{package_uri} schema:identifier "{data["id"]}" .\n'
+
+
+        g = Graph()
+        g.parse(data=prefix + "\n" + triples, format="turtle")
+        return g
+
+    except Exception as e:
+        print("PARSING ERROR for:")
+        print(prefix + "\n" + triples)
+        print(e)
+
+
+def get_workflowhub_files_in_repo():
+    workflows = []
+    for data_file in glob.glob("../../content/imports/workflowhub/*.workflowhub.json"):
+        workflows.append(data_file)
+    return workflows
+
+def process_workflows_by_id(id="SPROUT"):
+    """
+    Go through all workflowhub entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    """
+    workflow_files = get_workflowhub_files_in_repo()
+
+    for workflow_file in workflow_files:
+
+        workflow_number = os.path.basename(workflow_file)
+        workflow_number = workflow_number.removesuffix(".workflowhub.json")
+
+        if id == workflow_number:
+            path = Path(workflow_file)
+            workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+            workflow_id = None
+            if "id" in workflow.keys():
+                workflow_id = workflow["id"]
+
+            if workflow_id is None:
+                print(f"WARNING: no workflow id found for {workflow_file}!")
+                continue
+
+            directory = os.path.join("..", "..", "content", "imports", "workflowhub")
+
+            ## generate workflowhub JSON-LD and TTL files
+            temp_graph = rdfize(workflow)
+            if temp_graph and os.path.exists(directory):
+                temp_graph.serialize(
+                    format="json-ld",
+                    auto_compact=True,
+                    destination=os.path.join(directory, workflow_id + ".workflowhub.jsonld"),
+                )
+                temp_graph.serialize(
+                    format="turtle",
+                    destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
+                )
+                print(temp_graph.serialize(format="turtle"))
+
+
+def clean():
+    for data_file in glob.glob(r"../../content/imports/workflowhub/*.workflowhub.jsonld"):
+        print(f"removing file {data_file}")
+        os.remove(data_file)
+    for data_file in glob.glob(r"../../content/imports/workflowhub/*.workflowhub.ttl"):
+        print(f"removing file {data_file}")
+        os.remove(data_file)
+
+
+def process_workflows():
+    """
+    Go through all workflowhub entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    """
+    workflow_files = get_workflowhub_files_in_repo()
+
+    for workflow_file in workflow_files:
+        path = Path(workflow_file)
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+        workflow_id = None
+        if "id" in workflow.keys():
+            workflow_id = workflow["id"]
+
+        if workflow_id is None:
+            print(f"WARNING: no workflow id found for {workflow_file}!")
+            continue
+
+        directory = os.path.join("..", "..", "content", "imports", "workflowhub")
+
+        if not os.path.exists(directory):
+            print(f"WARNING: Directory {directory} does not exist for {workflow_id}!")
+            continue
+
+        ## generate workflowhub JSON-LD and TTL files
+        temp_graph = rdfize(workflow)
+        if temp_graph and os.path.exists(directory):
+            temp_graph.serialize(
+                format="json-ld",
+                auto_compact=True,
+                destination=os.path.join(directory, workflow_id + ".workflowhub.jsonld"),
+            )
+            temp_graph.serialize(
+                format="turtle",
+                destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
+            )
+        else:
+            wf_warnings.append(workflow_id)
+
+
+if __name__ == "__main__":
+    clean()
+    wf_warnings = []
+
+    process_workflows()
+    #process_workflows_by_id("1472")
+
+    for wf_id in wf_warnings:
+        print(f"WARNING: No graph generated for workflow {wf_id}")
