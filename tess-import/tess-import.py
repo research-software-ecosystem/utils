@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlparse
 
 import requests
 
@@ -53,22 +54,52 @@ def fetch_all_materials(max_items=None):
 
 def fetch_detail(material_id):
     url = f"{TESS_BASE}/materials/{material_id}"
-    resp = requests.get(url, timeout=30, headers={"Accept": "application/json"})
-    if resp.status_code != 200:
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, timeout=30, headers={"Accept": "application/json"})
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as e:
+            if attempt == 2:
+                raise
+            print(f"  retrying detail fetch for material {material_id} ({e})")
+            time.sleep(2 * (attempt + 1))
+    return None
+
+
+def extract_tool_uri(url):
+    """Extract the bio.tools URL from a TeSS external_resource URL.
+
+    TeSS classifies both legacy (https://bio.tools/tool/<name>) and direct
+    (https://bio.tools/<name>) URLs as tool resources. Return the canonical
+    bio.tools entry URL, or None if the URL does not point to bio.tools.
+    """
+    parsed = urlparse(url)
+    if parsed.netloc not in ("bio.tools", "www.bio.tools"):
         return None
-    return resp.json()
+    path = parsed.path.rstrip("/")
+    if path.startswith("/tool/"):
+        name = path[len("/tool/") :]
+    else:
+        name = path.lstrip("/")
+    if not name:
+        return None
+    return f"https://bio.tools/{name}"
 
 
 def extract_tools(item):
     tools = set()
     for res in item.get("external_resources", []):
         if res.get("type") == "tool":
-            url = res.get("url", "")
-            if url.startswith("https://bio.tools/tool/"):
-                bt = url.replace("https://bio.tools/tool/", "").strip()
-                if bt:
-                    tools.add(bt.lower())
-    return list(tools)
+            uri = extract_tool_uri(res.get("url", ""))
+            if uri:
+                tools.add(uri)
+    return sorted(tools)
+
+
+def name_from_tool_uri(uri):
+    """Derive the bio.tools entry name (directory key) from a tool URI."""
+    return uri.rstrip("/").rsplit("/", 1)[-1].lower()
 
 
 def build_entry(list_item, detail):
@@ -125,7 +156,7 @@ def retrieve(max_items=None, data_base="."):
     print(f"Found {len(all_items)} training materials{limit_msg}")
 
     all_entries = []
-    tool_to_mids = {}
+    tool_uri_to_material_urls = {}
     stat_unique_tools = set()
     stat_resource_types = {}
     stat_nodes = {}
@@ -142,6 +173,7 @@ def retrieve(max_items=None, data_base="."):
 
             entry = build_entry(list_item, detail)
             all_entries.append(entry)
+            material_url = entry.get("url", "")
 
             wf_cleaned = normalize_version_fields(entry, [])
             save_path = os.path.join(tess_directory, f"{mid}.tess.json")
@@ -150,11 +182,9 @@ def retrieve(max_items=None, data_base="."):
                     wf_cleaned, f, sort_keys=True, indent=4, separators=(",", ": ")
                 )
 
-            for tool_name in entry.get("tools", []):
-                stat_unique_tools.add(tool_name)
-                if tool_name not in tool_to_mids:
-                    tool_to_mids[tool_name] = []
-                tool_to_mids[tool_name].append(mid)
+            for tool_uri in entry.get("tools", []):
+                stat_unique_tools.add(tool_uri)
+                tool_uri_to_material_urls.setdefault(tool_uri, []).append(material_url)
 
             # Stats: resource type
             rt_list = detail.get("resource_type", []) if detail else []
@@ -171,36 +201,40 @@ def retrieve(max_items=None, data_base="."):
     print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
 
     matched_count = 0
-    mid_to_data_tools = {}
-    for bt_id in sorted(tool_to_mids.keys()):
+    material_url_to_tool_uris = {}
+    for tool_uri in sorted(tool_uri_to_material_urls.keys()):
+        bt_id = name_from_tool_uri(tool_uri)
         directory = os.path.join(data_base, "data", bt_id)
         if not os.path.isdir(directory):
             continue
 
-        mids = sorted(set(tool_to_mids[bt_id]))
+        material_urls = sorted(set(tool_uri_to_material_urls[tool_uri]))
 
-        for mid in mids:
-            mid_to_data_tools.setdefault(mid, []).append(bt_id)
+        for material_url in material_urls:
+            material_url_to_tool_uris.setdefault(material_url, []).append(tool_uri)
 
         data_save_path = os.path.join(directory, f"{bt_id}.tess.json")
         with open(data_save_path, "w") as f:
-            json.dump(mids, f, sort_keys=True, indent=4, separators=(",", ": "))
-        print(f"matched tool #{matched_count + 1}: {bt_id} ({len(mids)} trainings)")
+            json.dump(
+                material_urls, f, sort_keys=True, indent=4, separators=(",", ": ")
+            )
+        print(
+            f"matched tool #{matched_count + 1}: {bt_id} ({len(material_urls)} trainings)"
+        )
         matched_count += 1
 
     for entry in all_entries:
-        mid = entry["id"]
-        entry["mapped_tools"] = sorted(mid_to_data_tools.get(mid, []))
-        save_path = os.path.join(tess_directory, f"{mid}.tess.json")
+        entry["mapped_tools"] = sorted(
+            material_url_to_tool_uris.get(entry.get("url", ""), [])
+        )
+        save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
         with open(save_path, "w") as f:
-            json.dump(
-                entry, f, sort_keys=True, indent=4, separators=(",", ": ")
-            )
+            json.dump(entry, f, sort_keys=True, indent=4, separators=(",", ": "))
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
     print(f"  training materials processed: {len(all_entries)}")
-    print(f"  unique tool names found: {len(stat_unique_tools)}")
+    print(f"  unique tool URIs found: {len(stat_unique_tools)}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
     print("\n  Resource type distribution:")
     for rt in sorted(
