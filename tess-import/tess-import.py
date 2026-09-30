@@ -27,9 +27,17 @@ def clean(data_base="."):
 
 def fetch_page(page):
     url = f"{TESS_BASE}/materials.json?per_page={PER_PAGE}&page={page}"
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as e:
+            if attempt == 2:
+                raise
+            print(f"  retrying list fetch page {page} ({e})")
+            time.sleep(2 * (attempt + 1))
+    return []
 
 
 def fetch_all_materials(max_items=None):
@@ -102,6 +110,11 @@ def name_from_tool_uri(uri):
     return uri.rstrip("/").rsplit("/", 1)[-1].lower()
 
 
+def material_slug(url):
+    """Derive the material slug (last URL path segment) used as entry id."""
+    return url.rstrip("/").rsplit("/", 1)[-1] if url else ""
+
+
 def build_entry(list_item, detail):
     tools = extract_tools(list_item)
     topics = [
@@ -119,7 +132,7 @@ def build_entry(list_item, detail):
 
     return {
         "source": "TESS",
-        "id": list_item["id"],
+        "id": material_slug(list_item.get("url", "")),
         "url": list_item.get("url", ""),
         "title": list_item.get("title", ""),
         "description": list_item.get("description", ""),
@@ -168,7 +181,6 @@ def retrieve(max_items=None, data_base="."):
         }
         for future in as_completed(future_map):
             list_item = future_map[future]
-            mid = list_item["id"]
             detail = future.result()
 
             entry = build_entry(list_item, detail)
@@ -176,7 +188,7 @@ def retrieve(max_items=None, data_base="."):
             material_url = entry.get("url", "")
 
             wf_cleaned = normalize_version_fields(entry, [])
-            save_path = os.path.join(tess_directory, f"{mid}.tess.json")
+            save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
             with open(save_path, "w") as f:
                 json.dump(
                     wf_cleaned, f, sort_keys=True, indent=4, separators=(",", ": ")
