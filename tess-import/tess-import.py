@@ -169,7 +169,7 @@ def retrieve(max_items=None, data_base="."):
     print(f"Found {len(all_items)} training materials{limit_msg}")
 
     all_entries = []
-    tool_uri_to_material_urls = {}
+    tool_uri_to_material_ids = {}
     stat_unique_tools = set()
     stat_resource_types = {}
     stat_nodes = {}
@@ -185,7 +185,6 @@ def retrieve(max_items=None, data_base="."):
 
             entry = build_entry(list_item, detail)
             all_entries.append(entry)
-            material_url = entry.get("url", "")
 
             wf_cleaned = normalize_version_fields(entry, [])
             save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
@@ -196,7 +195,7 @@ def retrieve(max_items=None, data_base="."):
 
             for tool_uri in entry.get("tools", []):
                 stat_unique_tools.add(tool_uri)
-                tool_uri_to_material_urls.setdefault(tool_uri, []).append(material_url)
+                tool_uri_to_material_ids.setdefault(tool_uri, []).append(entry["id"])
 
             # Stats: resource type
             rt_list = detail.get("resource_type", []) if detail else []
@@ -213,31 +212,29 @@ def retrieve(max_items=None, data_base="."):
     print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
 
     matched_count = 0
-    material_url_to_tool_uris = {}
-    for tool_uri in sorted(tool_uri_to_material_urls.keys()):
+    material_id_to_tool_uris = {}
+    for tool_uri in sorted(tool_uri_to_material_ids.keys()):
         bt_id = name_from_tool_uri(tool_uri)
         directory = os.path.join(data_base, "data", bt_id)
         if not os.path.isdir(directory):
             continue
 
-        material_urls = sorted(set(tool_uri_to_material_urls[tool_uri]))
+        material_ids = sorted(set(tool_uri_to_material_ids[tool_uri]))
 
-        for material_url in material_urls:
-            material_url_to_tool_uris.setdefault(material_url, []).append(tool_uri)
+        for material_id in material_ids:
+            material_id_to_tool_uris.setdefault(material_id, []).append(tool_uri)
 
         data_save_path = os.path.join(directory, f"{bt_id}.tess.json")
         with open(data_save_path, "w") as f:
-            json.dump(
-                material_urls, f, sort_keys=True, indent=4, separators=(",", ": ")
-            )
+            json.dump(material_ids, f, sort_keys=True, indent=4, separators=(",", ": "))
         print(
-            f"matched tool #{matched_count + 1}: {bt_id} ({len(material_urls)} trainings)"
+            f"matched tool #{matched_count + 1}: {bt_id} ({len(material_ids)} trainings)"
         )
         matched_count += 1
 
     for entry in all_entries:
         entry["mapped_tools"] = sorted(
-            material_url_to_tool_uris.get(entry.get("url", ""), [])
+            material_id_to_tool_uris.get(entry.get("id", ""), [])
         )
         save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
         with open(save_path, "w") as f:
