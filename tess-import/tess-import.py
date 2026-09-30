@@ -101,7 +101,7 @@ def extract_tools(item):
         if res.get("type") == "tool":
             uri = extract_tool_uri(res.get("url", ""))
             if uri:
-                tools.add(uri)
+                tools.add(name_from_tool_uri(uri))
     return sorted(tools)
 
 
@@ -169,7 +169,7 @@ def retrieve(max_items=None, data_base="."):
     print(f"Found {len(all_items)} training materials{limit_msg}")
 
     all_entries = []
-    tool_uri_to_material_ids = {}
+    tool_to_material_ids = {}
     stat_unique_tools = set()
     stat_resource_types = {}
     stat_nodes = {}
@@ -193,9 +193,9 @@ def retrieve(max_items=None, data_base="."):
                     wf_cleaned, f, sort_keys=True, indent=4, separators=(",", ": ")
                 )
 
-            for tool_uri in entry.get("tools", []):
-                stat_unique_tools.add(tool_uri)
-                tool_uri_to_material_ids.setdefault(tool_uri, []).append(entry["id"])
+            for tool_name in entry.get("tools", []):
+                stat_unique_tools.add(tool_name)
+                tool_to_material_ids.setdefault(tool_name, []).append(entry["id"])
 
             # Stats: resource type
             rt_list = detail.get("resource_type", []) if detail else []
@@ -212,29 +212,28 @@ def retrieve(max_items=None, data_base="."):
     print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
 
     matched_count = 0
-    material_id_to_tool_uris = {}
-    for tool_uri in sorted(tool_uri_to_material_ids.keys()):
-        bt_id = name_from_tool_uri(tool_uri)
-        directory = os.path.join(data_base, "data", bt_id)
+    material_id_to_tools = {}
+    for tool_name in sorted(tool_to_material_ids.keys()):
+        directory = os.path.join(data_base, "data", tool_name)
         if not os.path.isdir(directory):
             continue
 
-        material_ids = sorted(set(tool_uri_to_material_ids[tool_uri]))
+        material_ids = sorted(set(tool_to_material_ids[tool_name]))
 
         for material_id in material_ids:
-            material_id_to_tool_uris.setdefault(material_id, []).append(tool_uri)
+            material_id_to_tools.setdefault(material_id, []).append(tool_name)
 
-        data_save_path = os.path.join(directory, f"{bt_id}.tess.json")
+        data_save_path = os.path.join(directory, f"{tool_name}.tess.json")
         with open(data_save_path, "w") as f:
             json.dump(material_ids, f, sort_keys=True, indent=4, separators=(",", ": "))
         print(
-            f"matched tool #{matched_count + 1}: {bt_id} ({len(material_ids)} trainings)"
+            f"matched tool #{matched_count + 1}: {tool_name} ({len(material_ids)} trainings)"
         )
         matched_count += 1
 
     for entry in all_entries:
         entry["mapped_tools"] = sorted(
-            material_id_to_tool_uris.get(entry.get("id", ""), [])
+            material_id_to_tools.get(entry.get("id", ""), [])
         )
         save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
         with open(save_path, "w") as f:
@@ -243,7 +242,7 @@ def retrieve(max_items=None, data_base="."):
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
     print(f"  training materials processed: {len(all_entries)}")
-    print(f"  unique tool URIs found: {len(stat_unique_tools)}")
+    print(f"  unique tool names found: {len(stat_unique_tools)}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
     print("\n  Resource type distribution:")
     for rt in sorted(
