@@ -6,6 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+# Ruff is pinned rather than resolved to "latest" at run time. Unpinned, a new
+# release changes what this check reports on a morning when nothing in the
+# repository changed, and the change can be large: 0.16 widened the default
+# rule set considerably, and the version actually installed here moved from
+# 0.16.9 to 0.16.10 between two runs in the same week. A pinned version also
+# means `make check` and this job agree, which they did not.
+#
+# Bump it deliberately, in a commit that also deals with whatever it newly
+# finds. Keep it in step with RUFF_VERSION in the Makefile.
+env:
+  RUFF_VERSION: "0.16.10"
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,10 +27,12 @@ jobs:
       - name: Run Ruff Linter
         uses: astral-sh/ruff-action@v3
         with:
+          version: ${{ env.RUFF_VERSION }}
           args: "check"
 
       - name: Run Ruff Formatter
         if: always()
         uses: astral-sh/ruff-action@v3
         with:
+          version: ${{ env.RUFF_VERSION }}
           args: "format --check"
