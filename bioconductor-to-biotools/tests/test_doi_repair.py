@@ -44,7 +44,9 @@ SYNTACTIC = [
     ),
 ]
 
-# These need a repair, so each must be confirmed by the registry first.
+# These need a repair, so each must be confirmed by the registry first. Only
+# lossless ones: the string below survives verbatim in the result, and what is
+# added is a constant true of every DOI of that kind.
 REPAIRABLE = [
     ("ihw", "arXiv%3A1701.05179", "10.48550/arXiv.1701.05179"),
     (
@@ -52,11 +54,20 @@ REPAIRABLE = [
         "1093/bioinformatics/btr345",
         "10.1093/bioinformatics/btr345",
     ),
-    ("bioconductor-pengls", "110.3389/fpls.2022.858711", "10.3389/fpls.2022.858711"),
-    ("bioconductor-ctsv", "btac457", "10.1093/bioinformatics/btac457"),
 ]
 
-UNUSABLE = [("bioconductor-clustergvis", "1111"), ("bioconductor-scqtltools", "NULL")]
+# No candidate is proposed for these, so they are dropped. The last two could
+# be repaired by guessing -- a stray leading digit, and reading btac457 as an
+# Oxford Bioinformatics article id -- and both guesses do resolve to the right
+# paper. The rules are still not here: one that invents an identifier can
+# resolve to a real and wrong paper, and a citation of the wrong work is worse
+# than a missing one.
+UNUSABLE = [
+    ("bioconductor-clustergvis", "1111"),
+    ("bioconductor-scqtltools", "NULL"),
+    ("bioconductor-pengls", "110.3389/fpls.2022.858711"),
+    ("bioconductor-ctsv", "btac457"),
+]
 
 
 class Normalise(unittest.TestCase):
@@ -87,7 +98,13 @@ class Normalise(unittest.TestCase):
 
     def test_it_never_fabricates_a_prefix(self):
         """Normalisation must leave a broken DOI broken; repairs get verified."""
-        for raw in ("1111", "NULL", "btac457", "1093/bioinformatics/btr345"):
+        for raw in (
+            "1111",
+            "NULL",
+            "btac457",
+            "110.3389/fpls.2022.858711",
+            "1093/bioinformatics/btr345",
+        ):
             with self.subTest(raw=raw):
                 self.assertNotRegex(normalise(raw), DOI)
 
@@ -164,12 +181,29 @@ class Resolve(unittest.TestCase):
     def test_an_unreachable_registry_refuses_rather_than_guesses(self):
         self.stub_registry(fail=True)
         with self.assertLogs("bc2bt.doi_repair", level=logging.WARNING):
-            self.assertIsNone(resolve("btac457"))
+            self.assertIsNone(resolve("1093/bioinformatics/btr345"))
+
+    def test_no_rule_infers_which_paper_was_meant(self):
+        """Both of these resolve if repaired, and both repairs are right.
+
+        They are refused anyway: the rules that would produce them guess at an
+        identifier, and such a rule can just as well resolve to a real and
+        wrong paper. Confirming existence is not confirming correctness.
+        """
+        self.stub_registry(
+            known={"10.3389/fpls.2022.858711", "10.1093/bioinformatics/btac457"}
+        )
+        for raw in ("110.3389/fpls.2022.858711", "btac457"):
+            with (
+                self.subTest(raw=raw),
+                self.assertLogs("bc2bt.doi_repair", level=logging.WARNING),
+            ):
+                self.assertIsNone(resolve(raw))
 
     def test_a_registry_failure_is_not_cached(self):
         """A blip must not condemn the candidate for the rest of the run."""
         self.stub_registry(fail=True)
-        resolve("btac457")
+        resolve("1093/bioinformatics/btr345")
         self.assertEqual(doi_repair._verified, {})
 
     def test_junk_is_discarded(self):
@@ -182,9 +216,9 @@ class Resolve(unittest.TestCase):
                 self.assertIsNone(resolve(raw))
 
     def test_each_candidate_is_looked_up_once(self):
-        self.stub_registry(known={"10.1093/bioinformatics/btac457"})
+        self.stub_registry(known={"10.1093/bioinformatics/btr345"})
         for _ in range(4):
-            resolve("btac457")
+            resolve("1093/bioinformatics/btr345")
         self.assertEqual(self.mock.call_count, 1)
 
 

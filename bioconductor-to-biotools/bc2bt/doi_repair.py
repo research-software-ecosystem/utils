@@ -12,12 +12,15 @@ normalise()  Decoding and unwrapping only. Nothing is added or inferred, so it
              cannot produce a DOI that was not already written down. Ten of the
              sixteen come back valid from this alone.
 
-candidates() Repairs, each of which guesses at an intention, so none is used
-             until the DOI registry confirms it exists. An unverified repair is
-             never emitted: a DOI that points at the wrong paper is false
-             provenance, and worse than no DOI at all.
+candidates() Repairs, restricted to the lossless kind: the original string
+             survives verbatim and what is added is a constant true of every
+             DOI of that kind, so no rule infers which paper was meant. Even
+             so, none is used until the DOI registry confirms it exists. An
+             unverified repair is never emitted: a DOI pointing at the wrong
+             paper is false provenance, and worse than no DOI at all. Two more
+             of the sixteen come back this way.
 
-Anything left unusable is discarded with a warning rather than sent. Deliberately
+The remaining four are discarded with a warning rather than sent. Deliberately
 no requests_cache here: importing doi.py installs a global sqlite cache as a
 side effect, and a verification memo for the handful of candidates in a run
 does not need one.
@@ -73,11 +76,26 @@ def normalise(raw: str) -> str:
 
 
 def candidates(text: str) -> list[str]:
-    """Ordered repair candidates, most defensible first. Each must be verified."""
+    """Ordered repair candidates. Each must still be verified before use.
+
+    Only lossless repairs: the original string survives verbatim in the
+    result, and what is added is a constant that is true of every DOI of that
+    kind. Nothing here infers which paper was meant.
+
+    Two rules that did infer were deliberately removed. One stripped junk
+    preceding an otherwise intact DOI, which turned `110.3389/fpls.2022.858711`
+    into `10.3389/...` by deciding the leading digit was a typo. The other read
+    a bare `btac457` as an Oxford Bioinformatics article id and supplied the
+    journal prefix. Both resolved, and by title both were in fact the right
+    paper -- but a rule that guesses an identifier can resolve to a real and
+    wrong paper, and a citation pointing at the wrong work is a worse outcome
+    than a missing one. Two records lose a reference as a result:
+    bioconductor-pengls and bioconductor-ctsv.
+    """
     out = []
 
-    # arXiv identifier. arXiv registers a DOI for every paper under this
-    # prefix, and the identifier is carried over unchanged.
+    # arXiv registers a DOI for every paper under this prefix, and carries the
+    # identifier over unchanged.
     arxiv = re.match(r"(?i)^(?:arxiv:|arxiv\.org/abs/)(\d{4}\.\d{4,5}(?:v\d+)?)$", text)
     if arxiv:
         out.append(f"10.48550/arXiv.{arxiv.group(1)}")
@@ -86,16 +104,6 @@ def candidates(text: str) -> list[str]:
     # nothing about this one.
     if re.match(r"^\d{4,9}/", text):
         out.append(f"10.{text}")
-
-    # Junk before an otherwise intact DOI, e.g. a stray leading digit.
-    embedded = re.search(r"(10\.\d{4,9}/.+)$", text)
-    if embedded and embedded.group(1) != text:
-        out.append(embedded.group(1))
-
-    # A bare Oxford Bioinformatics article id (btaa/btab/btac/btad...). This
-    # one does infer the journal, which is why verification is not optional.
-    if re.match(r"(?i)^bt[a-z]{2}\d+$", text):
-        out.append(f"10.1093/bioinformatics/{text}")
 
     return [c for c in dict.fromkeys(out) if DOI.match(c)]
 
