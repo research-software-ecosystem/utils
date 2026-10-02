@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 from bs4 import BeautifulSoup
+from .doi_repair import resolve as resolve_doi
 from .license_normalizer import normalize_license
 from .biotools_license import to_biotools_license
 
@@ -297,16 +298,28 @@ def extract_publications(citation_html: str) -> list:
         List of publication dictionaries with DOI entries
     """
     publications = []
+    seen = set()
     soup = BeautifulSoup(citation_html, "html.parser")
 
     for link in soup.find_all("a", href=True):
         href = link["href"].strip()
-        if "doi.org" in href:
-            doi = href.split("doi.org/")[-1]
-            # not updating the publications for now because this is ignored and overwritten by bio.tools
-            # meta = get_publication_metadata(doi)
-            # publications.append({"doi": doi, "metadata": meta})
-            publications.append({"doi": doi})
+        if "doi.org" not in href:
+            continue
+        # The whole href, not a split on "doi.org/": one of these reads
+        # "http://dx.doi.org10.1093/..." with the slash missing, where that
+        # split returns the entire string. resolve() strips the prefix itself.
+        doi = resolve_doi(href)
+        if doi is None:
+            continue
+        # The same DOI often appears twice on a citation page, once wrapped in
+        # BibTeX braces and once not; they normalise to one.
+        if doi in seen:
+            continue
+        seen.add(doi)
+        # not updating the publications for now because this is ignored and overwritten by bio.tools
+        # meta = get_publication_metadata(doi)
+        # publications.append({"doi": doi, "metadata": meta})
+        publications.append({"doi": doi})
 
     return publications
 
