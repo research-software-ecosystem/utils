@@ -1,0 +1,39 @@
+name: test bioconductor-to-biotools
+
+# This converter decides what lands in the commons and what bio.tools is asked
+# to accept, so the limits it has to respect should be pinned by tests rather
+# than rediscovered from a rejected import.
+
+on:
+  pull_request:
+    paths:
+      - "bioconductor-to-biotools/**"
+      - ".github/workflows/test-bioconductor-to-biotools.yml"
+  push:
+    branches: [main]
+    paths:
+      - "bioconductor-to-biotools/**"
+      - ".github/workflows/test-bioconductor-to-biotools.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bioconductor-to-biotools
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        # bc2bt imports bs4 at module level, so the package has to be
+        # importable even though the tests reach no network.
+        run: pip install -r requirements.txt
+      - name: Run the tests
+        run: python3 -m unittest discover -s tests -v

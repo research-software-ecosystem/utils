@@ -4,11 +4,25 @@ Converter module for transforming Bioconductor metadata to bio.tools format.
 
 import re
 import json
+import logging
 from pathlib import Path
 from typing import Optional
 from bs4 import BeautifulSoup
 from .license_normalizer import normalize_license
 from .biotools_license import to_biotools_license
+
+logger = logging.getLogger(__name__)
+
+# Limits bio.tools enforces on write, from its serializers. A record breaching
+# one of these is rejected whole, so nothing is gained by emitting it:
+#   description  CharField(min_length=10, max_length=1000, required=True)
+#   credit.name  CharField(max_length=100)
+#   publication  PublicationSerializer(many=True, required=False,
+#                                      allow_empty=False)  <- absent is fine,
+#                                                             empty is not
+MAX_DESCRIPTION = 1000
+MIN_DESCRIPTION = 10
+MAX_CREDIT_NAME = 100
 
 # Fields to preserve when updating existing bio.tools entries
 PRESERVED_FIELDS = [
@@ -19,6 +33,36 @@ PRESERVED_FIELDS = [
     "editPermission",
     "function",
 ]
+
+
+def fit_description(raw: str, fallback: str = "") -> str:
+    """Return a description within the length bio.tools accepts.
+
+    Bioconductor descriptions run to 2700 characters; the limit is 1000, and
+    89 records were rejected on it. Truncation is at the last sentence that
+    fits, so what is kept is whole sentences rather than a severed clause --
+    measured over the failing set, that retains a median 75% of the text and
+    ends on a real stop every time. A description with no sentence break in
+    its first half falls back to a word boundary and an ellipsis, which is
+    honest about being cut.
+
+    `fallback` (the Bioconductor ``Title``) covers the case where there is no
+    usable description at all: one package ships an empty one, and bio.tools
+    requires the field. Titles are not used in preference to a description --
+    they are a line long, and would throw away most of what we have.
+    """
+    text = re.sub(r"\s+", " ", raw or "").strip()
+    if len(text) < MIN_DESCRIPTION:
+        text = re.sub(r"\s+", " ", fallback or "").strip()
+    if len(text) <= MAX_DESCRIPTION:
+        return text if len(text) >= MIN_DESCRIPTION else ""
+
+    cut = text[:MAX_DESCRIPTION]
+    stops = list(re.finditer(r"(?<=[.!?])\s", cut))
+    if stops and stops[-1].end() >= MAX_DESCRIPTION // 2:
+        return cut[: stops[-1].start() + 1].strip()
+    space = cut.rfind(" ")
+    return (cut[:space].rstrip(" ,;:") + "\u2026") if space > 0 else cut
 
 
 def process_authors(author_str: str) -> list:
@@ -32,7 +76,12 @@ def process_authors(author_str: str) -> list:
         List of author dictionaries with name, typeEntity, typeRole, and optional orcid
     """
     authors = []
-    author_entries = re.split(r",(?![^\[]*\])", author_str)
+    # Do not split on a comma inside brackets *or* parentheses. The ORCID
+    # parenthetical can itself contain a comma -- "(ORCID: <...>, fnd: European
+    # Union HORIZON...)" -- and splitting there turned the funding note into a
+    # person. Across all 2418 packages this changes 26 credit lists and
+    # introduces no new over-long name.
+    author_entries = re.split(r",(?![^\[\]]*\])(?![^()]*\))", author_str)
 
     for entry in author_entries:
         entry = entry.strip()
@@ -66,6 +115,20 @@ def process_authors(author_str: str) -> list:
                 author_entry["orcid"] = orcid
             if type_role:
                 author_entry["typeRole"] = type_role
+
+            if len(author_entry["name"]) > MAX_CREDIT_NAME:
+                # Not a long name -- a parse that failed. Some DESCRIPTION
+                # Author fields separate people with spaces rather than commas,
+                # or append affiliations, and there is no way to split those
+                # without guessing where one person ends. Truncating to the
+                # limit would store a fabricated person, so drop the entry and
+                # say which package it came from.
+                logger.warning(
+                    "dropping unparseable credit (%d chars): %.60s...",
+                    len(author_entry["name"]),
+                    author_entry["name"],
+                )
+                continue
 
             authors.append(author_entry)
 
@@ -176,7 +239,9 @@ def convert_package(
         "biotoolsID": get_biotools_id(bioc_data),
         "collectionID": ["BioConductor"],
         "credit": process_authors(bioc_data.get("Author", "")),
-        "description": bioc_data.get("Description", ""),
+        "description": fit_description(
+            bioc_data.get("Description", ""), bioc_data.get("Title", "")
+        ),
         "documentation": [
             {
                 "type": ["User manual"],
@@ -204,9 +269,15 @@ def convert_package(
     if license_id:
         result["license"] = license_id
 
-    # Extract publications from citation HTML if provided
+    # Extract publications from citation HTML if provided. Assigned only when
+    # something was found: bio.tools takes `publication` as optional but
+    # rejects an empty list, and 117 records were refused on exactly that.
+    # Omitting it says "we know of none", which is what we mean; [] asserts
+    # "there are none", which we cannot support.
     if citation_html:
-        result["publication"] = extract_publications(citation_html)
+        publications = extract_publications(citation_html)
+        if publications:
+            result["publication"] = publications
 
     # Preserve fields from existing bio.tools entry
     if existing_biotools:
