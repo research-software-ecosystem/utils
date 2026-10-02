@@ -10,6 +10,12 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# Fields taken from Bioconductor only when bio.tools has nothing. A
+# description already in the entry is somebody's considered wording, very
+# likely better than a package DESCRIPTION abstract; Bioconductor fills the
+# gap rather than overruling it.
+FILL_ONLY_FIELDS = ("description",)
+
 
 class Updater:
     """Handles creation and updating of bio.tools entries."""
@@ -192,8 +198,29 @@ class Updater:
         ]
 
         for field in bioc_fields_to_update:
-            if field in bioc_data:
-                merged_data[field] = bioc_data[field]
+            if field not in bioc_data:
+                continue
+            incoming = bioc_data[field]
+            if not incoming and merged_data.get(field):
+                # Never trade something for nothing. The loop used to assign
+                # unconditionally, so a Bioconductor citation page with no DOI
+                # link replaced a populated `publication` list with [] --
+                # losing the references and producing a record bio.tools
+                # refuses, since it accepts the field absent but not empty.
+                logger.debug("keeping existing %s; Bioconductor sent nothing", field)
+                continue
+            if field in FILL_ONLY_FIELDS and merged_data.get(field):
+                logger.debug("keeping existing %s rather than overwriting", field)
+                continue
+            merged_data[field] = incoming
+
+        # An empty collection is never valid to send: every list-valued field
+        # in the API is allow_empty=False. Dropping them here also repairs the
+        # records already carrying "publication": [], which would otherwise
+        # survive untouched now that the converter no longer emits it.
+        for field in [k for k, v in merged_data.items() if v in ([], {})]:
+            logger.debug("dropping empty %s", field)
+            del merged_data[field]
 
         # Merge collectionID: ensure "BioConductor" is included
         existing_collections = set(existing_data.get("collectionID", []))
