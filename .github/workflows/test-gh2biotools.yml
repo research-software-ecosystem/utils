@@ -1,0 +1,36 @@
+name: test gh2biotools
+
+# What this script sends to bio.tools decides whether the weekly sync lands or
+# is rejected, so the shape of the payload should be pinned by tests. The suite
+# stubs every request: it needs no API token and touches no live record.
+
+on:
+  pull_request:
+    paths:
+      - "scripts/runbiotools/**"
+      - ".github/workflows/test-gh2biotools.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/runbiotools/**"
+      - ".github/workflows/test-gh2biotools.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        # gh2biotools imports both at module level, so they are needed to
+        # import it at all, even though every call is stubbed.
+        run: pip install requests boltons
+      - name: Run the tests
+        run: python3 -m unittest discover -s scripts/runbiotools -p 'test_*.py' -v
