@@ -5,6 +5,12 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
+try:
+    from tabulate import tabulate
+except ImportError:
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
+
 def rdfize(data) -> Graph:
     prefix = """
 @prefix biotools: <https://bio.tools/> .
@@ -32,7 +38,7 @@ def rdfize(data) -> Graph:
         
         if "creators" in data.keys():
             for author in data["creators"]:
-                triples += f'{package_uri} schema:creator "{author}" .\n'
+                triples += f'{package_uri} schema:creator "{author}" .\n' # formatting error for wf 1738, 1739, 1740, 1741 
 
         if "create_time" in data.keys():
             triples += f'{package_uri} schema:dateCreated "{data["create_time"]}" .\n'
@@ -41,11 +47,15 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} schema:license "{data["license"]}" .\n'
             
         if "name" in data.keys():
-            triples += f'{package_uri} schema:name "{data["name"]}" .\n'
+            triples += (
+                f"{package_uri} schema:name "
+                + json.dumps(data["name"])
+                + " .\n"
+            )
 
         # programmingLanguage 
 
-        # sdPublisher: "source" or "workflow_class"? eg WorkflowHub or Galaxy
+        # sdPublisher: "source" or "workflow_class"? i.e. WorkflowHub or Galaxy
     
         if "link" in data.keys():
             triples += f'{package_uri} schema:url <{data["link"]}> .\n'
@@ -66,7 +76,7 @@ def rdfize(data) -> Graph:
 
         # creativeWorkStatus: "active" or "inactive" or "deprecated" or "retired" or "archived"
 
-        if "description" in data.keys(): ## OJO special characters, ex. in workflow 104
+        if "description" in data.keys():
                 triples += (
                     f"{package_uri} schema:description "
                     + json.dumps(data["description"])
@@ -119,16 +129,15 @@ def rdfize(data) -> Graph:
         print(prefix + "\n" + triples)
         print(e)
 
-
 def get_workflowhub_files_in_repo():
     workflows = []
     for data_file in glob.glob("../../content/imports/workflowhub/*.workflowhub.json"):
         workflows.append(data_file)
     return workflows
 
-def process_workflows_by_id(id="SPROUT"):
+def process_workflows_by_id(rdf_graph, id="SPROUT"):
     """
-    Go through all workflowhub entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Produce an RDF graph representation for a given workflow ID.
     """
     workflow_files = get_workflowhub_files_in_repo()
 
@@ -149,35 +158,19 @@ def process_workflows_by_id(id="SPROUT"):
                 print(f"WARNING: no workflow id found for {workflow_file}!")
                 continue
 
-            directory = os.path.join("..", "..", "content", "imports", "workflowhub")
-
-            ## generate workflowhub JSON-LD and TTL files
+            ## generate TTL file
             temp_graph = rdfize(workflow)
-            if temp_graph and os.path.exists(directory):
-                temp_graph.serialize(
-                    format="json-ld",
-                    auto_compact=True,
-                    destination=os.path.join(directory, workflow_id + ".workflowhub.jsonld"),
-                )
-                temp_graph.serialize(
-                    format="turtle",
-                    destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
-                )
-                print(temp_graph.serialize(format="turtle"))
 
+            if temp_graph:
+                rdf_graph += temp_graph
+            else:
+                wf_warnings.append(workflow_id)
 
-def clean():
-    for data_file in glob.glob(r"../../content/imports/workflowhub/*.workflowhub.jsonld"):
-        print(f"removing file {data_file}")
-        os.remove(data_file)
-    for data_file in glob.glob(r"../../content/imports/workflowhub/*.workflowhub.ttl"):
-        print(f"removing file {data_file}")
-        os.remove(data_file)
+    return rdf_graph
 
-
-def process_workflows():
+def process_workflows(rdf_graph):
     """
-    Go through all workflowhub entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all workflowhub entries and produce an RDF/Turtle graph representation.
     """
     workflow_files = get_workflowhub_files_in_repo()
 
@@ -193,34 +186,66 @@ def process_workflows():
             print(f"WARNING: no workflow id found for {workflow_file}!")
             continue
 
-        directory = os.path.join("..", "..", "content", "imports", "workflowhub")
-
-        if not os.path.exists(directory):
-            print(f"WARNING: Directory {directory} does not exist for {workflow_id}!")
-            continue
-
-        ## generate workflowhub JSON-LD and TTL files
         temp_graph = rdfize(workflow)
-        if temp_graph and os.path.exists(directory):
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, workflow_id + ".workflowhub.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, workflow_id + ".workflowhub.ttl"),
-            )
+
+        if temp_graph:
+            rdf_graph += temp_graph
         else:
             wf_warnings.append(workflow_id)
 
+    return rdf_graph
+
+def generate_dump(directory):
+    """
+    Produce an single RDF file for all imported workflows.
+    """
+    rdf_graph = Graph()
+
+    # process_workflows_by_id(rdf_graph, "1104")
+    process_workflows(rdf_graph)
+    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "workflowhub-dump.ttl"))
+
+    show_stats(rdf_graph)
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    }
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    }
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
+
 
 if __name__ == "__main__":
-    clean()
     wf_warnings = []
+    directory = "../../content/datasets"
 
-    process_workflows()
-    #process_workflows_by_id("1472")
+    generate_dump(directory)
 
     for wf_id in wf_warnings:
-        print(f"WARNING: No graph generated for workflow {wf_id}")
+        print(f"WARNING: No graph generated for workflow {wf_id}: formatting error.")
