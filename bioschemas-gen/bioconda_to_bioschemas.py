@@ -455,6 +455,8 @@ if __name__ == "__main__":
     for tool_id in tool_warnings:
         print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
+    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+
     # clean()
     # tool_warnings = []
     # process_tools()
