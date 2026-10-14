@@ -7,29 +7,18 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
-# def getBiotoolsId(bioconda_data) -> str:
-#     """
-#     Get the bio.tools ID from the bioconda data.
-#     """
-#     if "extra" in bioconda_data.keys():
-#         if "identifiers" in bioconda_data["extra"].keys():
-#             for id in bioconda_data["extra"]["identifiers"]:
-#                 if id.lower().startswith("biotools:"):
-#                     return id
-#     return None
-
-def urlExists(url, timeout=5):
-    #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-    """Check if a URL exists """
-    #id = biotools_id.lower().split("biotools:", 1)[-1]
-    #print(id)
-    #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
-    try:
-        r = requests.get(url, timeout=timeout)
-        return r.status_code == 200
-    except requests.RequestException:
-        print(f"WARNING: URL {url} does not exist. \n") 
-        return False
+# def urlExists(url, timeout=5):
+#     #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
+#     """Check if a URL exists """
+#     #id = biotools_id.lower().split("biotools:", 1)[-1]
+#     #print(id)
+#     #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
+#     try:
+#         r = requests.get(url, timeout=timeout)
+#         return r.status_code == 200
+#     except requests.RequestException:
+#         print(f"WARNING: URL {url} does not exist. \n") 
+#         return False
 
 ## No specific format for authors and maintainers, no pattern to parse
 # def getAuthors(bioconductor_data) -> list:
@@ -124,8 +113,8 @@ def rdfize(data) -> Graph:
         depen = getDependencies(data)
     if 'biocViews' in data.keys():
         biocViews = getBiocViews(data)
-    if 'source.ver' in data.keys():
-        download = data['source.ver']
+    # if 'source.ver' in data.keys():   ## lacks base url
+    #     download = data['source.ver']
 
     try:
         ## Minimum properties
@@ -172,8 +161,8 @@ def rdfize(data) -> Graph:
         # contributor
         # discussionUrl
 
-        if download :
-            triples += f'{package_uri} schema:downloadUrl <{download}> .\n'
+        # if download :
+        #     triples += f'{package_uri} schema:downloadUrl <bioconductor:{download}> .\n'
 
         # funder
         # hasPart
@@ -227,7 +216,7 @@ def get_bioconductor_files_in_repo():
 
 def process_tools_by_id(id="SPROUT"):
     """
-    Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
     """
     tool_files = get_bioconductor_files_in_repo()
     #print(tool_files)
@@ -235,40 +224,32 @@ def process_tools_by_id(id="SPROUT"):
     for tool_file in tool_files:
         #tool_name = os.path.basename(tool_file).split('.')[0]
 
-        tool_id = os.path.basename(tool_file)
-        tool_id = tool_id.removesuffix(".bioconductor.json") 
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removesuffix(".bioconductor.json") 
 
-        # tool_name = None
-        # if "Package" in tool.keys():
-        #     tool_name = tool["Package"]
-        #tool_id = Path(tool_file).stem.removesuffix(".bioconductor")
-        #print(tool_id)
-        #print(tool_name)
-        if id == tool_id:# or id == tool_id:
-
-    #for tool_file in tool_files:
-        #if id in tool_file:
+        if id == tool_name:
+            
             path = Path(tool_file)
-            #tool = yaml.safe_load(path.read_text(encoding="utf-8"))
             tool = json.loads(path.read_text(encoding="utf-8"))
 
-            #print(tool_file)
-            # print(json.dumps(tool, indent=2))
-            #tool_id = None
-            #tool_id = id
-            #if "Package" in tool.keys():
-                #tool_id = tool["Package"]
+            tool_id = None
+            if "Package" in tool.keys():
+                tool_id = tool["Package"]
 
             if tool_id is None:
-                print(f"WARNING: no tool id found for {tool_file}!")
-                continue
-            tpe_id = tool_id.lower()
-            #print("test" +tpe_id)
+                print(f"WARNING: no tool id found in {tool_file}.")
+                tool_id = tool_name
+
+            # if biotools_id:
+            #     tpe_id = biotools_id
+            # else:
+                # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
+            tpe_id = tool_id ## assumes bioc package name == biotools ID - biotools ID is not in metadata
+
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-            ## generate bioconductor JSON-LD and TTL files
+            ## generate bioconductor graph
             temp_graph = rdfize(tool)
-            #print(temp_graph.serialize(format="turtle"))
             if temp_graph and os.path.exists(directory):
                 temp_graph.serialize(
                     format="json-ld",
@@ -291,34 +272,39 @@ def clean():
 
 def process_tools():
     """
-    Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / TTL).
     """
     tool_files = get_bioconductor_files_in_repo()
     for tool_file in tool_files:
+        print(f"processing {tool_file}")
+
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removesuffix(".bioconductor.json")
+
         path = Path(tool_file)
         tool = json.loads(path.read_text(encoding="utf-8"))
 
-
-        #print(tool_file)
-        tool_id = os.path.basename(tool_file)
-        tool_id = tool_id.removesuffix(".bioconductor.json") 
-        # if "Package" in tool.keys():
-        #     tool_id = tool["Package"]
-        # tool_id = os.path.basename(tool_file)
-        # tool_id = tool_id.removesuffix(".bioconductor.json")
+        tool_id = None
+        if "Package" in tool.keys():
+            tool_id = tool["Package"]
 
         if tool_id is None:
-            print(f"WARNING: no tool id found for {tool_file}!")
-            continue
+            print(f"WARNING: no bioconductor id found in {tool_file}, using file basename instead.")
+            tool_id = tool_name
 
-        tpe_id = tool_id.lower()
+        # if biotools_id:
+        #     tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
+        # else:
+            # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
+
+        tpe_id = tool_id.lower() ## assumes bioc package name == biotools ID - biotools ID is not in metadata
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
-            print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
+            print(f"WARNING: Directory {directory} does not exist for {tool_id}.")
             continue
 
-        ## generate bioconductor JSON-LD and TTL files
+        ## generate bioconductor TTL file
         temp_graph = rdfize(tool)
         if temp_graph and os.path.exists(directory):
             temp_graph.serialize(
@@ -338,4 +324,4 @@ if __name__ == "__main__":
     process_tools()
     #process_tools_by_id("bioconductor-ribocrypt")
     #process_tools_by_id("bam2fasta")
-    # process_tools_by_id("bowtie2")
+    # process_tools_by_id("deseq2")
