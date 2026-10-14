@@ -86,6 +86,17 @@ def rdfize(data) -> Graph:
     triples = ""
 
     name = None
+    url = None
+    desc = None
+    license = None
+    version = None
+    publi = None
+    maintainers = None
+    title = None
+    repo = None
+    authors = None
+    depen = None
+    biocViews = None
 
     if 'Package' in data.keys():
         name = data['Package']
