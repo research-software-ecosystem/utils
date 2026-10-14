@@ -114,7 +114,7 @@ def getMaintainers(bioconda_data) -> list:
         return res
     return None
 
-def urlExists(url, timeout=5):
+def urlExists(url, timeout=1):
     """Check if a URL exists """
     try:
         r = requests.get(url, timeout=timeout)
@@ -128,8 +128,6 @@ def rdfize(data) -> Graph:
 @prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
 @prefix biotools: <https://bio.tools/> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix debian: <https://salsa.debian.org/med-team/> .
-@prefix galaxytools: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
@@ -238,8 +236,8 @@ def rdfize(data) -> Graph:
 
             if download_urls:
                 for url in download_urls:
-                    if urlExists(url):
-                        triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
+                    #if urlExists(url):
+                    triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
 
             # funder
             # hasPart
@@ -262,8 +260,8 @@ def rdfize(data) -> Graph:
             # softwareAddOn
 
             if software_help:
-                if urlExists(software_help):
-                    triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
+                #if urlExists(software_help):
+                triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
 
             # thumbnailsUrl
 
@@ -301,7 +299,7 @@ def get_bioconda_files_in_repo():
     return tools
 
 
-def process_tools_by_id(id="SPROUT"):
+def process_tools_by_id(rdf_graph, id="SPROUT"):
     """
     Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
     """
@@ -336,22 +334,15 @@ def process_tools_by_id(id="SPROUT"):
                 tpe_id = tool_id                
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-            ## generate bioconda JSON-LD and TTL files
+            ## generate TTL file
             temp_graph = rdfize(tool)
-            if temp_graph and os.path.exists(directory):
-                temp_graph.serialize(
-                    format="json-ld",
-                    auto_compact=True,
-                    destination=os.path.join(directory, tool_id + ".bioconda.jsonld"),
-                )
-                temp_graph.serialize(
-                    format="turtle",
-                    destination=os.path.join(directory, tool_id + ".bioconda.ttl"),
-                )
-                print(temp_graph.serialize(format="turtle"))
-            else:
-                print(f"WARNING: no RDF graph generated for {tool_file}.\nDirectory does not exist or graph is empty.\nDirectory: {directory}\nGraph: {temp_graph}\n")
 
+            if temp_graph:
+                rdf_graph += temp_graph
+            else:
+                tool_warnings.append(tool_id)
+
+    return rdf_graph
 
 def clean():
     for data_file in glob.glob(r"../../content/data/*/*.bioconda.jsonld"):
@@ -362,7 +353,7 @@ def clean():
         os.remove(data_file)
 
 
-def process_tools():
+def process_tools(rdf_graph):
     """
     Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD).
     """
@@ -397,26 +388,76 @@ def process_tools():
             print(f"WARNING: Directory {directory} does not exist for {tool_id}.")
             continue
 
-        ## generate bioconda JSON-LD and TTL files
+        ## generate bioconda TTL file
+
         temp_graph = rdfize(tool)
-        if temp_graph and os.path.exists(directory):
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, tpe_id + ".bioconda.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
-            )
-            print(temp_graph.serialize(format="turtle"))
+
+        if temp_graph:
+            rdf_graph += temp_graph
         else:
-            print(f"WARNING: no RDF graph generated for {tool_file}.\nDirectory does not exist or graph is empty.\nDirectory: {directory}\nGraph: {temp_graph}\n")
+            tool_warnings.append(tool_id)
+
+    return rdf_graph
+
+def generate_dump(directory):
+    """
+    Produce an single RDF file for all imported tools.
+    """
+    rdf_graph = Graph()
+
+    # process_tools_by_id(rdf_graph, "bioconductor-xcms")
+    process_tools(rdf_graph)
+    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "bioconda-dump.ttl"))
+
+    show_stats(rdf_graph)
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    }
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    }
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
 
 
 if __name__ == "__main__":
-    clean()
-    process_tools()
+
+    tool_warnings = []
+    directory = "../../content/datasets"
+
+    generate_dump(directory)
+
+    for tool_id in tool_warnings:
+        print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+
+    # clean()
+    # tool_warnings = []
+    # process_tools()
     # process_tools_by_id("bioconductor-xcms")
     # process_tools_by_id("infernal")
     # process_tools_by_id("diamond")
