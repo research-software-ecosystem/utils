@@ -7,18 +7,12 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
-# def urlExists(url, timeout=5):
-#     #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-#     """Check if a URL exists """
-#     #id = biotools_id.lower().split("biotools:", 1)[-1]
-#     #print(id)
-#     #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
-#     try:
-#         r = requests.get(url, timeout=timeout)
-#         return r.status_code == 200
-#     except requests.RequestException:
-#         print(f"WARNING: URL {url} does not exist. \n") 
-#         return False
+try:
+    from tabulate import tabulate
+except ImportError:
+
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
 ## No specific format for authors and maintainers, no pattern to parse
 # def getAuthors(bioconductor_data) -> list:
@@ -225,7 +219,7 @@ def get_bioconductor_files_in_repo():
     return tools
 
 
-def process_tools_by_id(id="SPROUT"):
+def process_tools_by_id(rdf_graph, id="SPROUT"):
     """
     Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
     """
@@ -259,18 +253,13 @@ def process_tools_by_id(id="SPROUT"):
 
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-            ## generate bioconductor graph
+            ## generate TTL file
             temp_graph = rdfize(tool)
-            if temp_graph and os.path.exists(directory):
-                temp_graph.serialize(
-                    format="json-ld",
-                    auto_compact=True,
-                    destination=os.path.join(directory, tpe_id + ".bioconductor.jsonld"),
-                )
-                temp_graph.serialize(
-                    format="turtle",
-                    destination=os.path.join(directory, tpe_id + ".bioconductor.ttl"),
-                )
+
+            if temp_graph:
+                rdf_graph += temp_graph
+            else:
+                tool_warnings.append(tool_id)
 
 def clean():
     for data_file in glob.glob(r"../../content/data/*/*.bioconductor.jsonld"):
@@ -281,7 +270,7 @@ def clean():
         os.remove(data_file)
 
 
-def process_tools():
+def process_tools(rdf_graph):
     """
     Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / TTL).
     """
@@ -317,22 +306,75 @@ def process_tools():
 
         ## generate bioconductor TTL file
         temp_graph = rdfize(tool)
-        if temp_graph and os.path.exists(directory):
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, tpe_id + ".bioconductor.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, tpe_id + ".bioconductor.ttl"),
-            )
-            print(temp_graph.serialize(format="turtle"))
+
+        if temp_graph:
+            rdf_graph += temp_graph
+        else:
+            tool_warnings.append(tool_id)
+
+    return rdf_graph
+
+def generate_dump(directory):
+    """
+    Produce an single RDF file for all imported tools.
+    """
+    rdf_graph = Graph()
+
+    # process_tools_by_id(rdf_graph, "xcms")
+    process_tools(rdf_graph)
+    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "bioconductor-dump.ttl"))
+
+    show_stats(rdf_graph)
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    }
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    }
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
+
 
 
 if __name__ == "__main__":
-    clean()
-    process_tools()
+
+    tool_warnings = []
+    directory = "../../content/datasets"
+
+    generate_dump(directory)
+
+    for tool_id in tool_warnings:
+        print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+
+    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+
+    # clean()
+    # process_tools()
     #process_tools_by_id("bioconductor-ribocrypt")
     #process_tools_by_id("bam2fasta")
     # process_tools_by_id("deseq2")
