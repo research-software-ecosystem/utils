@@ -5,6 +5,13 @@ import yaml
 from pathlib import Path
 from rdflib import Graph
 
+try:
+    from tabulate import tabulate
+except ImportError:
+
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
+
 def getBiotoolsId(bioconda_data) -> str:
     """
     Get the bio.tools ID from the bioconda data.
@@ -14,12 +21,14 @@ def getBiotoolsId(bioconda_data) -> str:
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("biotools:"):
                     return id
+        else:
+            print(f"WARNING: no biotools identifiers found in bioconda data.")
+            return None
     if id:
         biotools_name = id.lower().split("biotools:", 1)[-1]
         api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
         if not urlExists(api_url):
             print(f"WARNING: biotools ID {id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
-    return None
 
 def getCitation(bioconda_data) -> list:
     """
@@ -41,14 +50,17 @@ def getDownloadUrl(bioconda_data) -> list:
   """
   res = []
   if 'source' in bioconda_data.keys():
-    if 'url' in bioconda_data['source'].keys():
+    if isinstance(bioconda_data['source'], dict):
+      if 'url' in bioconda_data['source'].keys():
         if isinstance(bioconda_data['source']['url'], list):
-            for url in bioconda_data['source']['url']:
-                res.append(url)
+          for url in bioconda_data['source']['url']:
+            res.append(url)
         elif isinstance(bioconda_data['source']['url'], str):
-            res.append(bioconda_data['source']['url'])
+          res.append(bioconda_data['source']['url'])
         else:
-            print(f"WARNING: source URL is not a string or list: {bioconda_data['source']['url']}")
+          print(f"WARNING: source URL is not a string or list: {bioconda_data['source']['url']}")
+    else:
+        print(f"WARNING: source is not a dictionary for package {bioconda_data['package']['name'] if 'package' in bioconda_data.keys() and 'name' in bioconda_data['package'].keys() else 'unknown'}, returning None for download URL.")
     if len(res) > 0:
         return res
     return None
@@ -172,6 +184,9 @@ def rdfize(data) -> Graph:
         ## Mandatory
         if "name" in data["package"].keys():
             name = data["package"]["name"]
+        else:
+            print(f"WARNING: no name found in bioconda data, using biotools id instead.")
+            name = biotools_id if biotools_id else "unknown"
 
         ## Recommended
         if "version" in data["package"].keys():
@@ -230,7 +245,7 @@ def rdfize(data) -> Graph:
             # hasPart
 
             if biotools_id:
-                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
+                triples += f'{package_uri} schema:identifier <{biotools_id}> .\n'
                 #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
             if other_identifier:
                 for id in other_identifier:
@@ -279,7 +294,7 @@ def rdfize(data) -> Graph:
         print(e)
 
 
-def get_biotools_files_in_repo():
+def get_bioconda_files_in_repo():
     tools = []
     for data_file in glob.glob("../../content/data/*/bioconda_*.yaml"):
         tools.append(data_file)
@@ -288,23 +303,17 @@ def get_biotools_files_in_repo():
 
 def process_tools_by_id(id="SPROUT"):
     """
-    Go through all bio.tools entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
     """
-    tool_files = get_biotools_files_in_repo()
+    tool_files = get_bioconda_files_in_repo()
 
     for tool_file in tool_files:
-        #tool_name = os.path.basename(tool_file).split('.')[0]
 
         tool_name = os.path.basename(tool_file)
         tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
 
-        tool_id = Path(tool_file).stem
-        #print(id)
-        #print(tool_name)
         if id == tool_name:
 
-    #for tool_file in tool_files:
-        #if id in tool_file:
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
@@ -316,9 +325,15 @@ def process_tools_by_id(id="SPROUT"):
                     tool_id = tool["package"]["name"]
 
             if tool_id is None:
-                print(f"WARNING: no tool id found for {tool_file}!")
-                continue
-            tpe_id = tool_id.lower()
+                print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+                tool_id = tool_name
+
+            biotools_id = getBiotoolsId(tool)
+            if biotools_id:
+                tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
+            else:
+                print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
+                tpe_id = tool_id                
             directory = os.path.join("..", "..", "content", "data", tpe_id)
 
             ## generate bioconda JSON-LD and TTL files
@@ -327,13 +342,15 @@ def process_tools_by_id(id="SPROUT"):
                 temp_graph.serialize(
                     format="json-ld",
                     auto_compact=True,
-                    destination=os.path.join(directory, tpe_id + ".bioconda.jsonld"),
+                    destination=os.path.join(directory, tool_id + ".bioconda.jsonld"),
                 )
                 temp_graph.serialize(
                     format="turtle",
-                    destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
+                    destination=os.path.join(directory, tool_id + ".bioconda.ttl"),
                 )
                 print(temp_graph.serialize(format="turtle"))
+            else:
+                print(f"WARNING: no RDF graph generated for {tool_file}.\nDirectory does not exist or graph is empty.\nDirectory: {directory}\nGraph: {temp_graph}\n")
 
 
 def clean():
@@ -347,28 +364,37 @@ def clean():
 
 def process_tools():
     """
-    Go through all bio.tools entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD).
     """
-    tool_files = get_biotools_files_in_repo()
+    tool_files = get_bioconda_files_in_repo()
     for tool_file in tool_files:
+        print(f"processing {tool_file}")
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
+    
         path = Path(tool_file)
         tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-        print(tool_file)
         tool_id = None
         if "package" in tool.keys():
             if "name" in tool["package"].keys():
                 tool_id = tool["package"]["name"]
 
         if tool_id is None:
-            print(f"WARNING: no tool id found for {tool_file}!")
-            continue
+            print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+            tool_id = tool_name
 
-        tpe_id = tool_id.lower()
+        biotools_id = getBiotoolsId(tool)
+        if biotools_id:
+            tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
+        else:
+            print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
+            tpe_id = tool_id                
+ 
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
-            print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
+            print(f"WARNING: Directory {directory} does not exist for {tool_id}.")
             continue
 
         ## generate bioconda JSON-LD and TTL files
@@ -384,12 +410,15 @@ def process_tools():
                 destination=os.path.join(directory, tpe_id + ".bioconda.ttl"),
             )
             print(temp_graph.serialize(format="turtle"))
+        else:
+            print(f"WARNING: no RDF graph generated for {tool_file}.\nDirectory does not exist or graph is empty.\nDirectory: {directory}\nGraph: {temp_graph}\n")
 
 
 if __name__ == "__main__":
     clean()
-    # process_tools()
-    process_tools_by_id("bioconductor-xcms")
+    process_tools()
+    # process_tools_by_id("bioconductor-xcms")
     # process_tools_by_id("infernal")
+    # process_tools_by_id("diamond")
     # process_tools_by_id("bam2fasta")
     # process_tools_by_id("bowtie2")
