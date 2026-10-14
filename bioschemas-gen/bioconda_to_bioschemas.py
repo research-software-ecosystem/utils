@@ -1,5 +1,6 @@
 import os
 import glob
+from token import NAME
 import requests
 import yaml
 from pathlib import Path
@@ -245,6 +246,9 @@ def rdfize(data) -> Graph:
             if biotools_id:
                 triples += f'{package_uri} schema:identifier <{biotools_id}> .\n'
                 #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
+
+            triples += f'{package_uri} schema:identifier <bioconda:{name}> .\n'
+
             if other_identifier:
                 for id in other_identifier:
                     triples += f'{package_uri} schema:identifier "{id}" .\n'
