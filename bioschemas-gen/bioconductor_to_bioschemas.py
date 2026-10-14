@@ -64,9 +64,10 @@ def getDependencies(bioconductor_data) -> list:
   if 'Depends' in bioconductor_data.keys():
     for dep in bioconductor_data['Depends']:
       res.append(dep)
-      #print(dep)
-    #res = bioconductor_data['Depends']
-    #print(res)
+
+#   if 'Imports' in bioconductor_data.keys():
+#     for dep in bioconductor_data['Imports']:
+#       res.append(dep)
 
   return res
 
@@ -86,17 +87,16 @@ def getBiocViews(bioconductor_data) -> list:
 
 def rdfize(data) -> Graph:
     prefix = """
+@prefix bioconductor: <https://git.bioconductor.org/packages/> . ## Not accessible ATM
+@prefix biotools: <https://bio.tools/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
-@prefix biotools: <https://bio.tools/> .
-@prefix bioconductor: <https://git.bioconductor.org/packages/> .
 """
 
     triples = ""
 
     name = None
-    url = None
 
     if 'Package' in data.keys():
         name = data['Package']
@@ -124,44 +124,86 @@ def rdfize(data) -> Graph:
         depen = getDependencies(data)
     if 'biocViews' in data.keys():
         biocViews = getBiocViews(data)
+    if 'source.ver' in data.keys():
+        download = data['source.ver']
 
     try:
         ## Minimum properties
         if name :
             package_uri = f"bioconductor:{name}"
             triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+
+            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+
+            if desc :
+                triples += f'{package_uri} schema:description "{desc}" .\n'
+
             triples += f'{package_uri} schema:name "{name}" .\n'
-        if desc :
-            triples += f'{package_uri} schema:description "{desc}" .\n'
-        if url :
-            triples += f'{package_uri} schema:url <{url}> .\n'
+
+            if url :
+                triples += f'{package_uri} schema:url <{url}> .\n'
 
         ## Recommended properties
+
+        # applicationCategory 
+
+        # applicationSubCategory ## EDAM terms not yet available 
+
+        if authors:
+            triples += f'{package_uri} schema:author "{authors}" .\n'
+
+        # citation
+
+        # featureList ## EDAM terms not yet available
+
         if license :
             triples += f'{package_uri} schema:license "{license}" .\n'
+
         if version :
             triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
         ## Optional properties
-        if publi :
-            triples += f'{package_uri} schema:dateModified "{publi}" .\n'
-        if maintainers : ## possibly several, can't parse them properly, no pattern to follow
-            triples += f'{package_uri} schema:maintainer "{maintainers}" .\n'
-        if title :
-            triples += f'{package_uri} schema:alternateName "{title}" .\n'
+
+        # applicationSuite
+
         if repo :
             triples += f'{package_uri} schema:codeRepository <{repo}> .\n'
 
-        #for author in authors:
-        if authors:
-            triples += f'{package_uri} schema:author "{authors}" .\n'
-        for dep in depen:
-            triples += f'{package_uri} schema:hasPart "{dep}" .\n'
+        # contributor
+        # discussionUrl
+
+        if download :
+            triples += f'{package_uri} schema:downloadUrl <{download}> .\n'
+
+        # funder
+        # hasPart
+        # identifier
+        # input
+        # isAccessibleForFree
+        # isBasedOn
+        # isPartOf
 
         for term in biocViews:
             triples += f'{package_uri} schema:keywords "{term}" .\n'
 
+        # operatingSystem
+        # output
+        # programmingLanguage
+        # provider ## Bioconductor?
+        # softwareAddOn
+        # softwareHelp
+        # thumbnailUrl
 
+        ## Other properties
+        if title :
+            triples += f'{package_uri} schema:alternateName "{title}" .\n'
+        if publi :
+            triples += f'{package_uri} schema:dateModified "{publi}" .\n'
+        if maintainers : ## possibly several, can't parse them properly, no pattern to follow
+            triples += f'{package_uri} schema:maintainer "{maintainers}" .\n'
+        if depen:
+                for dependency in depen:
+                    triples += f'{package_uri} schema:softwareRequirements "{dependency}" .\n'    
 
         g = Graph()
         g.parse(data=prefix + "\n" + triples, format="turtle")
