@@ -336,7 +336,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             else:
                 print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
                 tpe_id = tool_id                
-            directory = os.path.join("..", "..", "content", "data", tpe_id)
+            # directory = os.path.join("..", "..", "content", "data", tpe_id)
 
             ## generate TTL file
             temp_graph = rdfize(tool)
