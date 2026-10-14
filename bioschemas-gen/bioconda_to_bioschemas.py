@@ -14,22 +14,13 @@ def getBiotoolsId(bioconda_data) -> str:
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("biotools:"):
                     return id
+    if id:
+        biotools_name = id.lower().split("biotools:", 1)[-1]
+        api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
+        if not urlExists(api_url):
+            print(f"WARNING: biotools ID {id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
     return None
 
-def urlExists(url, timeout=5):
-    #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-    """Check if a URL exists """
-    #id = biotools_id.lower().split("biotools:", 1)[-1]
-    #print(id)
-    #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
-    try:
-        r = requests.get(url, timeout=timeout)
-        return r.status_code == 200
-    except requests.RequestException:
-        print(f"WARNING: URL {url} does not exist. \n") 
-        return False
-
-    
 def getCitation(bioconda_data) -> list:
     """
     Get DOIs from the bioconda data.
@@ -40,7 +31,49 @@ def getCitation(bioconda_data) -> list:
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("doi:"):
                     res.append(id)
-    return res
+    if len(res) > 0:
+        return res
+    return None
+
+def getDownloadUrl(bioconda_data) -> list:
+  """
+  Get URLs from the bioconda data.
+  """
+  res = []
+  if 'source' in bioconda_data.keys():
+    if 'url' in bioconda_data['source'].keys():
+        if isinstance(bioconda_data['source']['url'], list):
+            for url in bioconda_data['source']['url']:
+                res.append(url)
+        elif isinstance(bioconda_data['source']['url'], str):
+            res.append(bioconda_data['source']['url'])
+        else:
+            print(f"WARNING: source URL is not a string or list: {bioconda_data['source']['url']}")
+    if len(res) > 0:
+        return res
+    return None
+    
+def getDependencies(bioconda_data) -> list:
+  """
+  Get host dependencies from the bioconda data.
+  """
+  res = []
+  if 'requirements' in bioconda_data.keys():
+    if 'host' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['host']:
+      for pkg in bioconda_data['requirements']['host']:
+        # pkg = pkg.split(' ', 1)[0]
+        res.append(pkg)
+    if 'run' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['run']:
+      for pkg in bioconda_data['requirements']['run']:
+        # pkg = pkg.split(' ', 1)[0]
+        res.append(pkg)
+    if 'build' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['build']:
+      for pkg in bioconda_data['requirements']['build']:
+        # pkg = pkg.split(' ', 1)[0]
+        res.append(pkg)
+  if len(res) > 0:
+      return res
+  return None
 
 def getIdentifiers(bioconda_data) -> list:
     """
@@ -52,7 +85,9 @@ def getIdentifiers(bioconda_data) -> list:
             for id in bioconda_data["extra"]["identifiers"]:
                 if not id.lower().startswith("biotools:") and not id.lower().startswith("doi:"):
                     res.append(id)
-    return res
+    if len(res) > 0:
+        return res
+    return None
 
 def getMaintainers(bioconda_data) -> list:
     """
@@ -63,82 +98,54 @@ def getMaintainers(bioconda_data) -> list:
         if "recipe-maintainers" in bioconda_data["extra"].keys():
             for id in bioconda_data["extra"]["recipe-maintainers"]:
                 res.append(id)
-    return res
+    if len(res) > 0:
+        return res
+    return None
 
-def getDownloadUrl(bioconda_data) -> list:
-  """
-  Get URLs from the bioconda data.
-  """
-  res = []
-  if 'source' in bioconda_data.keys():
-    if not isinstance(bioconda_data['source'], dict):
-        print(f"WARNING: source is not a dictionary: {bioconda_data['source']}")
-    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], list):
-        for url in bioconda_data['source']['url']:
-            res.append(url)
-    elif 'url' in bioconda_data['source'].keys() and isinstance(bioconda_data['source']['url'], str):
-            res.append(bioconda_data['source']['url'])
-  return res
-  
-def getDependencies(bioconda_data) -> list:
-  """
-  Get host dependencies from the bioconda data.
-  """
-  res = []
-  if 'requirements' in bioconda_data.keys():
-    if 'host' in bioconda_data['requirements'].keys() and bioconda_data['requirements']['host']:
-      for pkg in bioconda_data['requirements']['host']:
-        pkg = pkg.split(' ', 1)[0]
-        res.append(pkg)
-  return res
-
+def urlExists(url, timeout=5):
+    """Check if a URL exists """
+    try:
+        r = requests.get(url, timeout=timeout)
+        return r.status_code == 200
+    except requests.RequestException:
+        print(f"WARNING: URL {url} does not exist. \n") 
+        return False
 
 def rdfize(data) -> Graph:
     prefix = """
+@prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
+@prefix biotools: <https://bio.tools/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix debian: <https://salsa.debian.org/med-team/> .
+@prefix galaxytools: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <http://schema.org/> .
-@prefix biotools: <https://bio.tools/> .
-@prefix bioconda: <https://github.com/bioconda/bioconda-recipes/tree/master/recipes/> .
-@prefix debian: <https://salsa.debian.org/med-team/> .
-@prefix galaxytools: <https://github.com/galaxyproject/tools-iuc/tree/master/tools/> .
 """
 
     triples = ""
 
     ## Mandatory
-    name = None
     description = None
+    name = None
     url = None
 
     ## Recommended
-    #author = getMaintainers(data)
     citation = getCitation(data)
-
-    biotools_id = getBiotoolsId(data)
-
-    #print(f"biotools_id: {biotools_id}")
-    #print(data)
-
-    if biotools_id:
-        biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
-        api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
-        print(api_url)
-        if not urlExists(api_url):
-            print(f"WARNING: biotools ID {biotools_id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
-            biotools_id = None
-
-    other_identifier = getIdentifiers(data)
     license = None
     version = None
 
     ## Optional
-    alternate_name = None
-    code_repository = None
+    code_repository = url
     download_urls = getDownloadUrl(data)
-    #dependencies = getDependencies(data)
+    biotools_id = getBiotoolsId(data)
+    other_identifier = getIdentifiers(data) 
     software_help = None
-    maintainer = getMaintainers(data)
+
+    ## not in Bioschemas profile, but in schema.org profile
+    alternate_name = None
+    dependencies = getDependencies(data)
+    maintainer = getMaintainers(data) 
 
     if "about" in data.keys():
         ## Mandatory
@@ -154,11 +161,12 @@ def rdfize(data) -> Graph:
             license = data["about"]["license"]
 
         ## Optional
-        if "summary" in data["about"].keys():
-            alternate_name = data["about"]["summary"]
         if "software_help" in data["about"].keys():
             software_help = data["about"]["software_help"]
 
+        ## Other
+        if "summary" in data["about"].keys():
+            alternate_name = data["about"]["summary"]
 
     if "package" in data.keys():
         ## Mandatory
@@ -171,46 +179,92 @@ def rdfize(data) -> Graph:
 
     try:
         if name:
-            ## Mandatory
             package_uri = f'bioconda:{name}'
             triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
             # triples += f'{package_uri} rdf:type schema:SoftwareSourceCode .\n'
-            triples += f'{package_uri} schema:name "{name}" .\n'
+
+            ## Minimum
+            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
             if description:
                 triples += f'{package_uri} schema:description "{description}" .\n'
+            triples += f'{package_uri} schema:name "{name}" .\n'
             if url:
                 triples += f'{package_uri} schema:url "{url}" .\n'
 
             ## Recommended
-            # if author 
-            for doi in citation:
-                triples += f'{package_uri} schema:citation "{doi}" .\n'            
-            if biotools_id:
-                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
-                #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
-            for id in other_identifier:
-                triples += f'{package_uri} schema:identifier "{id}" .\n'
+
+            # applicationCategory
+
+            # applicationSubCategory
+
+            # author ## available: recipe-maintainer in extra 
+
+            if citation:
+                for doi in citation:
+                    triples += f'{package_uri} schema:citation "{doi}" .\n'    
+
+            # featureList
+
             if license:
-                triples += f'{package_uri} schema:license "{license}" .\n'
+                triples += f'{package_uri} schema:license "{license}" .\n' 
+
             if version:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
             ## Optional
-            if alternate_name:
-                triples += f'{package_uri} schema:alternateName "{alternate_name}" .\n'
+
+            # applicationSuite
+
             if code_repository:
                 triples += f'{package_uri} schema:codeRepository "{code_repository}" .\n'
-            for url in download_urls:
-                if urlExists(software_help):
-                    triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
-            for maint in maintainer:
-                triples += f'{package_uri} schema:maintainer "{maint}" .\n'
+
+            # contributor ## available: recipe-maintainer in extra
+            # discussionUrl
+
+            if download_urls:
+                for url in download_urls:
+                    if urlExists(url):
+                        triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
+
+            # funder
+            # hasPart
+
+            if biotools_id:
+                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
+                #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
+            if other_identifier:
+                for id in other_identifier:
+                    triples += f'{package_uri} schema:identifier "{id}" .\n'
+
+            # input
+            # isAccessibleForFree
+            # isPartOf
+            # keywords
+            # operatingSystem
+            # output
+            # programmingLanguage
+            # provider ## is "bioconda"?
+            # softwareAddOn
+
             if software_help:
                 if urlExists(software_help):
                     triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
-    
-            #for dependency in dependencies:
-            #   triples += f'{package_uri} schema:hasPart "{dependency}" .\n'
+
+            # thumbnailsUrl
+
+            ## Other properties not in the Bioschemas profile, but in the schema.org profile
+
+            if alternate_name:
+                triples += f'{package_uri} schema:alternateName "{alternate_name}" .\n'
+
+            if maintainer:
+                for maint in maintainer:
+                    triples += f'{package_uri} schema:maintainer "{maint}" .\n'
+
+            if dependencies:
+                for dependency in dependencies:
+                    triples += f'{package_uri} schema:softwareRequirements "{dependency}" .\n'    
+
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -334,7 +388,8 @@ def process_tools():
 
 if __name__ == "__main__":
     clean()
-    process_tools()
-    # process_tools_by_id("bioconductor-xcms")
-    #process_tools_by_id("bam2fasta")
+    # process_tools()
+    process_tools_by_id("bioconductor-xcms")
+    # process_tools_by_id("infernal")
+    # process_tools_by_id("bam2fasta")
     # process_tools_by_id("bowtie2")
