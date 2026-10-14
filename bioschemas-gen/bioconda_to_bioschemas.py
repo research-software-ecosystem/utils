@@ -359,7 +359,7 @@ def clean():
 
 def process_tools(rdf_graph):
     """
-    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / TTL).
     """
     tool_files = get_bioconda_files_in_repo()
     for tool_file in tool_files:
