@@ -305,7 +305,7 @@ def get_bioconda_files_in_repo():
 
 def process_tools_by_id(rdf_graph, id="SPROUT"):
     """
-    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
+    Go through all bioconda entries and produce an RDF graph representation (BioSchemas / TTL) for the specified tool.
     """
     tool_files = get_bioconda_files_in_repo()
 
@@ -329,14 +329,6 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             if tool_id is None:
                 print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
                 tool_id = tool_name
-
-            biotools_id = getBiotoolsId(tool)
-            if biotools_id:
-                tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
-            else:
-                print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
-                tpe_id = tool_id                
-            # directory = os.path.join("..", "..", "content", "data", tpe_id)
 
             ## generate TTL file
             temp_graph = rdfize(tool)
@@ -384,7 +376,7 @@ def process_tools(rdf_graph):
             tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
         else:
             print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
-            tpe_id = tool_id                
+            tpe_id = tool_id
  
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
