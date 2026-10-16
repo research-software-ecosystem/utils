@@ -232,7 +232,7 @@ def rdfize(data) -> Graph:
 
             # provider
             triples += f'{package_uri} schema:provider <https://www.debian.org/> .\n'
-            triples += f'<https://www.debian.org/> schema:type Organization .\n'
+            triples += f'<https://www.debian.org/> schema:type "Organization" .\n'
 
             # sowtwareAddOn
             # softwareHelp

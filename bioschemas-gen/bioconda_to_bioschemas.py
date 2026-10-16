@@ -263,7 +263,7 @@ def rdfize(data) -> Graph:
 
             # provider
             triples += f'{package_uri} schema:provider <https://bioconda.github.io/> .\n'
-            triples += f'<https://bioconda.github.io/> schema:type Organization .\n'
+            triples += f'<https://bioconda.github.io/> schema:type "Organization" .\n'
 
             # softwareAddOn
 

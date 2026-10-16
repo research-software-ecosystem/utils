@@ -186,7 +186,7 @@ def rdfize(data) -> Graph:
 
         # provider
         triples += f'{package_uri} schema:provider <https://bioconductor.org/> .\n'
-        triples += f'<https://bioconductor.org/> schema:type Organization .\n'
+        triples += f'<https://bioconductor.org/> schema:type "Organization" .\n'
 
         # softwareAddOn
         # softwareHelp

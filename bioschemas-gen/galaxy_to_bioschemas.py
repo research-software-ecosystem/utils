@@ -249,7 +249,7 @@ def rdfize(data) -> Graph:
 
             # provider
             triples += f'{package_uri} schema:provider <https://galaxyproject.org/> .\n'
-            triples += f'<https://galaxyproject.org/> schema:type Organization .\n'
+            triples += f'<https://galaxyproject.org/> schema:type "Organization" .\n'
 
             # softwareAddOn
             # softwareHelp
