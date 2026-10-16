@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from rdflib import Graph
 import pandas as pd
-
+from tabulate import tabulate
 
 
 def getEdamUrisFromLabels(edam_labels) -> list:
@@ -32,6 +32,18 @@ def getEdamUrisFromLabels(edam_labels) -> list:
 
     return res
 
+def getBiotoolsIdFromGalaxy(tool_data) -> str:
+    """
+    Get the bio.tools ID from the galaxy data.
+    """
+    if "bio.tool_ID" in tool_data.keys() and tool_data["bio.tool_ID"]:
+        biotools_id = "biotools:" + tool_data["bio.tool_ID"]
+        # biotools_id = tool_data["bio.tool_ID"]
+        return biotools_id
+    return None
+
+
+
 def getGalaxyServers(tool_data) -> list:
     """
     Get Galaxy servers list where given tool is available.
@@ -43,7 +55,7 @@ def getGalaxyServers(tool_data) -> list:
     for k in tool_data.keys():
         if k.startswith(keystart) and tool_data[k] > 0:
             server = k.split(keystart)[-1]
-            if server_dict[server]:
+            if server in server_dict.keys():
                 if server not in res:
                     res.append(server_dict[server])
             else:
@@ -67,9 +79,9 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    ## Mandatory
-    name = None
+    ## Minimum
     description = None
+    name = None
     url = None
 
     ## Recommended
@@ -88,20 +100,20 @@ def rdfize(data) -> Graph:
     galaxywf_ids = [] # isPartOf
     keywords = []
 
-    ## Mandatory
-    if "Suite_ID" in data.keys():
-        name = data["Suite_ID"]
+    ## Minimum
     if "Description" in data.keys():
         description = data["Description"]
+    if "Suite_ID" in data.keys():
+        name = data["Suite_ID"]
     if "Suite_source" in data.keys():
         url = data["Suite_source"]
 
     ## Recommended  
     if "EDAM_topics" in data.keys():
-        top = getEdamUrisFromLabels(data["EDAM_topics"])
+        top = getEdamUrisFromLabels(data["EDAM_topics"]) ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
         for t in top:
             edam_topics.append("edam:" + t)  
-    if "EDAM_operations" in data.keys():
+    if "EDAM_operations" in data.keys(): ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
         ope = getEdamUrisFromLabels(data["EDAM_operations"])
         for o in ope:
             edam_operations.append("edam:" + o)        
@@ -126,7 +138,7 @@ def rdfize(data) -> Graph:
     if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
         bioconda_id = (
             "bioconda:" + data["Suite_conda_package"].strip()
-        )  # see pharokka package bioconda ID
+        )  # see pharokka package bioconda ID -> exception
 
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
@@ -143,30 +155,63 @@ def rdfize(data) -> Graph:
             ## Mandatory
             package_uri = f"galaxytool:{name}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
-            triples += f'{package_uri} schema:name "{name}" .\n'
+
+            ## Minimum
+
+            # dc:conformsTo
+            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+            
+            # description
             if description:
                 triples += f'''{package_uri} schema:description """{description}""" .\n'''  # see package infernal for ex. of special characters issue
+            
+            # name
+            triples += f'{package_uri} schema:name "{name}" .\n'
+
+            # url
             if url:
                 triples += f'{package_uri} schema:url <{url}> .\n'
 
             ## Recommended
+
+            # applicationCategory
+
+            # applicationSubCategory
             for top in edam_topics:
                 triples += f"{package_uri} schema:applicationSubCategory {top} .\n"
+
+            # author
+
+            # citation
+
+            # featureList
             for ope in edam_operations:
                 triples += f"{package_uri} schema:featureList {ope} .\n"
+
+            # license
+
+            # softwareVersion
             if version:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
             ## Optional
+
+            # applicationSuite
+
+            # codeRepository
             if code_repository:
                 triples += f'{package_uri} schema:codeRepository <{code_repository}> .\n'
-            if date_created:
-                triples += f'{package_uri} schema:dateCreated "{date_created}" .\n'
-            for of in output_format:
-                triples += f'{package_uri} schema:encodingFormat "{of}" .\n'
-                triples += f'{package_uri} bioschemas:output "{of}" .\n'
-#            for tid in tool_ids: 
-#                triples += f"{package_uri} schema:hasPart galaxytool:{tid} .\n"
+
+            # contributor
+            # discussionUrl
+            # downloadUrl
+            # funder
+
+            # hasPart
+            # for tid in tool_ids: 
+            #   triples += f"{package_uri} schema:hasPart galaxytool:{tid} .\n"  
+          
+            # identifier
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
             if bioconda_id:
@@ -174,6 +219,11 @@ def rdfize(data) -> Graph:
             if biii_id:
                 triples += f"{package_uri} schema:identifier {biii_id} .\n"
 
+            # input
+            # isAccessibleForFree
+            # isBasedOn
+
+            # isPartOf
             for galaxywf_id in galaxywf_ids:
                 triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
                 #if galaxywf_id.startswith("https://workflowhub.eu/"):
@@ -182,10 +232,33 @@ def rdfize(data) -> Graph:
             for galaxy_server in getGalaxyServers(data):
                 triples += f'{package_uri} schema:isPartOf <{galaxy_server}> .\n'
                 triples += f'<{galaxy_server}> rdf:type schema:WebSite .\n'
-
+                
+            # keywords
             # for server in server_dict.values():
             for key in keywords:
                 triples += f'{package_uri} schema:keywords "{key}" .\n'
+
+            # operatingSystem
+
+            # output
+            for of in output_format:
+                triples += f'{package_uri} schema:encodingFormat "{of}" .\n'
+                triples += f'{package_uri} bioschemas:output "{of}" .\n'
+
+            # programmingLanguage
+
+            # provider
+            triples += f'{package_uri} schema:provider <https://galaxyproject.org/> .\n'
+            triples += f'<https://galaxyproject.org/> schema:type "Organization" .\n'
+
+            # softwareAddOn
+            # softwareHelp
+            # thumbnailUrl
+
+            ## Other
+
+            if date_created:
+                triples += f'{package_uri} schema:dateCreated "{date_created}" .\n'
 
 
             g = Graph()
@@ -206,14 +279,17 @@ def get_galaxy_files_in_repo():
     return tools
 
 
-def process_tools_by_id(id="SPROUT"):
+def process_tools_by_id(rdf_graph, id="SPROUT"):
     """
-    Go through all galaxy entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all galaxy entries and produce an RDF graph representation (BioSchemas / TTL).
     """
     tool_files = get_galaxy_files_in_repo()
 
     for tool_file in tool_files:
-        if id in tool_file:
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removesuffix(".galaxy.json")
+
+        if id == tool_name:
             path = Path(tool_file)
             tool = json.loads(path.read_text(encoding="utf-8"))
 
@@ -224,21 +300,19 @@ def process_tools_by_id(id="SPROUT"):
             if tool_id is None:
                 print(f"WARNING: no tool id found for {tool_file}!")
                 continue
-            tpe_id = tool_id.lower()
-            directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-            ## generate bioconda JSON-LD and TTL files
+            # tpe_id = tool_id.lower()
+            # directory = os.path.join("..", "..", "content", "data", tpe_id)
+
+            ## generate graph for specified tool
             temp_graph = rdfize(tool)
-            if temp_graph and os.path.exists(directory):
-                temp_graph.serialize(
-                    format="json-ld",
-                    auto_compact=True,
-                    destination=os.path.join(directory, tpe_id + ".galaxy.jsonld"),
-                )
-                temp_graph.serialize(
-                    format="turtle",
-                    destination=os.path.join(directory, tpe_id + ".galaxy.ttl"),
-                )
+
+            if temp_graph:
+                rdf_graph += temp_graph
+            else:
+                tool_warnings.append(tool_id)
+
+    return rdf_graph
 
 
 def clean():
@@ -250,44 +324,96 @@ def clean():
         os.remove(data_file)
 
 
-def process_tools():
+def process_tools(rdf_graph):
     """
-    Go through all galaxy entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all galaxy entries and produce an RDF graph representation (BioSchemas / TTL).
     """
     tool_files = get_galaxy_files_in_repo()
+
     for tool_file in tool_files:
+        print(f"processing {tool_file}")
+        tool_name = os.path.basename(tool_file)
+        tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
+
         path = Path(tool_file)
         tool = json.loads(path.read_text(encoding="utf-8"))
 
         tool_id = None
-
-        if "Suite_ID" in tool.keys():
-            tool_id = tool["Suite_ID"]
+        if "package" in tool.keys():
+            tool_id = tool["package"]
 
         if tool_id is None:
-            print(f"WARNING: no tool id found for {tool_file}!")
-            continue
+            print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+            tool_id = tool_name
 
-        tpe_id = tool_id.lower()
+        biotools_id = getBiotoolsIdFromGalaxy(tool)
+        if biotools_id:
+            tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
+        else:
+            print(f"WARNING: no biotools id found for {tool_file}, using galaxy id to create data directory instead.")
+            tpe_id = tool_id                
+ 
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
             print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
             continue
 
-        ## generate galaxy JSON-LD and TTL files
-        temp_graph = rdfize(tool)
-        if temp_graph and os.path.exists(directory):
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, tpe_id + ".galaxy.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, tpe_id + ".galaxy.ttl"),
-            )
+        ## generate debian TTL file
 
+        temp_graph = rdfize(tool)
+
+        if temp_graph:
+            rdf_graph += temp_graph
+        else:
+            tool_warnings.append(tool_id)
+
+    return rdf_graph
+
+def generate_dump(directory):
+    """
+    Produce an single RDF file for all imported tools.
+    """
+    rdf_graph = Graph()
+
+    # process_tools_by_id(rdf_graph, "bowtie2")
+    process_tools(rdf_graph)
+    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "galaxy-dump.ttl"))
+
+    show_stats(rdf_graph)
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    }
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    }
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
 
 if __name__ == "__main__":
 
@@ -301,6 +427,17 @@ if __name__ == "__main__":
     server_dict = pd.Series(df.url.values,index=df.name).to_dict()
     server_dict = {k.replace(' ','_'):v for k,v in server_dict.items()}
 
-    clean()
-    process_tools()
-    #process_tools_by_id("segmetrics")
+    tool_warnings = []
+    directory = "../../content/datasets"
+
+    generate_dump(directory)
+
+    for tool_id in tool_warnings:
+        print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+
+    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+
+
+    # clean()
+    # process_tools()
+    #process_tools_by_id("jbrowse_2")

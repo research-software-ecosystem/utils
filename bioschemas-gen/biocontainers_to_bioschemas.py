@@ -6,6 +6,12 @@ from pathlib import Path
 from rdflib import Graph
 import requests
 
+try:
+    from tabulate import tabulate
+except ImportError:
+
+    def tabulate(rows, headers=()):
+        return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
 def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
     """
@@ -27,7 +33,8 @@ def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
                 print(f"WARNING: identifier is not a string: {id}")
     return None
 
-def urlExists(url, timeout=5):
+
+def urlExists(url, timeout=1):
     #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
     """Check if a URL exists """
     #id = biotools_id.lower().split("biotools:", 1)[-1]
@@ -45,7 +52,7 @@ def getCitationFromBioContainers(biocontainers_data) -> list:
     Get DOIs from the biocontainers data.
     """
     res = []
-    if "identifiers" in biocontainers_data.keys():
+    if "identifiers" in biocontainers_data.keys() and len(biocontainers_data["identifiers"]) > 0:
         for id in biocontainers_data["identifiers"]:
             if isinstance(id, str) and id.lower().startswith("doi:"):
                 res.append(id)
@@ -61,8 +68,9 @@ def getCitationFromBioContainers(biocontainers_data) -> list:
             else:
                 print(f"WARNING: identifier is not a string: {id}")
                 continue
-
-    return res
+    if len(res) > 0:
+        return res
+    return None
 
 
 def rdfize(data) -> Graph:
@@ -77,16 +85,14 @@ def rdfize(data) -> Graph:
     triples = ""
 
     biotools_id = getBiotoolsIdFromBioContainers(data) 
-    #print(f"biotools_id: {biotools_id}")
-    #print(data)
 
-    if biotools_id:
-        biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
-        api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
-        print(api_url)
-        if not urlExists(api_url):
-            print(f"WARNING: biotools ID {biotools_id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
-            biotools_id = None
+    # if biotools_id:
+    #     biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
+    #     api_url = f"https://bio.tools/api/tool/{biotools_name}/?format=json"
+    #     print(api_url)
+    #     if not urlExists(api_url):
+    #         print(f"WARNING: biotools ID {biotools_id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
+    #         biotools_id = None
 
     dois = getCitationFromBioContainers(data)
 
@@ -95,16 +101,36 @@ def rdfize(data) -> Graph:
             package_uri = f"biocontainers:{data['name']}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             #triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
-            triples += f'{package_uri} schema:name "{data["name"]}" .\n'
+
+            ## Minimum 
+            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+
             if "description" in data.keys():
                 triples += (
                     f"{package_uri} schema:description "
                     + json.dumps(data["description"])
                     + " .\n"
                 )
-                # triples += (
-                #     f'{package_uri} schema:description "{data["description"]}" .\n'
-                # )
+
+            triples += f'{package_uri} schema:name "{data["name"]}" .\n'
+
+            if "home_url" in data.keys()  and data["home_url"] != "Not available":
+                triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
+
+            ## Recommended
+
+            # applicationCategory
+            
+            # applicationSubCategory
+            
+            # author    
+
+            if dois:
+                for doi in dois:
+                    triples += f'{package_uri} schema:citation "{doi}" .\n'
+
+            # featureList
+
             if "license" in data.keys():
                 # triples += f'{package_uri} schema:license "{data["license"]}" .\n'
                 triples += (
@@ -113,17 +139,42 @@ def rdfize(data) -> Graph:
                     + " .\n"
                 )
 
+            # softwareVersion 
+
+            ## Optional
+
+            # applicationSuite
+            # codeRepository
+            # contributor
+            # discussionUrl
+            # downloadUrl
+            # funder
+            # hasPart
+            
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
                 #triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
-            if "home_url" in data.keys() and urlExists(data["home_url"]):
-                triples += f'{package_uri} schema:url <{data["home_url"]}> .\n'
+
+            # input
+            # isAccessibleForFree
+            # isBasedOn
+            # isPartOf
+
             if "keywords" in data.keys():
                 for keyword in data["keywords"]:
                     triples += f'{package_uri} schema:keywords "{keyword}" .\n'
-            # process DOIs
-            for doi in dois:
-                triples += f'{package_uri} schema:citation "{doi}" .\n'
+
+            # operatingSystem
+            # output
+            # programmingLanguage
+
+            # provider
+            triples += f'{package_uri} schema:provider <https://biocontainers.pro> .\n'
+            triples += f'<https://biocontainers.pro> schema:type "Organization" .\n'
+
+            # softwareAddOn
+            # softwareHelp
+            # thumbnailUrl
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -135,48 +186,44 @@ def rdfize(data) -> Graph:
         print(e)
 
 
-def get_biotools_files_in_repo():
+def get_biocontainers_files_in_repo():
     tools = []
     for data_file in glob.glob("../../content/data/*/*.biocontainers.yaml"):
         tools.append(data_file)
     return tools
 
 
-def process_tools_by_id(id="SPROUT"):
+def process_tools_by_id(rdf_graph, id="SPROUT"):
     """
-    Go through all bio.tools entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all biocontainers entries and produce an RDF graph representation (BioSchemas / TTL).
     """
-    tool_files = get_biotools_files_in_repo()
+    tool_files = get_biocontainers_files_in_repo()
 
     for tool_file in tool_files:
         tool_name = os.path.basename(tool_file).split('.')[0]
         tool_id = Path(tool_file).stem
-        #print(id)
-        #print(tool_name)
+
         if id == tool_name:
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-            print(tool_file)
-            tool_id = tool["name"]
-            tpe_id = tool_id.lower()
-            directory = os.path.join("..", "..", "content", "data", tpe_id)
+            tool_id = None
+            if "name" in tool.keys():
+                tool_id = tool["name"]
 
-            ## generate biocontainers JSON-LD and TTL files
+            if tool_id is None:
+                print(f"WARNING: no biocontainers id found in {tool_file}, using file basename instead.")
+                tool_id = tool_name
+
+            ## generate TTL file
             temp_graph = rdfize(tool)
-            if temp_graph and os.path.exists(directory):
-                temp_graph.serialize(
-                    format="json-ld",
-                    auto_compact=True,
-                    destination=os.path.join(
-                        directory, tpe_id + ".biocontainers.jsonld"
-                    ),
-                )
-                temp_graph.serialize(
-                    format="turtle",
-                    destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
-                )
-                print(temp_graph.serialize(format="turtle"))
+
+            if temp_graph:
+                rdf_graph += temp_graph
+            else:
+                tool_warnings.append(tool_id)
+
+    return rdf_graph
 
 
 def clean():
@@ -188,12 +235,13 @@ def clean():
         os.remove(data_file)
 
 
-def process_tools():
+def process_tools(rdf_graph):
     """
-    Go through all bio.tools entries and produce an RDF graph representation (BioSchemas / JSON-LD).
+    Go through all biocontainers entries and produce an RDF graph representation (BioSchemas / TTL).
     """
-    tool_files = get_biotools_files_in_repo()
+    tool_files = get_biocontainers_files_in_repo()
     for tool_file in tool_files:
+        print(f"processing {tool_file}")
         path = Path(tool_file)
         tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
@@ -205,24 +253,78 @@ def process_tools():
             print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
             continue
 
-        ## generate biocontainers JSON-LD and TTL files
+        ## generate bioconda TTL file
+
         temp_graph = rdfize(tool)
-        if temp_graph and os.path.exists(directory):
-            temp_graph.serialize(
-                format="json-ld",
-                auto_compact=True,
-                destination=os.path.join(directory, tpe_id + ".biocontainers.jsonld"),
-            )
-            temp_graph.serialize(
-                format="turtle",
-                destination=os.path.join(directory, tpe_id + ".biocontainers.ttl"),
-            )
-            print(temp_graph.serialize(format="turtle"))
+
+        if temp_graph:
+            rdf_graph += temp_graph
+        else:
+            tool_warnings.append(tool_id)
+
+    return rdf_graph
+
+
+def generate_dump(directory):
+    """
+    Produce an single RDF file for all imported tools.
+    """
+    rdf_graph = Graph()
+
+    # process_tools_by_id(rdf_graph, "ucsc-bigwigcat")
+    process_tools(rdf_graph)
+    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "biocontainers-dump.ttl"))
+
+    show_stats(rdf_graph)
+
+def show_stats(rdf_graph):
+    """
+    Display Bioschemas classes and properties counts.
+    """
+
+    ### display used classes
+    classes_counts = """
+    SELECT ?c (count(?c) as ?count) WHERE {
+        ?s rdf:type ?c .
+    }
+    GROUP BY ?c
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(classes_counts)
+    print()
+    print("Used classes")
+    print(tabulate(res))
+
+    ### display used properties
+    property_counts = """
+    SELECT ?p (count(?p) as ?count) WHERE {
+        ?s ?p ?o .
+    }
+    GROUP BY ?p
+    ORDER BY DESC(?count)
+    """
+
+    res = rdf_graph.query(property_counts)
+    print()
+    print("Used properties")
+    print(tabulate(res))
 
 
 if __name__ == "__main__":
-    clean()
-    process_tools()
+
+    tool_warnings = []
+    directory = "../../content/datasets"
+
+    generate_dump(directory)
+
+    for tool_id in tool_warnings:
+        print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+
+    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+
+    # clean()
+    # process_tools()
     # tool = "bam2fasta"
 
     # process_tools_by_id(tool)
