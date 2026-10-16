@@ -246,7 +246,11 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} bioschemas:output "{of}" .\n'
 
             # programmingLanguage
+
             # provider
+            triples += f'{package_uri} schema:provider <https://galaxyproject.org/> .\n'
+            triples += f'<https://galaxyproject.org/> schema:type Organization .\n'
+
             # softwareAddOn
             # softwareHelp
             # thumbnailUrl

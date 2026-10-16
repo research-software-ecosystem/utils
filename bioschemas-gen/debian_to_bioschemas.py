@@ -229,7 +229,11 @@ def rdfize(data) -> Graph:
             ## See above with featureList
 
             # programmingLanguage
+
             # provider
+            triples += f'{package_uri} schema:provider <https://www.debian.org/> .\n'
+            triples += f'<https://www.debian.org/> schema:type Organization .\n'
+
             # sowtwareAddOn
             # softwareHelp
             # thumbnailUrl
