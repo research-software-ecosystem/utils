@@ -227,7 +227,6 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
     #print(tool_files)
 
     for tool_file in tool_files:
-        #tool_name = os.path.basename(tool_file).split('.')[0]
 
         tool_name = os.path.basename(tool_file)
         tool_name = tool_name.removesuffix(".bioconductor.json") 
@@ -249,9 +248,9 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             #     tpe_id = biotools_id
             # else:
                 # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
-            tpe_id = tool_id ## assumes bioc package name == biotools ID - biotools ID is not in metadata
+            # tpe_id = tool_id ## assumes bioc package name == biotools ID - biotools ID is not in metadata
 
-            directory = os.path.join("..", "..", "content", "data", tpe_id)
+            # directory = os.path.join("..", "..", "content", "data", tpe_id)
 
             ## generate TTL file
             temp_graph = rdfize(tool)
