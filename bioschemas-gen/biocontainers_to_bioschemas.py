@@ -211,14 +211,6 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
                 print(f"WARNING: no biocontainers id found in {tool_file}, using file basename instead.")
                 tool_id = tool_name
 
-            biotools_id = getBiotoolsIdFromBioContainers(tool)
-            if biotools_id:
-                tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
-            else:
-                print(f"WARNING: no biotools id found for {tool_file}, using biocontainers id to create data directory instead.")
-                tpe_id = tool_id                
-            # directory = os.path.join("..", "..", "content", "data", tpe_id)
-
             ## generate TTL file
             temp_graph = rdfize(tool)
 
