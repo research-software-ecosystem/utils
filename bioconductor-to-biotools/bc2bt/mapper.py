@@ -2,25 +2,25 @@
 Mapper module for matching bio.tools entries using configurable identity functions.
 """
 
+import glob
+import json
+import logging
 import os
 import re
-import json
-import glob
-import logging
 from collections import defaultdict
-from typing import List, Dict, Callable, Optional, FrozenSet, Tuple
+from collections.abc import Callable
 from multiprocessing import Pool, cpu_count
 from urllib.parse import urlparse
+
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 matplotlib.use("Agg")  # Set non-interactive backend
-from tqdm import tqdm
 import pandas as pd
-from upsetplot import from_indicators, UpSet
-
+from tqdm import tqdm
+from upsetplot import UpSet, from_indicators
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -33,6 +33,7 @@ levels = {
     "NOTSET": logging.NOTSET,
 }
 logging.basicConfig(level=levels.get(log_level, logging.INFO))
+logger = logging.getLogger(__name__)
 
 
 def remove_protocol(url: str) -> str:
@@ -66,18 +67,18 @@ def normalize_bioconductor_url(url: str) -> str:
         return url
 
 
-def identity_name(json_data: dict) -> Optional[str]:
+def identity_name(json_data: dict) -> str | None:
     """Return the name of the bio.tools tool from JSON."""
     return json_data.get("name")
 
 
-def identity_name_insensitive(json_data: dict) -> Optional[str]:
+def identity_name_insensitive(json_data: dict) -> str | None:
     """Return the name of the bio.tools tool from JSON (case-insensitive)."""
     name = json_data.get("name")
     return name.lower() if name else None
 
 
-def identity_homepage(json_data: dict) -> Optional[str]:
+def identity_homepage(json_data: dict) -> str | None:
     """Return the homepage of the bio.tools tool from JSON."""
     homepage = json_data.get("homepage")
     if homepage:
@@ -85,7 +86,7 @@ def identity_homepage(json_data: dict) -> Optional[str]:
     return None
 
 
-def identity_biotoolsID_unprefixed(json_data: dict) -> Optional[str]:
+def identity_biotoolsID_unprefixed(json_data: dict) -> str | None:
     """Return the biotoolsID without 'bioconductor-' prefix."""
     btid = json_data.get("biotoolsID")
     if btid:
@@ -93,7 +94,7 @@ def identity_biotoolsID_unprefixed(json_data: dict) -> Optional[str]:
     return None
 
 
-def identity_doi(json_data: dict) -> Optional[FrozenSet[str]]:
+def identity_doi(json_data: dict) -> frozenset[str] | None:
     """Return the publication DOIs of the bio.tools tool from JSON."""
     dois = set()
     publications = json_data.get("publication", [])
@@ -104,7 +105,7 @@ def identity_doi(json_data: dict) -> Optional[FrozenSet[str]]:
     return frozenset(dois) if dois else None
 
 
-def identity_name_homepage(json_data: dict) -> Optional[Tuple]:
+def identity_name_homepage(json_data: dict) -> tuple | None:
     """
     Return combined (name, homepage) tuple for strong duplicate detection.
 
@@ -119,7 +120,7 @@ def identity_name_homepage(json_data: dict) -> Optional[Tuple]:
 
 
 # Registry of available identity functions
-IDENTITY_FUNCTIONS: Dict[str, Callable] = {
+IDENTITY_FUNCTIONS: dict[str, Callable] = {
     "name": identity_name,
     "doi": identity_doi,
     "name_insensitive": identity_name_insensitive,
@@ -129,13 +130,13 @@ IDENTITY_FUNCTIONS: Dict[str, Callable] = {
 }
 
 
-def load_json(filepath: str) -> Optional[dict]:
+def load_json(filepath: str) -> dict | None:
     """Load JSON file and return its contents."""
     try:
         with open(filepath, "r", encoding="utf-8") as file:
             return json.load(file)
     except Exception as e:
-        logging.error(f"Error loading {filepath}: {e}")
+        logger.error(f"Error loading {filepath}: {e}")
         return None
 
 
@@ -150,21 +151,21 @@ class IdentityRegistry:
     def __init__(self):
         self.functions = IDENTITY_FUNCTIONS.copy()
 
-    def resolve(self, methods: List[str]) -> List[Callable]:
+    def resolve(self, methods: list[str]) -> list[Callable]:
         """Resolve method names to functions."""
         return [self.functions[m] for m in methods if m in self.functions]
 
-    def list_methods(self) -> List[str]:
+    def list_methods(self) -> list[str]:
         """List available method names."""
         return list(self.functions.keys())
 
-    def validate(self, methods: List[str]) -> List[str]:
+    def validate(self, methods: list[str]) -> list[str]:
         """Validate method names, return invalid ones."""
         return [m for m in methods if m not in self.functions]
 
 
 def build_identity_index(
-    json_data_dict: Dict[str, dict], identity_methods: List[str]
+    json_data_dict: dict[str, dict], identity_methods: list[str]
 ) -> tuple:
     """
     Pre-compute all identity values and create reverse indices for fast lookup.
@@ -206,7 +207,7 @@ def find_matches_optimized(
     identity_values1: dict,
     identity_values2: dict,
     identity_indices2: dict,
-    identity_methods: List[str],
+    identity_methods: list[str],
 ) -> tuple:
     """
     Find matches between two datasets using pre-computed indices.
@@ -228,11 +229,11 @@ def find_matches_optimized(
     match_registry2 = {method: {} for method in identity_methods}
 
     # Initialize all files as unmatched
-    for file1 in identity_values1.keys():
+    for file1 in identity_values1:
         for method in identity_methods:
             match_registry1[method][file1] = False
 
-    for file2 in identity_values2.keys():
+    for file2 in identity_values2:
         for method in identity_methods:
             match_registry2[method][file2] = False
 
@@ -319,7 +320,7 @@ def find_matches_optimized(
 
 
 def create_match_upsetplot(
-    data: dict, filename: str, pattern: str, identity_methods: List[str]
+    data: dict, filename: str, pattern: str, identity_methods: list[str]
 ):
     """
     Create an UpSet plot from the match data.
@@ -339,16 +340,16 @@ def create_match_upsetplot(
     plt.suptitle(title)
     plt.savefig(filename, dpi=300, bbox_inches="tight")
     plt.close()
-    logging.info(f"Upset plot {title} saved to {filename}")
+    logger.info(f"Upset plot {title} saved to {filename}")
 
 
 def compare_files(
     pattern1: str,
     pattern2: str,
-    identity_methods: List[str],
-    upset1_path: Optional[str] = None,
-    upset2_path: Optional[str] = None,
-    num_workers: Optional[int] = None,
+    identity_methods: list[str],
+    upset1_path: str | None = None,
+    upset2_path: str | None = None,
+    num_workers: int | None = None,
 ) -> dict:
     """
     Compare two sets of bio.tools JSON files based on the given identity methods.
@@ -370,7 +371,7 @@ def compare_files(
     files1 = glob.glob(pattern1)
     files2 = glob.glob(pattern2)
 
-    logging.info(
+    logger.info(
         f"Found {len(files1)} files matching pattern1 and {len(files2)} files matching pattern2"
     )
 
@@ -380,7 +381,7 @@ def compare_files(
         raise ValueError(f"No files found matching pattern2: {pattern2}")
 
     # Parallel JSON loading
-    logging.info("Loading JSON files from dataset 1...")
+    logger.info("Loading JSON files from dataset 1...")
     with Pool(num_workers) as pool:
         results1 = list(
             tqdm(
@@ -392,7 +393,7 @@ def compare_files(
         )
     json_data1 = {filepath: data for filepath, data in results1 if data is not None}
 
-    logging.info("Loading JSON files from dataset 2...")
+    logger.info("Loading JSON files from dataset 2...")
     with Pool(num_workers) as pool:
         results2 = list(
             tqdm(
@@ -404,12 +405,12 @@ def compare_files(
         )
     json_data2 = {filepath: data for filepath, data in results2 if data is not None}
 
-    logging.info(f"Loaded {len(json_data1)} valid files from dataset 1")
-    logging.info(f"Loaded {len(json_data2)} valid files from dataset 2")
+    logger.info(f"Loaded {len(json_data1)} valid files from dataset 1")
+    logger.info(f"Loaded {len(json_data2)} valid files from dataset 2")
 
     # Build identity indices
-    logging.info("Building identity indices...")
-    identity_values1, identity_indices1 = build_identity_index(
+    logger.info("Building identity indices...")
+    identity_values1, _identity_indices1 = build_identity_index(
         json_data1, identity_methods
     )
     identity_values2, identity_indices2 = build_identity_index(
@@ -417,7 +418,7 @@ def compare_files(
     )
 
     # Find matches using optimized algorithm
-    logging.info("Finding matches...")
+    logger.info("Finding matches...")
     match_results, match_registry1, match_registry2, matched_files1, matched_files2 = (
         find_matches_optimized(
             identity_values1, identity_values2, identity_indices2, identity_methods
@@ -444,7 +445,7 @@ def compare_files(
 
     # Create upset plots
     if upset1_path or upset2_path:
-        logging.info("Creating upset plots...")
+        logger.info("Creating upset plots...")
         if upset1_path:
             create_match_upsetplot(
                 match_registry1, upset1_path, pattern1, identity_methods

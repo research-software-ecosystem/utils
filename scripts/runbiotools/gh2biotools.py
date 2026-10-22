@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import os
+import argparse
 import json
 import logging
-import argparse
+import os
+
 import requests
 from boltons.iterutils import remap
 
@@ -11,6 +12,7 @@ HOST = "https://bio.tools"
 TOOL_API_URL = f"{HOST}/api/tool/"
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def drop_edam_labels(payload):
@@ -56,7 +58,7 @@ def validate_upload_tool(tool, headers):
     response = requests.post(url, headers=headers, data=json.dumps(tool))
 
     if not response.ok:
-        logging.error(
+        logger.error(
             f"Error validating upload for {tool['biotoolsID']}: {response.status_code} {response.text}"
         )
     return response.ok
@@ -74,7 +76,7 @@ def validate_update_tool(tool, tool_id, headers):
     response = requests.put(url, headers=headers, data=json.dumps(tool))
 
     if not response.ok:
-        logging.error(
+        logger.error(
             f"Error validating update for {tool['biotoolsID']}: {response.status_code} {response.text}"
         )
     return response.ok
@@ -103,7 +105,7 @@ def process_single_file(file, headers, validate_only=False):
     tool_id = payload_dict.get("biotoolsID")
 
     if not tool_id:
-        logging.error(f"'biotoolsID' not found in {file}")
+        logger.error(f"'biotoolsID' not found in {file}")
         return "UNKNOWN", "failed"
 
     # check if tool exists
@@ -136,7 +138,7 @@ def process_single_file(file, headers, validate_only=False):
 
     elif response.status_code == 404:
         # tool not registered, proceed with upload
-        logging.info(f"Tool {tool_id} not registered, proceeding with upload")
+        logger.info(f"Tool {tool_id} not registered, proceeding with upload")
         valid = validate_upload_tool(payload_dict, headers)
 
         if not valid:
@@ -150,7 +152,7 @@ def process_single_file(file, headers, validate_only=False):
         return tool_id, "uploaded" if success else "failed_upload"
 
     else:
-        logging.error(
+        logger.error(
             f"Error retrieving tool {tool_id}: {response.status_code} {response.text}"
         )
         return tool_id, "failed"
@@ -158,40 +160,40 @@ def process_single_file(file, headers, validate_only=False):
 
 def print_summary(results):
     """Print a summary of the upload results."""
-    logging.info("---------------------------")
-    logging.info("SUMMARY")
-    logging.info(f"Tools uploaded: {len(results['uploaded'])}")
-    logging.info(f"Tools updated: {len(results['updated'])}")
-    logging.info(f"Tools unchanged: {len(results['unchanged'])}")
-    logging.info(f"Tools failed: {len(results['failed'])}")
-    logging.info(f"Tools failed validation: {len(results['failed_validation'])}")
-    logging.info(
+    logger.info("---------------------------")
+    logger.info("SUMMARY")
+    logger.info(f"Tools uploaded: {len(results['uploaded'])}")
+    logger.info(f"Tools updated: {len(results['updated'])}")
+    logger.info(f"Tools unchanged: {len(results['unchanged'])}")
+    logger.info(f"Tools failed: {len(results['failed'])}")
+    logger.info(f"Tools failed validation: {len(results['failed_validation'])}")
+    logger.info(
         f"Tools failed upload after validation: {len(results['failed_upload'])}"
     )
-    logging.info(
+    logger.info(
         f"Tools failed update after validation: {len(results['failed_update'])}"
     )
 
     if results["uploaded"]:
-        logging.info(f"Uploaded tools: {', '.join(results['uploaded'])}")
+        logger.info(f"Uploaded tools: {', '.join(results['uploaded'])}")
     if results["updated"]:
-        logging.info(f"Updated tools: {', '.join(results['updated'])}")
+        logger.info(f"Updated tools: {', '.join(results['updated'])}")
     if results["failed"]:
-        logging.error(f"Failed tools: {', '.join(results['failed'])}")
+        logger.error(f"Failed tools: {', '.join(results['failed'])}")
     if results["failed_validation"]:
-        logging.error(
+        logger.error(
             f"Failed validation tools: {', '.join(results['failed_validation'])}"
         )
     if results["failed_upload"]:
-        logging.error(f"Failed upload tools: {', '.join(results['failed_upload'])}")
+        logger.error(f"Failed upload tools: {', '.join(results['failed_upload'])}")
     if results["failed_update"]:
-        logging.error(f"Failed update tools: {', '.join(results['failed_update'])}")
+        logger.error(f"Failed update tools: {', '.join(results['failed_update'])}")
 
 
 def run_upload(files, validate_only=False):
     token = os.environ.get("BIOTOOLS_API_TOKEN")
     if not token:
-        logging.error("Missing BIOTOOLS_API_TOKEN. Aborting upload.")
+        logger.error("Missing BIOTOOLS_API_TOKEN. Aborting upload.")
         raise SystemExit(1)
 
     headers = {**HEADERS, "Authorization": f"Token {token}"}
@@ -206,7 +208,7 @@ def run_upload(files, validate_only=False):
     }
 
     if validate_only:
-        logging.info("validate-only: nothing will be written to bio.tools")
+        logger.info("validate-only: nothing will be written to bio.tools")
 
     for json_file in files:
         with open(json_file, "r") as file:

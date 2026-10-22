@@ -184,7 +184,7 @@ def superseded_by_newer_run():
         runs = api(
             "GET", f"/repos/{REPO}/actions/workflows/{WORKFLOW_FILE}/runs?per_page=1"
         )
-    except Exception as exc:  # noqa: BLE001 - this check must never be the thing that breaks
+    except Exception as exc:
         # A 403 here means the calling job is missing `actions: read`, which is
         # a configuration fault rather than a blip, so name what is lost and
         # put it in the summary where someone will see it.
@@ -413,7 +413,7 @@ def main():
     if any((needs.get(job) or {}).get("result") == "failure" for job in SOURCES):
         try:
             ensure_label()
-        except Exception as exc:  # noqa: BLE001 - reporting must survive its own faults
+        except Exception as exc:
             # Do not abort here: that would skip the summary at exactly the
             # moment the reporting path is in trouble. Opening issues is held
             # back instead, so a run cannot leave unlabelled ones behind.
@@ -425,7 +425,7 @@ def main():
         result = (needs.get(job) or {}).get("result", "missing")
         try:
             rows.append(handle(job, resource, targets, result, label_ready))
-        except Exception as exc:  # noqa: BLE001 - one resource must not hide the rest
+        except Exception as exc:
             # One resource failing to report must not hide the other eight, nor
             # lose the summary. Record it and carry on; the exit status below
             # still makes the run red.

@@ -3,10 +3,9 @@ Updater module for creating and updating bio.tools entries based on match result
 """
 
 import json
-import shutil
 import logging
+import shutil
 from pathlib import Path
-
 
 logger = logging.getLogger(__name__)
 
@@ -207,10 +206,10 @@ class Updater:
                 # link replaced a populated `publication` list with [] --
                 # losing the references and producing a record bio.tools
                 # refuses, since it accepts the field absent but not empty.
-                logger.debug("keeping existing %s; Bioconductor sent nothing", field)
+                logger.debug(f"keeping existing {field}; Bioconductor sent nothing")
                 continue
             if field in FILL_ONLY_FIELDS and merged_data.get(field):
-                logger.debug("keeping existing %s rather than overwriting", field)
+                logger.debug(f"keeping existing {field} rather than overwriting")
                 continue
             merged_data[field] = incoming
 
@@ -219,13 +218,13 @@ class Updater:
         # records already carrying "publication": [], which would otherwise
         # survive untouched now that the converter no longer emits it.
         for field in [k for k, v in merged_data.items() if v in ([], {})]:
-            logger.debug("dropping empty %s", field)
+            logger.debug(f"dropping empty {field}")
             del merged_data[field]
 
         # Merge collectionID: ensure "BioConductor" is included
         existing_collections = set(existing_data.get("collectionID", []))
         existing_collections.add("BioConductor")
-        merged_data["collectionID"] = sorted(list(existing_collections))
+        merged_data["collectionID"] = sorted(existing_collections)
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would update: {existing_path}")
@@ -291,7 +290,7 @@ class Updater:
 
         # Build mapping from converted files to existing files
         conversion_to_existing = {}
-        for method, method_results in match_results.get("match_results", {}).items():
+        for method_results in match_results.get("match_results", {}).values():
             for existing_file, converted_files in method_results.items():
                 for converted_file in converted_files:
                     conversion_to_existing[converted_file] = existing_file

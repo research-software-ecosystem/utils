@@ -1,12 +1,12 @@
-import os
-import json
-import pandas as pd
 import argparse
 import glob
-from Bio import Entrez
+import json
 import logging
-from tqdm import tqdm
+import os
 
+import pandas as pd
+from Bio import Entrez
+from tqdm import tqdm
 
 # PMID->DOI cache
 
@@ -71,25 +71,26 @@ def get_doi_from_pubmed_id(pubmed_id):
     handle = Entrez.efetch(db="pubmed", id=str(pubmed_id), retmode="xml")
     records = Entrez.read(handle)
     handle.close()
-    logging.info(f"Retrieving DOI for PMID {pubmed_id}")
+    logger.info(f"Retrieving DOI for PMID {pubmed_id}")
     try:
         article = records["PubmedArticle"][0]["PubmedData"]["ArticleIdList"]
         for identifier in article:
             if identifier.attributes["IdType"] == "doi":
                 cache[pubmed_id] = identifier
                 save_cache(cache)
-                logging.info(f"Found DOI for PMID {pubmed_id}: {identifier}")
+                logger.info(f"Found DOI for PMID {pubmed_id}: {identifier}")
                 return identifier
     except (KeyError, IndexError):
         pass
     cache[pubmed_id] = None
     save_cache(cache)
-    logging.warning(f"Didn't find DOI for PMID {pubmed_id}")
+    logger.warning(f"Didn't find DOI for PMID {pubmed_id}")
     return None
 
 
 # Configure logging based on the provided log level
 logging.basicConfig(level=args.log_level)
+logger = logging.getLogger(__name__)
 
 # Initialize an empty list to store the extracted data
 data = []
@@ -163,7 +164,7 @@ if len(duplicate_dois) > 0:
     duplicate_info = []
     for doi in duplicate_dois:
         biotools_ids = duplicate_df[
-            duplicate_df["publication.doi"].apply(lambda x: doi in x)
+            duplicate_df["publication.doi"].apply(lambda x, doi=doi: doi in x)
         ]["biotoolsID"].tolist()
         duplicate_info.append({"DOI": doi, "BiotoolsID": biotools_ids})
 

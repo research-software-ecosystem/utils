@@ -1,5 +1,7 @@
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 def normalize_version_to_string(value):
     """
@@ -71,9 +73,7 @@ def normalize_version_fields(data, field_paths):
         try:
             if "[" in field_path:
                 if "[]." not in field_path:
-                    list_key = (
-                        field_path[:-2] if field_path.endswith("[]") else field_path
-                    )
+                    list_key = field_path.removesuffix("[]")
                     if list_key in data and isinstance(data[list_key], list):
                         data[list_key] = normalize_version_to_string(data[list_key])
                 else:
@@ -101,7 +101,7 @@ def normalize_version_fields(data, field_paths):
                 if field_path in data:
                     data[field_path] = normalize_version_to_string(data[field_path])
         except (KeyError, TypeError, IndexError, AttributeError) as e:
-            logging.debug(f"Skipping field path '{field_path}': {e}")
+            logger.debug(f"Skipping field path '{field_path}': {e}")
             continue
 
     return data

@@ -1,9 +1,10 @@
-import os
 import glob
 import json
+import os
 from pathlib import Path
-from rdflib import Graph
+
 import pandas as pd
+from rdflib import Graph
 from tabulate import tabulate
 
 
@@ -15,14 +16,14 @@ def getEdamUrisFromLabels(edam_labels) -> list:
     res = []
 
     for lab in edam_labels:
-        query = """
+        query = f"""
     PREFIX edam: <http://edamontology.org/>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-    SELECT ?label ?entity WHERE {
-        ?entity rdfs:label '%s' .
-    }
-    """ %(lab)
+    SELECT ?label ?entity WHERE {{
+        ?entity rdfs:label '{lab}' .
+    }}
+    """
 
         q = edam_kg.query(query)
         for r in q:
@@ -32,16 +33,16 @@ def getEdamUrisFromLabels(edam_labels) -> list:
 
     return res
 
+
 def getBiotoolsIdFromGalaxy(tool_data) -> str:
     """
     Get the bio.tools ID from the galaxy data.
     """
-    if "bio.tool_ID" in tool_data.keys() and tool_data["bio.tool_ID"]:
+    if tool_data.get("bio.tool_ID"):
         biotools_id = "biotools:" + tool_data["bio.tool_ID"]
         # biotools_id = tool_data["bio.tool_ID"]
         return biotools_id
     return None
-
 
 
 def getGalaxyServers(tool_data) -> list:
@@ -52,16 +53,17 @@ def getGalaxyServers(tool_data) -> list:
     res = []
     keystart = "Number_of_tools_on_"
 
-    for k in tool_data.keys():
+    for k in tool_data:
         if k.startswith(keystart) and tool_data[k] > 0:
             server = k.split(keystart)[-1]
-            if server in server_dict.keys():
+            if server in server_dict:
                 if server not in res:
                     res.append(server_dict[server])
             else:
                 print(f"WARNING: Galaxy instance {server} not found in servers list.")
 
     return res
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -85,70 +87,71 @@ def rdfize(data) -> Graph:
     url = None
 
     ## Recommended
-    edam_topics = [] # applicationSubCategory
-    edam_operations = [] #featureList
+    edam_topics = []  # applicationSubCategory
+    edam_operations = []  # featureList
     version = None
 
     ## Optional
     code_repository = None
     date_created = None
-    output_format = [] # encodingFormat, biochemas:output
+    output_format = []  # encodingFormat, biochemas:output
     tool_ids = []  # hasPart
-    biotools_id = None # identifier
-    biii_id = None # identifier
-    bioconda_id = None # identifier
-    galaxywf_ids = [] # isPartOf
+    biotools_id = None  # identifier
+    biii_id = None  # identifier
+    bioconda_id = None  # identifier
+    galaxywf_ids = []  # isPartOf
     keywords = []
 
     ## Minimum
-    if "Description" in data.keys():
+    if "Description" in data:
         description = data["Description"]
-    if "Suite_ID" in data.keys():
+    if "Suite_ID" in data:
         name = data["Suite_ID"]
-    if "Suite_source" in data.keys():
+    if "Suite_source" in data:
         url = data["Suite_source"]
 
-    ## Recommended  
-    if "EDAM_topics" in data.keys():
-        top = getEdamUrisFromLabels(data["EDAM_topics"]) ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
+    ## Recommended
+    if "EDAM_topics" in data:
+        top = getEdamUrisFromLabels(
+            data["EDAM_topics"]
+        )  ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
         for t in top:
-            edam_topics.append("edam:" + t)  
-    if "EDAM_operations" in data.keys(): ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
+            edam_topics.append("edam:" + t)
+    if (
+        "EDAM_operations" in data
+    ):  ## Only labels are available atm, should be URis, see https://github.com/galaxyproject/galaxy_codex/issues/709
         ope = getEdamUrisFromLabels(data["EDAM_operations"])
         for o in ope:
-            edam_operations.append("edam:" + o)        
-    if "Suite_version" in data.keys():
+            edam_operations.append("edam:" + o)
+    if "Suite_version" in data:
         version = data["Suite_version"]
 
-    ## Optional  
-    if "Homepage" in data.keys():
+    ## Optional
+    if "Homepage" in data:
         code_repository = data["Homepage"]
-    if "Suite_first_commit_date" in data.keys():
+    if "Suite_first_commit_date" in data:
         date_created = data["Suite_first_commit_date"]
-    if "Tool_output_formats" in data.keys():
-        for of in data["Tool_output_formats"]:
-            output_format.append(of)
-    if "Tool_IDs" in data.keys():
-        for tid in data["Tool_IDs"]:
-            tool_ids.append(tid)
-    if "bio.tool_ID" in data.keys() and data["bio.tool_ID"]:
+    if "Tool_output_formats" in data:
+        output_format.extend(data["Tool_output_formats"])
+    if "Tool_IDs" in data:
+        tool_ids.extend(data["Tool_IDs"])
+    if data.get("bio.tool_ID"):
         biotools_id = "biotools:" + data["bio.tool_ID"]
-    if "biii_ID" in data.keys() and data["biii_ID"]:
+    if data.get("biii_ID"):
         biii_id = "biii:" + data["biii_ID"]
-    if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
+    if data.get("Suite_conda_package"):
         bioconda_id = (
             "bioconda:" + data["Suite_conda_package"].strip()
         )  # see pharokka package bioconda ID -> exception
 
-    if "Related_Workflows" in data.keys():
+    if "Related_Workflows" in data:
         for workflow in data["Related_Workflows"]:
-            for wf in workflow.keys():
+            for wf in workflow:
                 if wf == "link":
                     galaxywf_ids.append(workflow[wf])
 
-    if "ToolShed_categories" in data.keys():
-        for keyword in data["ToolShed_categories"]:
-            keywords.append(keyword)
+    if "ToolShed_categories" in data:
+        keywords.extend(data["ToolShed_categories"])
 
     try:
         if name:
@@ -160,17 +163,17 @@ def rdfize(data) -> Graph:
 
             # dc:conformsTo
             triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
-            
+
             # description
             if description:
                 triples += f'''{package_uri} schema:description """{description}""" .\n'''  # see package infernal for ex. of special characters issue
-            
+
             # name
             triples += f'{package_uri} schema:name "{name}" .\n'
 
             # url
             if url:
-                triples += f'{package_uri} schema:url <{url}> .\n'
+                triples += f"{package_uri} schema:url <{url}> .\n"
 
             ## Recommended
 
@@ -200,7 +203,9 @@ def rdfize(data) -> Graph:
 
             # codeRepository
             if code_repository:
-                triples += f'{package_uri} schema:codeRepository <{code_repository}> .\n'
+                triples += (
+                    f"{package_uri} schema:codeRepository <{code_repository}> .\n"
+                )
 
             # contributor
             # discussionUrl
@@ -208,9 +213,9 @@ def rdfize(data) -> Graph:
             # funder
 
             # hasPart
-            # for tid in tool_ids: 
-            #   triples += f"{package_uri} schema:hasPart galaxytool:{tid} .\n"  
-          
+            # for tid in tool_ids:
+            #   triples += f"{package_uri} schema:hasPart galaxytool:{tid} .\n"
+
             # identifier
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
@@ -225,14 +230,14 @@ def rdfize(data) -> Graph:
 
             # isPartOf
             for galaxywf_id in galaxywf_ids:
-                triples += f'{package_uri} schema:isPartOf <{galaxywf_id}> .\n'
-                #if galaxywf_id.startswith("https://workflowhub.eu/"):
-                    #triples += f'<https://workflowhub.eu/> rdf:type schema:Website .\n'
+                triples += f"{package_uri} schema:isPartOf <{galaxywf_id}> .\n"
+                # if galaxywf_id.startswith("https://workflowhub.eu/"):
+                # triples += f'<https://workflowhub.eu/> rdf:type schema:Website .\n'
 
             for galaxy_server in getGalaxyServers(data):
-                triples += f'{package_uri} schema:isPartOf <{galaxy_server}> .\n'
-                triples += f'<{galaxy_server}> rdf:type schema:WebSite .\n'
-                
+                triples += f"{package_uri} schema:isPartOf <{galaxy_server}> .\n"
+                triples += f"<{galaxy_server}> rdf:type schema:WebSite .\n"
+
             # keywords
             # for server in server_dict.values():
             for key in keywords:
@@ -248,8 +253,8 @@ def rdfize(data) -> Graph:
             # programmingLanguage
 
             # provider
-            triples += f'{package_uri} schema:provider <https://galaxyproject.org/> .\n'
-            triples += f'<https://galaxyproject.org/> schema:type "Organization" .\n'
+            triples += f"{package_uri} schema:provider <https://galaxyproject.org/> .\n"
+            triples += '<https://galaxyproject.org/> schema:type "Organization" .\n'
 
             # softwareAddOn
             # softwareHelp
@@ -260,22 +265,20 @@ def rdfize(data) -> Graph:
             if date_created:
                 triples += f'{package_uri} schema:dateCreated "{date_created}" .\n'
 
-
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
             print(g.serialize(format="turtle"))
             return g
 
-    except Exception as e:
+    except Exception:
         print("PARSING ERROR for:")
         print(prefix + "\n" + triples)
-        raise (e)
+        raise
 
 
 def get_galaxy_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.galaxy.json"):
-        tools.append(data_file)
+    tools.extend(glob.glob("../../content/data/*/*.galaxy.json"))
     return tools
 
 
@@ -294,7 +297,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             tool = json.loads(path.read_text(encoding="utf-8"))
 
             tool_id = None
-            if "Suite_ID" in tool.keys():
+            if "Suite_ID" in tool:
                 tool_id = tool["Suite_ID"]
 
             if tool_id is None:
@@ -339,20 +342,24 @@ def process_tools(rdf_graph):
         tool = json.loads(path.read_text(encoding="utf-8"))
 
         tool_id = None
-        if "package" in tool.keys():
+        if "package" in tool:
             tool_id = tool["package"]
 
         if tool_id is None:
-            print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+            print(
+                f"WARNING: no bioconda id found in {tool_file}, using file basename instead."
+            )
             tool_id = tool_name
 
         biotools_id = getBiotoolsIdFromGalaxy(tool)
         if biotools_id:
             tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
         else:
-            print(f"WARNING: no biotools id found for {tool_file}, using galaxy id to create data directory instead.")
-            tpe_id = tool_id                
- 
+            print(
+                f"WARNING: no biotools id found for {tool_file}, using galaxy id to create data directory instead."
+            )
+            tpe_id = tool_id
+
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
@@ -370,6 +377,7 @@ def process_tools(rdf_graph):
 
     return rdf_graph
 
+
 def generate_dump(directory):
     """
     Produce an single RDF file for all imported tools.
@@ -378,9 +386,12 @@ def generate_dump(directory):
 
     # process_tools_by_id(rdf_graph, "bowtie2")
     process_tools(rdf_graph)
-    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "galaxy-dump.ttl"))
+    rdf_graph.serialize(
+        format="turtle", destination=os.path.join(directory, "galaxy-dump.ttl")
+    )
 
     show_stats(rdf_graph)
+
 
 def show_stats(rdf_graph):
     """
@@ -415,8 +426,8 @@ def show_stats(rdf_graph):
     print("Used properties")
     print(tabulate(res))
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
     edam_kg = Graph()
     edam_kg.parse(edam_version, format="xml")
@@ -424,8 +435,8 @@ if __name__ == "__main__":
     server_table = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/sources/data/available_public_servers.csv"
     df = pd.read_table(server_table)
 
-    server_dict = pd.Series(df.url.values,index=df.name).to_dict()
-    server_dict = {k.replace(' ','_'):v for k,v in server_dict.items()}
+    server_dict = pd.Series(df.url.values, index=df.name).to_dict()
+    server_dict = {k.replace(" ", "_"): v for k, v in server_dict.items()}
 
     tool_warnings = []
     directory = "../../content/datasets"
@@ -435,9 +446,10 @@ if __name__ == "__main__":
     for tool_id in tool_warnings:
         print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
-    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
-
+    print(
+        f"{len(tool_warnings)} tools could not be processed due to formatting errors."
+    )
 
     # clean()
     # process_tools()
-    #process_tools_by_id("jbrowse_2")
+    # process_tools_by_id("jbrowse_2")

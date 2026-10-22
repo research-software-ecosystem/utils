@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .converter import batch_convert
-from .mapper import compare_files, IdentityRegistry
+from .mapper import IdentityRegistry, compare_files
 from .updater import update_entries
 
 

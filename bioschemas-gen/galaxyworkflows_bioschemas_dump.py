@@ -1,14 +1,12 @@
+# from pathlib import Path
 
-#from pathlib import Path
-from urllib import response
-
-#from matplotlib.pylab import rint
-from rdflib import Graph
-#from rdflib import ConjunctiveGraph
-import requests
-#import yaml
+# from matplotlib.pylab import rint
+# import yaml
 import json
 
+# from rdflib import ConjunctiveGraph
+import requests
+from rdflib import Graph
 
 edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
 
@@ -16,37 +14,39 @@ kg = Graph()
 kg.parse(edam_version, format="xml")
 
 
-def getEdamUrisFromLabels(edam_labels) -> list :
-  """
-  Get EDAM URIs from EDAM labels.
-  """
+def getEdamUrisFromLabels(edam_labels) -> list:
+    """
+    Get EDAM URIs from EDAM labels.
+    """
 
-  res = []
+    res = []
 
-  for lab in edam_labels:
-    query="""
+    for lab in edam_labels:
+        query = f"""
     PREFIX edam: <http://edamontology.org/>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-    SELECT ?label ?entity WHERE {
-        ?entity rdfs:label '%s' .
-    }
-    """%(lab)
+    SELECT ?label ?entity WHERE {{
+        ?entity rdfs:label '{lab}' .
+    }}
+    """
 
-    q = kg.query(query)
-    for r in q:
-        uri = r['entity'].rsplit('/', 1)[-1]
-        res.append(f'{uri}')
+        q = kg.query(query)
+        for r in q:
+            uri = r["entity"].rsplit("/", 1)[-1]
+            res.append(f"{uri}")
 
-  return res
+    return res
+
 
 def get_metadata(url):
-    
+
     response = requests.get(url)
-    response.raise_for_status() 
+    response.raise_for_status()
 
     data = json.loads(response.text)
     return data
+
 
 def rdfize(data) -> Graph:
 
@@ -60,86 +60,95 @@ def rdfize(data) -> Graph:
     triples = ""
 
     try:
-
         for entry in data:
-
             ## Minimum
-            if "link" in entry.keys():
-                package_uri = f'<{entry["link"]}>'
-                triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
+            if "link" in entry:
+                package_uri = f"<{entry['link']}>"
+                triples += f"{package_uri} rdf:type schema:ComputationalWorkflow .\n"
                 triples += f'{package_uri} schema:url "{entry["link"]}" .\n'
 
-                if "name" in entry.keys():
-                    triples += f"{package_uri} schema:name " + json.dumps(entry["name"]) + " .\n"
+                if "name" in entry:
+                    triples += (
+                        f"{package_uri} schema:name "
+                        + json.dumps(entry["name"])
+                        + " .\n"
+                    )
 
-                if "description" in entry.keys():
-                    triples += f"{package_uri} schema:description " + json.dumps(entry["description"]) + " .\n"
+                if "description" in entry:
+                    triples += (
+                        f"{package_uri} schema:description "
+                        + json.dumps(entry["description"])
+                        + " .\n"
+                    )
 
                 ## Recommended
                 # if "id" in entry.keys():
                 #     triples += f'{package_uri} schema:identifier "{entry["id"]}" .\n'
-                
-                if "doi" in entry.keys():
+
+                if "doi" in entry:
                     triples += f'{package_uri} schema:citation "{entry["doi"]}" .\n'
-            
-                if "latest_version" in entry.keys():
+
+                if "latest_version" in entry:
                     triples += f'{package_uri} schema:softwareVersion "{entry["latest_version"]}" .\n'
 
-                if "license" in entry.keys():
+                if "license" in entry:
                     triples += f'{package_uri} schema:license "{entry["license"]}" .\n'
 
-                if "creators" in entry.keys():
+                if "creators" in entry:
                     for creator in entry["creators"]:
                         triples += f'{package_uri} schema:author "{creator}" .\n'
 
-                if "edam_operation" in entry.keys():
+                if "edam_operation" in entry:
                     ope = getEdamUrisFromLabels(entry["edam_operation"])
                     for o in ope:
-                        triples += f'{package_uri} schema:featureList edam:{o} .\n'
+                        triples += f"{package_uri} schema:featureList edam:{o} .\n"
 
-                if "edam_topic" in entry.keys():
+                if "edam_topic" in entry:
                     top = getEdamUrisFromLabels(entry["edam_topic"])
                     for t in top:
-                        triples += f'{package_uri} schema:applicationSubCategory edam:{t} .\n'
+                        triples += (
+                            f"{package_uri} schema:applicationSubCategory edam:{t} .\n"
+                        )
 
                 ## Optional
-                if "create_time" in entry.keys():
-                    triples += f'{package_uri} schema:dateCreated "{entry["create_time"]}" .\n'
+                if "create_time" in entry:
+                    triples += (
+                        f'{package_uri} schema:dateCreated "{entry["create_time"]}" .\n'
+                    )
 
-                if "update_time" in entry.keys():
+                if "update_time" in entry:
                     triples += f'{package_uri} schema:dateModified "{entry["update_time"]}" .\n'
 
-                if "source" in entry.keys():
+                if "source" in entry:
                     if entry["source"] == "WorkflowHub":
                         server = "https://workflowhub.eu"
-                        triples += f'{package_uri} schema:isPartOf <{server}> .\n'
-                        triples += f'<{server}> rdf:type schema:WebSite .\n'
+                        triples += f"{package_uri} schema:isPartOf <{server}> .\n"
+                        triples += f"<{server}> rdf:type schema:WebSite .\n"
                     elif entry["source"].startswith("https://"):
                         server = entry["source"]
-                        triples += f'{package_uri} schema:isPartOf <{server}> .\n'
-                        triples += f'<{server}> rdf:type schema:WebSite .\n'
+                        triples += f"{package_uri} schema:isPartOf <{server}> .\n"
+                        triples += f"<{server}> rdf:type schema:WebSite .\n"
 
-                if "tags" in entry.keys():
+                if "tags" in entry:
                     for tag in entry["tags"]:
                         triples += f'{package_uri} schema:keywords "{tag}" .\n'
-    
+
         g = Graph()
-        g.parse(data=prefix+"\n"+triples, format="turtle")
-        print(g.serialize(format='turtle'))
+        g.parse(data=prefix + "\n" + triples, format="turtle")
+        print(g.serialize(format="turtle"))
         g.serialize(
             format="turtle",
             destination="../../content/datasets/galaxyworkflow-dump.ttl",
         )
 
-
-
-    except Exception as e:
+    except Exception:
         print("PARSING ERROR for:")
-        print(prefix+"\n"+triples)
-        raise(e)
+        print(prefix + "\n" + triples)
+        raise
+
 
 if __name__ == "__main__":
     url = "https://raw.githubusercontent.com/galaxyproject/galaxy_codex/refs/heads/main/communities/all/resources/workflows.json"
     data = get_metadata(url)
     rdfize(data)
-    #rdfize(data[1:100])
+    # rdfize(data[1:100])
