@@ -1,6 +1,7 @@
+import logging
+
 import dateutil.parser
 import requests
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,9 @@ def get_publication_metadata(doi):
         citation_count = data.get("is-referenced-by-count", None)
 
         # Extract journal
-        if "container-title" in data and data["container-title"]:
+        if data.get("container-title"):
             journal = data["container-title"][0]
-        elif "short-container-title" in data and data["short-container-title"]:
+        elif data.get("short-container-title"):
             journal = data["short-container-title"][0]
 
         # Extract date
@@ -101,5 +102,5 @@ def get_publication_metadata(doi):
         }
 
     except Exception as e:
-        logger.error(f"Error fetching metadata for DOI {doi}: {str(e)}")
+        logger.error(f"Error fetching metadata for DOI {doi}: {e!s}")
         return None

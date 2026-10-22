@@ -1,5 +1,6 @@
-import os
 import glob
+import os
+
 from rdflib import ConjunctiveGraph
 from tabulate import tabulate
 
@@ -16,8 +17,7 @@ def get_bioschemas_files_in_repo():
         "w",
         encoding="utf-8",
     ) as f:
-        for tool in tools:
-            f.write(f"{tool}\n")
+        f.writelines(f"{tool}\n" for tool in tools)
     return tools
 
 

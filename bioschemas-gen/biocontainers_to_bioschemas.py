@@ -1,10 +1,11 @@
-import yaml
-import os
 import glob
 import json
+import os
 from pathlib import Path
-from rdflib import Graph
+
 import requests
+import yaml
+from rdflib import Graph
 
 try:
     from tabulate import tabulate
@@ -13,11 +14,12 @@ except ImportError:
     def tabulate(rows, headers=()):
         return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
+
 def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
     """
     Get the bio.tools ID from the biocontainers data.
     """
-    if "identifiers" in biocontainers_data.keys():
+    if "identifiers" in biocontainers_data:
         for id in biocontainers_data["identifiers"]:
             if isinstance(id, str) and id.lower().startswith("biotools:"):
                 return id
@@ -35,24 +37,28 @@ def getBiotoolsIdFromBioContainers(biocontainers_data) -> str:
 
 
 def urlExists(url, timeout=1):
-    #"""Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
-    """Check if a URL exists """
-    #id = biotools_id.lower().split("biotools:", 1)[-1]
-    #print(id)
-    #api_url = f"https://bio.tools/api/tool/{id}/?format=json"
+    # """Check if a biotools ID exists using the bio.tools JSON API (not the front-end URL)."""
+    """Check if a URL exists"""
+    # id = biotools_id.lower().split("biotools:", 1)[-1]
+    # print(id)
+    # api_url = f"https://bio.tools/api/tool/{id}/?format=json"
     try:
         r = requests.get(url, timeout=timeout)
         return r.status_code == 200
     except requests.RequestException:
         print(f"WARNING: URL {url} does not exist. \n")
         return False
-    
+
+
 def getCitationFromBioContainers(biocontainers_data) -> list:
     """
     Get DOIs from the biocontainers data.
     """
     res = []
-    if "identifiers" in biocontainers_data.keys() and len(biocontainers_data["identifiers"]) > 0:
+    if (
+        "identifiers" in biocontainers_data
+        and len(biocontainers_data["identifiers"]) > 0
+    ):
         for id in biocontainers_data["identifiers"]:
             if isinstance(id, str) and id.lower().startswith("doi:"):
                 res.append(id)
@@ -84,7 +90,7 @@ def rdfize(data) -> Graph:
 
     triples = ""
 
-    biotools_id = getBiotoolsIdFromBioContainers(data) 
+    biotools_id = getBiotoolsIdFromBioContainers(data)
 
     # if biotools_id:
     #     biotools_name = biotools_id.lower().split("biotools:", 1)[-1]
@@ -97,15 +103,15 @@ def rdfize(data) -> Graph:
     dois = getCitationFromBioContainers(data)
 
     try:
-        if "name" in data.keys():
+        if "name" in data:
             package_uri = f"biocontainers:{data['name']}"
             triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
-            #triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
+            # triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
 
-            ## Minimum 
+            ## Minimum
             triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
 
-            if "description" in data.keys():
+            if "description" in data:
                 triples += (
                     f"{package_uri} schema:description "
                     + json.dumps(data["description"])
@@ -114,16 +120,16 @@ def rdfize(data) -> Graph:
 
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
 
-            if "home_url" in data.keys()  and data["home_url"] != "Not available":
+            if "home_url" in data and data["home_url"] != "Not available":
                 triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
 
             ## Recommended
 
             # applicationCategory
-            
+
             # applicationSubCategory
-            
-            # author    
+
+            # author
 
             if dois:
                 for doi in dois:
@@ -131,7 +137,7 @@ def rdfize(data) -> Graph:
 
             # featureList
 
-            if "license" in data.keys():
+            if "license" in data:
                 # triples += f'{package_uri} schema:license "{data["license"]}" .\n'
                 triples += (
                     f"{package_uri} schema:license "
@@ -139,7 +145,7 @@ def rdfize(data) -> Graph:
                     + " .\n"
                 )
 
-            # softwareVersion 
+            # softwareVersion
 
             ## Optional
 
@@ -150,17 +156,17 @@ def rdfize(data) -> Graph:
             # downloadUrl
             # funder
             # hasPart
-            
+
             if biotools_id:
                 triples += f"{package_uri} schema:identifier {biotools_id} .\n"
-                #triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
+                # triples += f'{package_uri} schema:isBasedOn "{biotools_id}" .\n'
 
             # input
             # isAccessibleForFree
             # isBasedOn
             # isPartOf
 
-            if "keywords" in data.keys():
+            if "keywords" in data:
                 for keyword in data["keywords"]:
                     triples += f'{package_uri} schema:keywords "{keyword}" .\n'
 
@@ -169,8 +175,8 @@ def rdfize(data) -> Graph:
             # programmingLanguage
 
             # provider
-            triples += f'{package_uri} schema:provider <https://biocontainers.pro> .\n'
-            triples += f'<https://biocontainers.pro> schema:type "Organization" .\n'
+            triples += f"{package_uri} schema:provider <https://biocontainers.pro> .\n"
+            triples += '<https://biocontainers.pro> schema:type "Organization" .\n'
 
             # softwareAddOn
             # softwareHelp
@@ -188,8 +194,7 @@ def rdfize(data) -> Graph:
 
 def get_biocontainers_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.biocontainers.yaml"):
-        tools.append(data_file)
+    tools.extend(glob.glob("../../content/data/*/*.biocontainers.yaml"))
     return tools
 
 
@@ -200,7 +205,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
     tool_files = get_biocontainers_files_in_repo()
 
     for tool_file in tool_files:
-        tool_name = os.path.basename(tool_file).split('.')[0]
+        tool_name = os.path.basename(tool_file).split(".")[0]
         tool_id = Path(tool_file).stem
 
         if id == tool_name:
@@ -208,11 +213,13 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
             tool_id = None
-            if "name" in tool.keys():
+            if "name" in tool:
                 tool_id = tool["name"]
 
             if tool_id is None:
-                print(f"WARNING: no biocontainers id found in {tool_file}, using file basename instead.")
+                print(
+                    f"WARNING: no biocontainers id found in {tool_file}, using file basename instead."
+                )
                 tool_id = tool_name
 
             ## generate TTL file
@@ -273,9 +280,12 @@ def generate_dump(directory):
 
     # process_tools_by_id(rdf_graph, "ucsc-bigwigcat")
     process_tools(rdf_graph)
-    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "biocontainers-dump.ttl"))
+    rdf_graph.serialize(
+        format="turtle", destination=os.path.join(directory, "biocontainers-dump.ttl")
+    )
 
     show_stats(rdf_graph)
+
 
 def show_stats(rdf_graph):
     """
@@ -312,7 +322,6 @@ def show_stats(rdf_graph):
 
 
 if __name__ == "__main__":
-
     tool_warnings = []
     directory = "../../content/datasets"
 
@@ -321,11 +330,12 @@ if __name__ == "__main__":
     for tool_id in tool_warnings:
         print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
-    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+    print(
+        f"{len(tool_warnings)} tools could not be processed due to formatting errors."
+    )
 
     # clean()
     # process_tools()
     # tool = "bam2fasta"
 
     # process_tools_by_id(tool)
-

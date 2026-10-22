@@ -1,6 +1,7 @@
-import git
-import os
 import argparse
+import os
+
+import git
 
 
 # initiate the parser
@@ -9,13 +10,13 @@ class readable_dir(argparse.Action):
         prospective_dir = values
         if not os.path.isdir(prospective_dir):
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a valid path".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a valid path"
             )
         if os.access(prospective_dir, os.R_OK):
             setattr(namespace, self.dest, prospective_dir)
         else:
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a readable dir".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a readable dir"
             )
 
 
@@ -41,7 +42,7 @@ def get_changeg_biotools(branch1, branch2, path):
     format = "--name-status"
     files = []
     g = git.Git(path)
-    differ = g.diff("%s..%s" % (branch1, branch2), format).split("\n")
+    differ = g.diff(f"{branch1}..{branch2}", format).split("\n")
     for line in differ:
         if len(line):
             files.append(line)

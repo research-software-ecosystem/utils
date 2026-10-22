@@ -1,7 +1,8 @@
-import yaml
 import argparse
 import os
 import sys
+
+import yaml
 
 
 class readable_dir(argparse.Action):
@@ -9,13 +10,13 @@ class readable_dir(argparse.Action):
         prospective_dir = values
         if not os.path.isdir(prospective_dir):
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a valid path".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a valid path"
             )
         if os.access(prospective_dir, os.R_OK):
             setattr(namespace, self.dest, prospective_dir)
         else:
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a readable dir".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a readable dir"
             )
 
 

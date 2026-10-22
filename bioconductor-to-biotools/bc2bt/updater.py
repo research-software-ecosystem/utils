@@ -3,10 +3,9 @@ Updater module for creating and updating bio.tools entries based on match result
 """
 
 import json
-import shutil
 import logging
+import shutil
 from pathlib import Path
-
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +224,7 @@ class Updater:
         # Merge collectionID: ensure "BioConductor" is included
         existing_collections = set(existing_data.get("collectionID", []))
         existing_collections.add("BioConductor")
-        merged_data["collectionID"] = sorted(list(existing_collections))
+        merged_data["collectionID"] = sorted(existing_collections)
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would update: {existing_path}")
@@ -291,7 +290,7 @@ class Updater:
 
         # Build mapping from converted files to existing files
         conversion_to_existing = {}
-        for method, method_results in match_results.get("match_results", {}).items():
+        for method_results in match_results.get("match_results", {}).values():
             for existing_file, converted_files in method_results.items():
                 for converted_file in converted_files:
                     conversion_to_existing[converted_file] = existing_file

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import sys
-import yaml
-import argparse
 from pathlib import Path
+
 import jinja2
+import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.metadata import normalize_version_fields
@@ -24,7 +25,7 @@ def parse_bioconda(directory):
     """
     Get bioconda content data into memory.
     """
-    data = dict()
+    data = {}
 
     # Create a custom Undefined class that treats undefined variables in conda jinja template as empty strings
     class SilentUndefined(jinja2.Undefined):
@@ -60,7 +61,7 @@ def parse_bioconda(directory):
             )
             data[str(p.absolute())] = conda
         except Exception as e:
-            print(f"Error processing {p}: {type(e).__name__}: {str(e)}")
+            print(f"Error processing {p}: {type(e).__name__}: {e!s}")
             continue
 
     return data
@@ -107,13 +108,13 @@ class readable_dir(argparse.Action):
         prospective_dir = values
         if not os.path.isdir(prospective_dir):
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a valid path".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a valid path"
             )
         if os.access(prospective_dir, os.R_OK):
             setattr(namespace, self.dest, prospective_dir)
         else:
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a readable dir".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a readable dir"
             )
 
 

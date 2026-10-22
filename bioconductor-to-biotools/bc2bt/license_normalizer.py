@@ -13,15 +13,14 @@ The new version recognises inputs such as:
 Only the `normalize_license` function is part of the public API.
 """
 
+import difflib
 import re
 import unicodedata
-import difflib
-from typing import Optional, Dict, Set
 
 # ----------------------------------------------------------------------
 # 1️⃣  Full SPDX identifier set (copy‑paste from https://spdx.org/licenses/)
 # ----------------------------------------------------------------------
-_SP_dx_IDS: Set[str] = {
+_SP_dx_IDS: set[str] = {
     "0BSD",
     "AFL-1.1",
     "AFL-1.2",
@@ -74,7 +73,7 @@ _SP_dx_IDS: Set[str] = {
 # ----------------------------------------------------------------------
 # 2️⃣  Hand‑crafted exact‑match table (kept unchanged)
 # ----------------------------------------------------------------------
-_ALIAS_MAP: Dict[str, str] = {
+_ALIAS_MAP: dict[str, str] = {
     # GPL family
     "gpl": "GPL-1.0-or-later",
     "gpl-1": "GPL-1.0-only",
@@ -199,8 +198,8 @@ def _clean_string_for_exact_match(raw: str) -> str:
 
 
 def _family_fallback(
-    family: Optional[str], version: Optional[str], later: bool
-) -> Optional[str]:
+    family: str | None, version: str | None, later: bool
+) -> str | None:
     """
     Build a SPDX identifier from the data extracted by ``_extract_family_version``.
     The function is intentionally *conservative* – it only returns a value
@@ -274,8 +273,8 @@ def _family_fallback(
 
 
 def _fuzzy_match(
-    candidate: str, spdx_set: Set[str], cutoff: float = 0.92
-) -> Optional[str]:
+    candidate: str, spdx_set: set[str], cutoff: float = 0.92
+) -> str | None:
     """
     Conservative fuzzy matcher – uses difflib and only returns a match if
     the similarity ratio is >= *cutoff*.
@@ -292,10 +291,10 @@ def _fuzzy_match(
 def normalize_license(
     raw_license: str,
     *,
-    alias_map: Optional[Dict[str, str]] = None,
-    spdx_ids: Optional[Set[str]] = None,
+    alias_map: dict[str, str] | None = None,
+    spdx_ids: set[str] | None = None,
     fuzzy_cutoff: float = 0.92,
-) -> Optional[str]:
+) -> str | None:
     """
     Convert a possibly noisy licence string to an SPDX identifier.
 

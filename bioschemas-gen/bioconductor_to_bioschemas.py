@@ -1,10 +1,8 @@
+import glob
 import json
 import os
-import glob
-import re
-import requests
-import yaml
 from pathlib import Path
+
 from rdflib import Graph
 
 try:
@@ -39,34 +37,36 @@ except ImportError:
 
 #   return res
 
+
 def getDependencies(bioconductor_data) -> list:
-  """
-  Get package dependencies from the bioconductor data.
-  """
-  res = []
-  if 'Depends' in bioconductor_data.keys():
-    for dep in bioconductor_data['Depends']:
-      res.append(dep)
+    """
+    Get package dependencies from the bioconductor data.
+    """
+    res = []
+    if "Depends" in bioconductor_data:
+        res.extend(bioconductor_data["Depends"])
 
-#   if 'Imports' in bioconductor_data.keys():
-#     for dep in bioconductor_data['Imports']:
-#       res.append(dep)
+    #   if 'Imports' in bioconductor_data.keys():
+    #     for dep in bioconductor_data['Imports']:
+    #       res.append(dep)
 
-  return res
+    return res
+
 
 def getBiocViews(bioconductor_data) -> list:
-  """
-  Get biocViews terms from bioconductor packages.
-  """
-  res = []
-  if 'biocViews' in bioconductor_data.keys():
-    #for term in bioconductor_data['biocViews']:
-      #res.append(term)
-      #print(dep)
-    res = bioconductor_data['biocViews']
-    #print(res)
+    """
+    Get biocViews terms from bioconductor packages.
+    """
+    res = []
+    if "biocViews" in bioconductor_data:
+        # for term in bioconductor_data['biocViews']:
+        # res.append(term)
+        # print(dep)
+        res = bioconductor_data["biocViews"]
+        # print(res)
 
-  return res
+    return res
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -92,56 +92,56 @@ def rdfize(data) -> Graph:
     depen = None
     biocViews = None
 
-    if 'Package' in data.keys():
-        name = data['Package']
-    if 'Description' in data.keys():
-        desc = data['Description']
-    if 'URL' in data.keys():
-        url = data['URL']
+    if "Package" in data:
+        name = data["Package"]
+    if "Description" in data:
+        desc = data["Description"]
+    if "URL" in data:
+        url = data["URL"]
 
-    if 'License' in data.keys():
-        license = data['License']
-    if 'Version' in data.keys():
-        version = data['Version']
+    if "License" in data:
+        license = data["License"]
+    if "Version" in data:
+        version = data["Version"]
 
-    if 'Date/Publication' in data.keys():
-        publi = data['Date/Publication']
-    if 'Maintainer' in data.keys():
-        maintainers = data['Maintainer']
-    if 'Title' in data.keys():
-        title = data['Title']
-    if 'git_url' in data.keys():
-        repo = data['git_url']
-    if 'Author' in data.keys():
-        authors = data['Author']
-    if 'Depends' in data.keys():
+    if "Date/Publication" in data:
+        publi = data["Date/Publication"]
+    if "Maintainer" in data:
+        maintainers = data["Maintainer"]
+    if "Title" in data:
+        title = data["Title"]
+    if "git_url" in data:
+        repo = data["git_url"]
+    if "Author" in data:
+        authors = data["Author"]
+    if "Depends" in data:
         depen = getDependencies(data)
-    if 'biocViews' in data.keys():
+    if "biocViews" in data:
         biocViews = getBiocViews(data)
     # if 'source.ver' in data.keys():   ## lacks base url
     #     download = data['source.ver']
 
     try:
         ## Minimum properties
-        if name :
+        if name:
             package_uri = f"bioconductor:{name}"
-            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
 
             triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
 
-            if desc :
+            if desc:
                 triples += f'{package_uri} schema:description "{desc}" .\n'
 
             triples += f'{package_uri} schema:name "{name}" .\n'
 
-            if url :
-                triples += f'{package_uri} schema:url <{url}> .\n'
+            if url:
+                triples += f"{package_uri} schema:url <{url}> .\n"
 
         ## Recommended properties
 
-        # applicationCategory 
+        # applicationCategory
 
-        # applicationSubCategory ## EDAM terms not yet available 
+        # applicationSubCategory ## EDAM terms not yet available
 
         if authors:
             triples += f'{package_uri} schema:author "{authors}" .\n'
@@ -150,18 +150,18 @@ def rdfize(data) -> Graph:
 
         # featureList ## EDAM terms not yet available
 
-        if license :
+        if license:
             triples += f'{package_uri} schema:license "{license}" .\n'
 
-        if version :
+        if version:
             triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
 
         ## Optional properties
 
         # applicationSuite
 
-        if repo :
-            triples += f'{package_uri} schema:codeRepository <{repo}> .\n'
+        if repo:
+            triples += f"{package_uri} schema:codeRepository <{repo}> .\n"
 
         # contributor
         # discussionUrl
@@ -185,29 +185,33 @@ def rdfize(data) -> Graph:
         # programmingLanguage
 
         # provider
-        triples += f'{package_uri} schema:provider <https://bioconductor.org/> .\n'
-        triples += f'<https://bioconductor.org/> schema:type "Organization" .\n'
+        triples += f"{package_uri} schema:provider <https://bioconductor.org/> .\n"
+        triples += '<https://bioconductor.org/> schema:type "Organization" .\n'
 
         # softwareAddOn
         # softwareHelp
         # thumbnailUrl
 
         ## Other properties
-        if title :
+        if title:
             triples += f'{package_uri} schema:alternateName "{title}" .\n'
-        if publi :
+        if publi:
             triples += f'{package_uri} schema:dateModified "{publi}" .\n'
-        if maintainers : ## possibly several, can't parse them properly, no pattern to follow
+        if (
+            maintainers
+        ):  ## possibly several, can't parse them properly, no pattern to follow
             triples += f'{package_uri} schema:maintainer "{maintainers}" .\n'
         if depen:
-                for dependency in depen:
-                    triples += f'{package_uri} schema:softwareRequirements "{dependency}" .\n'    
+            for dependency in depen:
+                triples += (
+                    f'{package_uri} schema:softwareRequirements "{dependency}" .\n'
+                )
 
         g = Graph()
         g.parse(data=prefix + "\n" + triples, format="turtle")
         print(g.serialize(format="turtle"))
-            # serialize in compact json ld syntax
-            # print(g.serialize(format='json-ld'))
+        # serialize in compact json ld syntax
+        # print(g.serialize(format='json-ld'))
         return g
 
     except Exception as e:
@@ -218,8 +222,7 @@ def rdfize(data) -> Graph:
 
 def get_bioconductor_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.bioconductor.json"):
-        tools.append(data_file)
+    tools.extend(glob.glob("../../content/data/*/*.bioconductor.json"))
     return tools
 
 
@@ -228,20 +231,18 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
     Go through all bioconductor entries and produce an RDF graph representation (BioSchemas / JSON-LD) for the specified tool.
     """
     tool_files = get_bioconductor_files_in_repo()
-    #print(tool_files)
+    # print(tool_files)
 
     for tool_file in tool_files:
-
         tool_name = os.path.basename(tool_file)
-        tool_name = tool_name.removesuffix(".bioconductor.json") 
+        tool_name = tool_name.removesuffix(".bioconductor.json")
 
         if id == tool_name:
-            
             path = Path(tool_file)
             tool = json.loads(path.read_text(encoding="utf-8"))
 
             tool_id = None
-            if "Package" in tool.keys():
+            if "Package" in tool:
                 tool_id = tool["Package"]
 
             if tool_id is None:
@@ -251,7 +252,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
             # if biotools_id:
             #     tpe_id = biotools_id
             # else:
-                # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
+            # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
             # tpe_id = tool_id ## assumes bioc package name == biotools ID - biotools ID is not in metadata
 
             # directory = os.path.join("..", "..", "content", "data", tpe_id)
@@ -263,6 +264,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
                 rdf_graph += temp_graph
             else:
                 tool_warnings.append(tool_id)
+
 
 def clean():
     for data_file in glob.glob(r"../../content/data/*/*.bioconductor.jsonld"):
@@ -288,19 +290,23 @@ def process_tools(rdf_graph):
         tool = json.loads(path.read_text(encoding="utf-8"))
 
         tool_id = None
-        if "Package" in tool.keys():
+        if "Package" in tool:
             tool_id = tool["Package"]
 
         if tool_id is None:
-            print(f"WARNING: no bioconductor id found in {tool_file}, using file basename instead.")
+            print(
+                f"WARNING: no bioconductor id found in {tool_file}, using file basename instead."
+            )
             tool_id = tool_name
 
         # if biotools_id:
         #     tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
         # else:
-            # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
+        # print(f"WARNING: no biotools id found for {tool_file}, using bioconductor id to create data directory instead.")
 
-        tpe_id = tool_id.lower() ## assumes bioc package name == biotools ID - biotools ID is not in metadata
+        tpe_id = (
+            tool_id.lower()
+        )  ## assumes bioc package name == biotools ID - biotools ID is not in metadata
         directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         if not os.path.exists(directory):
@@ -317,6 +323,7 @@ def process_tools(rdf_graph):
 
     return rdf_graph
 
+
 def generate_dump(directory):
     """
     Produce an single RDF file for all imported tools.
@@ -325,9 +332,12 @@ def generate_dump(directory):
 
     # process_tools_by_id(rdf_graph, "xcms")
     process_tools(rdf_graph)
-    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "bioconductor-dump.ttl"))
+    rdf_graph.serialize(
+        format="turtle", destination=os.path.join(directory, "bioconductor-dump.ttl")
+    )
 
     show_stats(rdf_graph)
+
 
 def show_stats(rdf_graph):
     """
@@ -363,9 +373,7 @@ def show_stats(rdf_graph):
     print(tabulate(res))
 
 
-
 if __name__ == "__main__":
-
     tool_warnings = []
     directory = "../../content/datasets"
 
@@ -374,10 +382,12 @@ if __name__ == "__main__":
     for tool_id in tool_warnings:
         print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
-    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+    print(
+        f"{len(tool_warnings)} tools could not be processed due to formatting errors."
+    )
 
     # clean()
     # process_tools()
-    #process_tools_by_id("bioconductor-ribocrypt")
-    #process_tools_by_id("bam2fasta")
+    # process_tools_by_id("bioconductor-ribocrypt")
+    # process_tools_by_id("bam2fasta")
     # process_tools_by_id("deseq2")

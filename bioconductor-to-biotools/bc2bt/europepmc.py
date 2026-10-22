@@ -1,6 +1,7 @@
+import logging
+
 import dateutil.parser
 import requests
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -83,5 +84,5 @@ def get_publication_metadata(doi):
         }
 
     except Exception as e:
-        logger.error(f"Error fetching metadata for DOI {doi}: {str(e)}")
+        logger.error(f"Error fetching metadata for DOI {doi}: {e!s}")
         return None

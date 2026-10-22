@@ -4,6 +4,11 @@ extend-include = ["*.ipynb"]
 [lint]
 ignore = [
     "T201",   # Allow print statements
+    # The importers deliberately catch Exception at the top of their per-item
+    # loops: one malformed record is logged and skipped so the rest of the
+    # batch still lands. Narrowing those handlers would turn a bad record
+    # into a failed import run.
+    "BLE001",
 ]
 
 [lint.per-file-ignores]
