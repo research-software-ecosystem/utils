@@ -206,10 +206,10 @@ class Updater:
                 # link replaced a populated `publication` list with [] --
                 # losing the references and producing a record bio.tools
                 # refuses, since it accepts the field absent but not empty.
-                logger.debug("keeping existing %s; Bioconductor sent nothing", field)
+                logger.debug(f"keeping existing {field}; Bioconductor sent nothing")
                 continue
             if field in FILL_ONLY_FIELDS and merged_data.get(field):
-                logger.debug("keeping existing %s rather than overwriting", field)
+                logger.debug(f"keeping existing {field} rather than overwriting")
                 continue
             merged_data[field] = incoming
 
@@ -218,7 +218,7 @@ class Updater:
         # records already carrying "publication": [], which would otherwise
         # survive untouched now that the converter no longer emits it.
         for field in [k for k, v in merged_data.items() if v in ([], {})]:
-            logger.debug("dropping empty %s", field)
+            logger.debug(f"dropping empty {field}")
             del merged_data[field]
 
         # Merge collectionID: ensure "BioConductor" is included

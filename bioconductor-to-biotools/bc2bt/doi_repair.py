@@ -121,7 +121,7 @@ def exists(doi: str) -> bool:
     except requests.RequestException as exc:
         # Not cached: unverified is unusable, but a blip should not rule the
         # candidate out for the rest of the run.
-        logger.warning("could not reach the DOI registry for %s (%s)", doi, exc)
+        logger.warning(f"could not reach the DOI registry for {doi} ({exc})")
         return False
     if response.status_code == 404:
         _verified[doi] = False
@@ -129,7 +129,7 @@ def exists(doi: str) -> bool:
     try:
         found = response.json().get("responseCode") == 1
     except ValueError:
-        logger.warning("unreadable registry response for %s", doi)
+        logger.warning(f"unreadable registry response for {doi}")
         return False
     _verified[doi] = found
     return found
@@ -146,5 +146,5 @@ def resolve(raw: str) -> str | None:
                 "repaired DOI %r as %r (confirmed by the registry)", raw, candidate
             )
             return candidate
-    logger.warning("discarding unusable DOI %r (normalised to %r)", raw, text)
+    logger.warning(f"discarding unusable DOI {raw!r} (normalised to {text!r})")
     return None
