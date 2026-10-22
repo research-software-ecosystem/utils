@@ -253,7 +253,7 @@ def rdfize(data) -> Graph:
         print(g.serialize(format="turtle"))
         return g
 
-    except Exception as e:
+    except Exception:
         print("PARSING ERROR for:")
         print(prefix + "\n" + triples)
         raise
