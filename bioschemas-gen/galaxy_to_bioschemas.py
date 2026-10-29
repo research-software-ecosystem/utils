@@ -159,7 +159,7 @@ def rdfize(data) -> Graph:
             ## Minimum
 
             # dc:conformsTo
-            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+            triples += f'{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n'
             
             # description
             if description:
@@ -243,7 +243,7 @@ def rdfize(data) -> Graph:
             # output
             for of in output_format:
                 triples += f'{package_uri} schema:encodingFormat "{of}" .\n'
-                triples += f'{package_uri} bioschemas:output "{of}" .\n'
+                #triples += f'{package_uri} bioschemas:output "{of}" .\n'
 
             # programmingLanguage
 
