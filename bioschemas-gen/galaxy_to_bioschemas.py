@@ -5,6 +5,7 @@ from pathlib import Path
 from rdflib import Graph
 import pandas as pd
 from tabulate import tabulate
+import validators
 
 
 def getEdamUrisFromLabels(edam_labels) -> list:
@@ -41,8 +42,6 @@ def getBiotoolsIdFromGalaxy(tool_data) -> str:
         # biotools_id = tool_data["bio.tool_ID"]
         return biotools_id
     return None
-
-
 
 def getGalaxyServers(tool_data) -> list:
     """
@@ -135,10 +134,10 @@ def rdfize(data) -> Graph:
         biotools_id = "biotools:" + data["bio.tool_ID"]
     if "biii_ID" in data.keys() and data["biii_ID"]:
         biii_id = "biii:" + data["biii_ID"]
-    if "Suite_conda_package" in data.keys() and data["Suite_conda_package"]:
+    if "Suite_conda_package" in data.keys() and data["Suite_conda_package"] and data["Suite_conda_package"] != "@EXECUTABLE@":
         bioconda_id = (
             "bioconda:" + data["Suite_conda_package"].strip()
-        )  # see pharokka package bioconda ID -> exception
+        )  # exceptions: pharokka, rnashapes
 
     if "Related_Workflows" in data.keys():
         for workflow in data["Related_Workflows"]:
@@ -159,7 +158,7 @@ def rdfize(data) -> Graph:
             ## Minimum
 
             # dc:conformsTo
-            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+            triples += f'{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n'
             
             # description
             if description:
@@ -169,7 +168,7 @@ def rdfize(data) -> Graph:
             triples += f'{package_uri} schema:name "{name}" .\n'
 
             # url
-            if url:
+            if url and validators.url(url):
                 triples += f'{package_uri} schema:url <{url}> .\n'
 
             ## Recommended
@@ -274,8 +273,20 @@ def rdfize(data) -> Graph:
 
 def get_galaxy_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.galaxy.json"):
-        tools.append(data_file)
+    # for data_file in glob.glob("../../content/data/*/*.galaxy.json"):
+    for data_file in glob.glob("../../content/imports/galaxy/*.galaxy.json"):
+        if "geometric means (dead wood)" in data_file:
+            continue
+        if "tophat_fusion_post" in data_file:
+            continue
+        if "wound healing scratch assay image analysis" in data_file:
+            continue
+        if "make data paper sketches from eml" in data_file:
+            continue
+        if "scripting tools" in data_file:
+            continue
+        else:
+            tools.append(data_file)
     return tools
 
 
@@ -342,22 +353,22 @@ def process_tools(rdf_graph):
         if "package" in tool.keys():
             tool_id = tool["package"]
 
-        if tool_id is None:
-            print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
-            tool_id = tool_name
+        # if tool_id is None:
+        #     print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+        #     tool_id = tool_name
 
-        biotools_id = getBiotoolsIdFromGalaxy(tool)
-        if biotools_id:
-            tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
-        else:
-            print(f"WARNING: no biotools id found for {tool_file}, using galaxy id to create data directory instead.")
-            tpe_id = tool_id                
+        # biotools_id = getBiotoolsIdFromGalaxy(tool)
+        # if biotools_id:
+        #     tpe_id = biotools_id.lower().split("biotools:", 1)[-1]
+        # else:
+        #     print(f"WARNING: no biotools id found for {tool_file}, using galaxy id to create data directory instead.")
+        #     tpe_id = tool_id                
  
-        directory = os.path.join("..", "..", "content", "data", tpe_id)
+        # directory = os.path.join("..", "..", "content", "data", tpe_id)
 
-        if not os.path.exists(directory):
-            print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
-            continue
+        # if not os.path.exists(directory):
+        #     print(f"WARNING: Directory {directory} does not exist for {tool_id}!")
+        #     continue
 
         ## generate debian TTL file
 

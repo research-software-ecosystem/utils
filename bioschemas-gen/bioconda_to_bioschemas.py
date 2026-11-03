@@ -18,7 +18,7 @@ def getBiotoolsId(bioconda_data) -> str:
     """
     Get the bio.tools ID from the bioconda data.
     """
-    if "extra" in bioconda_data.keys():
+    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
         if "identifiers" in bioconda_data["extra"].keys():
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("biotools:"):
@@ -37,7 +37,7 @@ def getCitation(bioconda_data) -> list:
     Get DOIs from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys():
+    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
         if "identifiers" in bioconda_data["extra"].keys():
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("doi:"):
@@ -74,7 +74,7 @@ def getDependencies(bioconda_data) -> list:
   """
   res = []
   requirement_types = ['host', 'run', 'build']
-  if 'requirements' in bioconda_data.keys():
+  if 'requirements' in bioconda_data.keys() and bioconda_data['requirements']:
     for requirement_type in requirement_types:
         if requirement_type in bioconda_data['requirements'].keys() and bioconda_data['requirements'][requirement_type]:
             for pkg in bioconda_data['requirements'][requirement_type]:
@@ -90,7 +90,7 @@ def getIdentifiers(bioconda_data) -> list:
     Get other identifiers from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys():
+    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
         if "identifiers" in bioconda_data["extra"].keys():
             for id in bioconda_data["extra"]["identifiers"]:
                 if not id.lower().startswith("biotools:") and not id.lower().startswith("doi:"):
@@ -104,7 +104,7 @@ def getMaintainers(bioconda_data) -> list:
     Get Maintainers from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys():
+    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
         if "recipe-maintainers" in bioconda_data["extra"].keys():
             for id in bioconda_data["extra"]["recipe-maintainers"]:
                 res.append(id)
@@ -297,10 +297,10 @@ def rdfize(data) -> Graph:
         print(prefix + "\n" + triples)
         print(e)
 
-
 def get_bioconda_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/bioconda_*.yaml"):
+    # for data_file in glob.glob("../../content/data/*/bioconda_*.yaml"):
+    for data_file in glob.glob("../../content/imports/bioconda/bioconda_*.yaml"):
         tools.append(data_file)
     return tools
 
@@ -450,8 +450,8 @@ if __name__ == "__main__":
 
     generate_dump(directory)
 
-    for tool_id in tool_warnings:
-        print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+    # for tool_id in tool_warnings:
+        # print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
     print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
 

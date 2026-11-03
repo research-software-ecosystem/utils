@@ -251,8 +251,10 @@ def rdfize(data) -> Graph:
 
 def get_debian_files_in_repo():
     tools = []
-    for data_file in glob.glob("../../content/data/*/*.debian.yaml"):
-        tools.append(data_file)
+    # for data_file in glob.glob("../../content/data/*/*.debian.yaml"):
+    for data_file in glob.glob("../../content/imports/debian-med/*.debian.yaml"):
+        if "ncbi-blast+-legacy" not in data_file:
+            tools.append(data_file)
     return tools
 
 
