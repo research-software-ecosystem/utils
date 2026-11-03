@@ -8,6 +8,7 @@ from rdflib import Graph
 import requests
 #import yaml
 import json
+import validators
 
 
 edam_version = "https://github.com/edamontology/edamontology/raw/main/EDAM_dev.owl"
@@ -80,6 +81,7 @@ def rdfize(data) -> Graph:
                 #     triples += f'{package_uri} schema:identifier "{entry["id"]}" .\n'
                 
                 if "doi" in entry.keys():
+                    # if validators.url({entry["doi"]}):
                     triples += f'{package_uri} schema:citation "{entry["doi"]}" .\n'
             
                 if "latest_version" in entry.keys():

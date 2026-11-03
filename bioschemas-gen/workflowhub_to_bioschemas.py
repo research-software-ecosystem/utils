@@ -4,6 +4,7 @@ import json
 import yaml
 from pathlib import Path
 from rdflib import Graph
+import validators
 
 try:
     from tabulate import tabulate
@@ -32,7 +33,7 @@ def rdfize(data) -> Graph:
         if workflow_id:
             package_uri = f'<{workflow_id}>'
             triples += f'{package_uri} rdf:type schema:ComputationalWorkflow .\n'
-            triples += f'{package_uri} dcterms:conformsTo "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE" .\n'
+            triples += f'{package_uri} dcterms:conformsTo <https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE> .\n'
 
         ## Minimum
         
@@ -70,6 +71,7 @@ def rdfize(data) -> Graph:
                 triples += f'{package_uri} schema:applicationSubCategory <{topic}> .\n'
 
         if "doi" in data.keys():
+            # if validators.url({data["doi"]}):
             triples += f'{package_uri} schema:citation "{data["doi"]}" .\n'
 
         # contributor: a secondary contributor to the CreativeWork or Event

@@ -99,7 +99,7 @@ def rdfize(data) -> Graph:
 
             ## Minimum
             # dc:conformsTo
-            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+            triples += f'{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n'
 
             # description 
             if description:
@@ -126,7 +126,7 @@ def rdfize(data) -> Graph:
 
             # citation
             for doi in dois:
-                triples += f'{package_uri} schema:citation "{doi}" .\n'
+                triples += f'{package_uri} schema:citation <{doi}> .\n'
 
             # featureList, input, output
             if "edam_scopes" in data.keys():

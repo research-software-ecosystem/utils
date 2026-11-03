@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from rdflib import Graph
 import requests
+import validators
 
 try:
     from tabulate import tabulate
@@ -103,7 +104,7 @@ def rdfize(data) -> Graph:
             #triples += f"{package_uri} rdf:type schema:SoftwareSourceCode .\n"
 
             ## Minimum 
-            triples += f'{package_uri} schema:conformsTo "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE" .\n'
+            triples += f'{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n'
 
             if "description" in data.keys():
                 triples += (
@@ -114,8 +115,8 @@ def rdfize(data) -> Graph:
 
             triples += f'{package_uri} schema:name "{data["name"]}" .\n'
 
-            if "home_url" in data.keys()  and data["home_url"] != "Not available":
-                triples += f'{package_uri} schema:url "{data["home_url"]}" .\n'
+            if "home_url" in data.keys() and validators.url(data["home_url"]): # data["home_url"] != "Not available":
+                triples += f'{package_uri} schema:url <{data["home_url"]}> .\n'
 
             ## Recommended
 
@@ -127,7 +128,7 @@ def rdfize(data) -> Graph:
 
             if dois:
                 for doi in dois:
-                    triples += f'{package_uri} schema:citation "{doi}" .\n'
+                    triples += f'{package_uri} schema:citation <{doi}> .\n'
 
             # featureList
 
