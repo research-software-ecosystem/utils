@@ -2,15 +2,11 @@ import argparse
 import glob
 import json
 import os
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 
 import requests
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from common.metadata import normalize_version_fields
 
 TESS_BASE = "https://tess.elixir-europe.org"
 PER_PAGE = 100
@@ -110,9 +106,19 @@ def name_from_tool_uri(uri):
     return uri.rstrip("/").rsplit("/", 1)[-1].lower()
 
 
-def material_slug(url):
-    """Derive the material slug (last URL path segment) used as entry id."""
-    return url.rstrip("/").rsplit("/", 1)[-1] if url else ""
+def material_slug(list_item, detail):
+    """Return the TeSS material slug used as entry id.
+
+    Prefer the slug from the detail record; fall back to the last path
+    segment of the TeSS material URL, then to the numeric id.
+    """
+    slug = (detail or {}).get("slug")
+    if slug:
+        return slug
+    tess_url = list_item.get("url", "")
+    if tess_url:
+        return tess_url.rstrip("/").rsplit("/", 1)[-1]
+    return str(list_item["id"])
 
 
 def build_entry(list_item, detail):
@@ -132,8 +138,9 @@ def build_entry(list_item, detail):
 
     return {
         "source": "TESS",
-        "id": material_slug(list_item.get("url", "")),
-        "url": list_item.get("url", ""),
+        "id": material_slug(list_item, detail),
+        "url": detail_fields.get("url") or list_item.get("url", ""),
+        "tess_url": list_item.get("url", ""),
         "title": list_item.get("title", ""),
         "description": list_item.get("description", ""),
         "doi": list_item.get("doi", ""),
@@ -161,7 +168,6 @@ def build_entry(list_item, detail):
 
 def retrieve(max_items=None, data_base="."):
     tess_directory = os.path.join(data_base, "imports", "tess")
-    os.makedirs(tess_directory, exist_ok=True)
 
     print("Fetching training materials from TESS API...")
     all_items = fetch_all_materials(max_items)
@@ -186,13 +192,6 @@ def retrieve(max_items=None, data_base="."):
             entry = build_entry(list_item, detail)
             all_entries.append(entry)
 
-            wf_cleaned = normalize_version_fields(entry, [])
-            save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
-            with open(save_path, "w") as f:
-                json.dump(
-                    wf_cleaned, f, sort_keys=True, indent=4, separators=(",", ": ")
-                )
-
             for tool_name in entry.get("tools", []):
                 stat_unique_tools.add(tool_name)
                 tool_to_material_ids.setdefault(tool_name, []).append(entry["id"])
@@ -209,7 +208,9 @@ def retrieve(max_items=None, data_base="."):
                 node_name = node.get("name", "unknown")
                 stat_nodes[node_name] = stat_nodes.get(node_name, 0) + 1
 
-    print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
+    # All fetches succeeded: only now replace the previous import.
+    clean(data_base=data_base)
+    os.makedirs(tess_directory, exist_ok=True)
 
     matched_count = 0
     material_id_to_tools = {}
@@ -238,12 +239,14 @@ def retrieve(max_items=None, data_base="."):
         save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
         with open(save_path, "w") as f:
             json.dump(entry, f, sort_keys=True, indent=4, separators=(",", ": "))
+    print(f"\nSaved {len(all_entries)} training material files to imports/tess/")
 
     print(f"\nTotal tools matched in RSEc content: {matched_count}")
     print("\nStats:")
     print(f"  training materials processed: {len(all_entries)}")
     print(f"  unique tool names found: {len(stat_unique_tools)}")
     print(f"  unique tools that hit data/ dir: {matched_count}")
+    total = len(all_entries) or 1
     print("\n  Resource type distribution:")
     for rt in sorted(
         stat_resource_types.keys(),
@@ -251,7 +254,7 @@ def retrieve(max_items=None, data_base="."):
         reverse=True,
     ):
         count = stat_resource_types[rt]
-        pct = count / len(all_entries) * 100
+        pct = count / total * 100
         print(f"    {rt}: {count} ({pct:.0f}%)")
     print("\n  Source node distribution:")
     for node in sorted(
@@ -260,7 +263,7 @@ def retrieve(max_items=None, data_base="."):
         reverse=True,
     ):
         count = stat_nodes[node]
-        pct = count / len(all_entries) * 100
+        pct = count / total * 100
         print(f"    {node}: {count} ({pct:.0f}%)")
 
 
@@ -284,5 +287,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    clean(data_base=args.content_dir)
     retrieve(max_items=args.test, data_base=args.content_dir)
