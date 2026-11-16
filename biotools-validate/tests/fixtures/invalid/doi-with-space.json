@@ -1,0 +1,69 @@
+{
+  "additionDate": "2018-07-14T10:26:31Z",
+  "biotoolsCURIE": "biotools:16spip",
+  "biotoolsID": "16spip",
+  "credit": [
+    {
+      "email": "zhangwen@icdc.cn",
+      "name": "Wen Zhang",
+      "typeEntity": "Person",
+      "typeRole": [
+        "Primary contact"
+      ]
+    }
+  ],
+  "description": "Comprehensive analysis pipeline for rapid pathogen detection in clinical samples based on 16S metagenomic sequencing.",
+  "documentation": [
+    {
+      "type": [
+        "User manual"
+      ],
+      "url": "http://16spip.mypathogen.cn/docs/Manual-16sPIP.pdf"
+    }
+  ],
+  "editPermission": {
+    "type": "private"
+  },
+  "function": [
+    {
+      "operation": [
+        {
+          "term": "Gene prediction",
+          "uri": "http://edamontology.org/operation_2454"
+        }
+      ]
+    }
+  ],
+  "homepage": "http://16spip.mypathogen.cn/",
+  "language": [
+    "Perl",
+    "Python",
+    "Shell"
+  ],
+  "lastUpdate": "2024-11-25T14:33:11.783719Z",
+  "name": "16sPIP",
+  "operatingSystem": [
+    "Linux"
+  ],
+  "owner": "migle_sur",
+  "publication": [
+    {
+      "doi": "10.1093/bio informatics"
+    }
+  ],
+  "toolType": [
+    "Command-line tool",
+    "Web application"
+  ],
+  "topic": [
+    {
+      "term": "Microbiology",
+      "uri": "http://edamontology.org/topic_3301"
+    },
+    {
+      "term": "Sequence analysis",
+      "uri": "http://edamontology.org/topic_0080"
+    }
+  ],
+  "validated": 1
+}

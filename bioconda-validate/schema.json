@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bioconda import (bioconda_<name>.yaml, rendered recipe)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "package"
+  ],
+  "properties": {
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.-]+$"
+        },
+        "version": {
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      }
+    },
+    "source": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/source"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "build": {
+      "type": "object",
+      "description": "conda-build knobs are an open set; only the valued fields are typed",
+      "properties": {
+        "number": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "noarch": {
+          "type": [
+            "string",
+            "boolean"
+          ]
+        },
+        "entry_points": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "rpaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skip": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "build": {
+          "$ref": "#/$defs/specList"
+        },
+        "host": {
+          "$ref": "#/$defs/specList"
+        },
+        "run": {
+          "$ref": "#/$defs/specList"
+        },
+        "run_constrained": {
+          "$ref": "#/$defs/specList"
+        }
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "source_files": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "downstreams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "about": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "home": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        },
+        "dev_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        },
+        "doc_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        },
+        "doc_source_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        },
+        "license_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        },
+        "license": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "license_family": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "license_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "curie"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "extra": {
+      "type": "object",
+      "properties": {
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "curie"
+          }
+        },
+        "recipe-maintainers": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "skip-lints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "additional-platforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parent_recipe": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "version": {
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          }
+        },
+        "autobump": {
+          "type": "object"
+        },
+        "container": {
+          "type": "object"
+        },
+        "notes": {
+          "type": [
+            "string",
+            "array"
+          ]
+        }
+      },
+      "description": "freeform per conda-build; only valued fields are typed"
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "app": {
+      "type": "object"
+    },
+    "features": {
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "schema_version": {
+      "type": "integer"
+    }
+  },
+  "$defs": {
+    "sourceUrl": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "url"
+        },
+        {
+          "type": "string",
+          "pattern": "^/",
+          "description": "CRAN-mirror-relative path in rendered R recipes"
+        }
+      ]
+    },
+    "specList": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sourceUrl"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sourceUrl"
+              }
+            }
+          ]
+        },
+        "md5": {
+          "type": "string",
+          "format": "md5"
+        },
+        "sha256": {
+          "type": "string",
+          "format": "sha256"
+        },
+        "git_url": {
+          "type": "string"
+        },
+        "git_rev": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "git_depth": {
+          "type": "integer"
+        },
+        "svn_url": {
+          "type": "string"
+        },
+        "svn_rev": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "folder": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "patches": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

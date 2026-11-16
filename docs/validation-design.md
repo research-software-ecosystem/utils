@@ -1,8 +1,9 @@
 # Design proposal: syntactic validators for imported files
 
-Status: **proposal — not implemented**. This document describes the design for
-per-source validation scripts; implementation starts once the open questions at
-the end are settled.
+Status: **implemented** (see the `*-validate/` folders). The open questions at
+the end were settled as: one folder per source (Q1), JSON Schema + custom
+formats (Q2), `additionalProperties: false` (Q3), minimal biii/openebench
+schemas (Q4), offline only (Q5), EDAM pattern-only (Q6).
 
 ## 1. Goal and scope
 
@@ -43,33 +44,18 @@ validators (they would deserve an RDF-level check of their own).
 ## 2. Layout
 
 ```
-validation/
-├── DESIGN.md                      (this document)
-├── requirements.txt               pyyaml, jsonschema
-├── common_checks.py               shared value validators + runner plumbing
-├── schemas/
-│   ├── biotools.schema.json
-│   ├── bioconda.schema.json
-│   ├── bioconductor.schema.json
-│   ├── biocontainers.schema.json
-│   ├── debian-med.schema.json
-│   ├── galaxy.schema.json
-│   ├── workflowhub.schema.json
-│   ├── openebench.schema.json
-│   └── biii.schema.json
-├── validate_biotools.py           one thin CLI per source
-├── validate_bioconda.py
-├── validate_bioconductor.py
-├── validate_biocontainers.py
-├── validate_debian_med.py
-├── validate_galaxy.py
-├── validate_workflowhub.py
-├── validate_openebench.py
-├── validate_biii.py
+<source>-validate/            one folder per source (9 folders)
+├── validate.py               thin CLI: source name, schema path, globs
+├── schema.json               JSON Schema (draft 2020-12) with format hooks
+├── requirements.txt          jsonschema, pyyaml
 └── tests/
-    ├── fixtures/<source>/valid/…      real sampled files, committed
-    ├── fixtures/<source>/invalid/…    hand-broken variants, one defect each
-    └── test_<source>.py               offline unittest, like the other suites
+    ├── test_validate.py      offline unittest
+    └── fixtures/{valid,invalid}/   real clean files + hand-broken variants
+
+common/
+├── validation_checks.py      shared value checkers + FormatChecker
+├── validation_runner.py      shared CLI engine and reporting
+└── test_validation_checks.py
 ```
 
 One script per source keeps each source's rules reviewable by the person who

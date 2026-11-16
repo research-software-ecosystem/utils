@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenEBench metrics import (<id>.oeb.metrics.json) — minimal checks",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["@id", "@type"],
+    "properties": {
+      "@id": {
+        "type": "string",
+        "format": "url",
+        "pattern": "^https://openebench\\.bsc\\.es/monitor/metrics/"
+      },
+      "@license": {"type": "string", "format": "url"},
+      "@nmsp": {"type": ["string", "null"]},
+      "@type": {"type": "string", "const": "metrics"},
+      "@timestamp": {"type": ["string", "null"]},
+      "deprecated": {"type": "boolean"},
+      "distribution": {"type": "object"},
+      "support": {"type": "object"},
+      "project": {
+        "type": "object",
+        "properties": {
+          "publications": {
+            "type": "array",
+            "items": {
+              "type": ["object", "null"],
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "doi": {"type": ["string", "null"], "format": "doi"},
+                      "pmid": {"type": ["string", "null"], "format": "pmid"},
+                      "pmcid": {"type": ["string", "null"], "format": "pmcid"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BIII / NEUBIAS import (<id>.neubias.raw.json, Drupal node export) — minimal checks",
+  "type": "object",
+  "required": ["nid", "title", "type"],
+  "properties": {
+    "nid": {"$ref": "#/$defs/valueList"},
+    "uuid": {"$ref": "#/$defs/valueList"},
+    "vid": {"$ref": "#/$defs/valueList"},
+    "uid": {"type": "array"},
+    "langcode": {"$ref": "#/$defs/valueList"},
+    "default_langcode": {"$ref": "#/$defs/valueList"},
+    "revision_log": {"type": "array"},
+    "revision_timestamp": {"type": "array"},
+    "revision_translation_affected": {"type": "array"},
+    "revision_uid": {"type": "array"},
+    "promote": {"$ref": "#/$defs/valueList"},
+    "sticky": {"$ref": "#/$defs/valueList"},
+    "status": {"$ref": "#/$defs/valueList"},
+    "path": {"type": "array"},
+    "title": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {"value": {"type": "string", "minLength": 1}}
+      }
+    },
+    "type": {"type": "array"},
+    "body": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "format": {"type": ["string", "null"]},
+          "processed": {"type": ["string", "null"]},
+          "summary": {"type": ["string", "null"]},
+          "value": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "created": {"$ref": "#/$defs/dateList"},
+    "changed": {"$ref": "#/$defs/dateList"}
+  },
+  "patternProperties": {
+    "^field_.+$": {
+      "type": "array",
+      "items": {
+        "type": ["object", "null"],
+        "properties": {
+          "uri": {
+            "anyOf": [
+              {"type": "string", "format": "url"},
+              {"type": "string", "pattern": "^(/|internal:|entity:|route:)"},
+              {"type": "null"}
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {"type": "string", "format": "url"},
+              {"type": "string", "pattern": "^/"},
+              {"type": "null"}
+            ]
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "valueList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {"value": {}}
+      }
+    },
+    "dateList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "format": {"type": ["string", "null"]},
+          "value": {
+            "anyOf": [
+              {"type": "string", "format": "iso-datetime"},
+              {"type": "integer"},
+              {"type": "null"}
+            ]
+          }
+        }
+      }
+    }
+  }
+}
