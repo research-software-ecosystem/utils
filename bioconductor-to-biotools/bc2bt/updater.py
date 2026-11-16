@@ -3,10 +3,9 @@ Updater module for creating and updating bio.tools entries based on match result
 """
 
 import json
-import shutil
 import logging
+import shutil
 from pathlib import Path
-
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +224,7 @@ class Updater:
         # Merge collectionID: ensure "BioConductor" is included
         existing_collections = set(existing_data.get("collectionID", []))
         existing_collections.add("BioConductor")
-        merged_data["collectionID"] = sorted(list(existing_collections))
+        merged_data["collectionID"] = sorted(existing_collections)
 
         if self.dry_run:
             logger.info(f"[DRY RUN] Would update: {existing_path}")
@@ -279,7 +278,7 @@ class Updater:
             try:
                 created_path = self.create_entry(new_file_path, str(self.bt_files_dir))
                 summary["created"].append(created_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
                 logger.error(f"Error creating entry from {new_file_path}: {e}")
                 summary["errors"].append({"file": new_file_path, "error": str(e)})
 
@@ -291,7 +290,7 @@ class Updater:
 
         # Build mapping from converted files to existing files
         conversion_to_existing = {}
-        for method, method_results in match_results.get("match_results", {}).items():
+        for method_results in match_results.get("match_results", {}).values():
             for existing_file, converted_files in method_results.items():
                 for converted_file in converted_files:
                     conversion_to_existing[converted_file] = existing_file
@@ -306,7 +305,7 @@ class Updater:
                         "target": updated_path,
                     }
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
                 logger.error(
                     f"Error updating {existing_file} from {converted_file}: {e}"
                 )

@@ -2,15 +2,16 @@
 Converter module for transforming Bioconductor metadata to bio.tools format.
 """
 
-import re
 import json
 import logging
+import re
 from pathlib import Path
-from typing import Optional
+
 from bs4 import BeautifulSoup
+
+from .biotools_license import to_biotools_license
 from .doi_repair import resolve as resolve_doi
 from .license_normalizer import normalize_license
-from .biotools_license import to_biotools_license
 
 logger = logging.getLogger(__name__)
 
@@ -219,8 +220,8 @@ def build_download(bioc_data: dict) -> list:
 
 def convert_package(
     bioc_data: dict,
-    citation_html: Optional[str] = None,
-    existing_biotools: Optional[dict] = None,
+    citation_html: str | None = None,
+    existing_biotools: dict | None = None,
 ) -> dict:
     """
     Convert a Bioconductor package dictionary to bio.tools format.
@@ -348,7 +349,7 @@ def merge_with_existing(new_data: dict, existing_data: dict) -> dict:
 def batch_convert(
     input_dir: str,
     output_dir: str,
-    existing_biotools_dir: Optional[str] = None,
+    existing_biotools_dir: str | None = None,
 ) -> list:
     """
     Batch convert all Bioconductor JSON files in input directory.

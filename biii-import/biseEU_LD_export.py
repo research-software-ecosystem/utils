@@ -1,15 +1,15 @@
-import os
-import urllib3
+import argparse
+import datetime
 import glob
 import json
-import argparse
-from argparse import RawTextHelpFormatter
-import datetime
+import os
 import sys
 import urllib
-from rdflib import Graph, ConjunctiveGraph
+from argparse import RawTextHelpFormatter
 
+import urllib3
 from bs4 import BeautifulSoup
+from rdflib import ConjunctiveGraph, Graph
 
 
 def sanitize_html(text):
@@ -104,7 +104,7 @@ def main():
     if args.td is None:
         print("Please fill the -td or --target_drupal_url parameter")
         parser.print_help()
-        exit(0)
+        sys.exit(0)
     # if args.u is None:
     #     print('Please fill the -u or --username parameter')
     #     parser.print_help()
@@ -116,7 +116,7 @@ def main():
     if (args.id is None) and (args.dump is False) and (args.test is False):
         print("Please fill the -id, -dump, or -test parameters")
         parser.print_help()
-        exit(0)
+        sys.exit(0)
 
     connection = {
         # 'username': args.u,
@@ -150,13 +150,13 @@ def main():
                 break
 
             sys.stdout.buffer.write(
-                "Exporting ".encode("utf-8")
+                b"Exporting "
                 + s["title"].encode("utf-8")
-                + ": ".encode("utf-8")
+                + b": "
                 + s["nid"].encode("utf-8")
-                + " [".encode("utf-8")
+                + b" ["
                 + str(round(count * 100 / total)).encode("utf-8")
-                + "% done]\n".encode("utf-8")
+                + b"% done]\n"
             )
             sys.stdout.flush()
 
@@ -199,7 +199,7 @@ def main():
                 )
 
             import_to_graph(graph, node_ld)
-            count += 1
+            count += 1  # noqa: SIM113
         if os.path.isfile(out_filename):
             os.remove(out_filename)
         graph.serialize(format="turtle", destination=out_filename)
@@ -212,13 +212,13 @@ def main():
         count = 0
         for s in softwares:
             sys.stdout.buffer.write(
-                "Exporting ".encode("utf-8")
+                b"Exporting "
                 + s["title"].encode("utf-8")
-                + ": ".encode("utf-8")
+                + b": "
                 + s["nid"].encode("utf-8")
-                + " [".encode("utf-8")
+                + b" ["
                 + str(round(count * 100 / total)).encode("utf-8")
-                + "% done]\n".encode("utf-8")
+                + b"% done]\n"
             )
             sys.stdout.flush()
 
@@ -262,7 +262,7 @@ def main():
                 )
 
             import_to_graph(graph, node_ld)
-            count += 1
+            count += 1  # noqa: SIM113
         if os.path.isfile(out_filename):
             os.remove(out_filename)
         graph.serialize(format="turtle", destination=out_filename)
@@ -411,8 +411,8 @@ def rdfize_bioschema_tool(json_entry):
             out["name"] = entry["title"][0]["value"]
 
         for item in entry["field_has_function"]:
-            if "target_uuid" in item.keys():
-                if "featureList" not in out.keys():
+            if "target_uuid" in item:
+                if "featureList" not in out:
                     out["featureList"] = [{"@id": item["target_uuid"]}]
                 else:
                     out["featureList"].append({"@id": item["target_uuid"]})
@@ -423,8 +423,8 @@ def rdfize_bioschema_tool(json_entry):
                 #     out["applicationCategory"].append({"@id": item["target_uuid"]})
 
         for item in entry["field_has_topic"]:
-            if "target_uuid" in item.keys():
-                if "hasTopic" not in out.keys():
+            if "target_uuid" in item:
+                if "hasTopic" not in out:
                     out["hasTopic"] = [{"@id": item["target_uuid"]}]
                     # print(f"Added first topic {item['target_uuid']}")
                 else:
@@ -432,7 +432,7 @@ def rdfize_bioschema_tool(json_entry):
                     # print(f"Added another topic {item['target_uuid']}")
 
         for item in entry["field_has_reference_publication"]:
-            if "citation" not in out.keys():
+            if "citation" not in out:
                 out["citation"] = []
             if item["uri"]:
                 out["citation"].append({"@id": item["uri"].strip()})
@@ -440,13 +440,13 @@ def rdfize_bioschema_tool(json_entry):
                 out["citation"].append(item["title"])
 
         for item in entry["field_has_license"]:
-            if "license" not in out.keys():
+            if "license" not in out:
                 out["license"] = []
             if item["value"]:
                 out["license"].append(item["value"])
 
         for item in entry["field_has_author"]:
-            if "publisher" not in out.keys():
+            if "publisher" not in out:
                 out["publisher"] = []
             if item["value"]:
                 out["publisher"].append(item["value"])
@@ -462,7 +462,7 @@ def rdfize_bioschema_tool(json_entry):
                 out["dateModified"] = str(date.isoformat())
 
         for item in entry["field_is_dependent_of"]:
-            if "softwareRequirements" not in out.keys():
+            if "softwareRequirements" not in out:
                 out["softwareRequirements"] = []
             if item["target_id"]:
                 out["softwareRequirements"].append(
@@ -536,13 +536,13 @@ def rdfize(json_entry):
             entry["hasTitle"] = entry["title"][0]["value"]
 
         for item in entry["field_image"]:
-            if "hasIllustration" not in entry.keys():
+            if "hasIllustration" not in entry:
                 entry["hasIllustration"] = [item["url"]]
             else:
                 entry["hasIllustration"].append(item["url"])
 
         for item in entry["field_has_author"]:
-            if "hasAuthor" not in entry.keys():
+            if "hasAuthor" not in entry:
                 entry["hasAuthor"] = []
             if item["value"]:
                 entry["hasAuthor"].append(item["value"])
@@ -552,24 +552,24 @@ def rdfize(json_entry):
 
         for item in entry["field_has_function"]:
             # print(item)
-            if "target_uuid" in item.keys():
-                if "hasFunction" not in entry.keys():
+            if "target_uuid" in item:
+                if "hasFunction" not in entry:
                     entry["hasFunction"] = [{"@id": item["target_uuid"]}]
                 else:
                     entry["hasFunction"].append({"@id": item["target_uuid"]})
 
         for item in entry["field_has_topic"]:
             # print(item)
-            if "target_uuid" in item.keys():
-                if "hasTopic" not in entry.keys():
+            if "target_uuid" in item:
+                if "hasTopic" not in entry:
                     entry["hasTopic"] = [{"@id": item["target_uuid"]}]
                 else:
                     entry["hasTopic"].append({"@id": item["target_uuid"]})
 
         for item in entry["field_is_dependent_of"]:
             # print(item)
-            if "target_id" in item.keys():
-                if "requires" not in entry.keys():
+            if "target_id" in item:
+                if "requires" not in entry:
                     entry["requires"] = [
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
@@ -579,7 +579,7 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_has_reference_publication"]:
-            if "citation" not in entry.keys():
+            if "citation" not in entry:
                 entry["citation"] = []
             if item["uri"]:
                 entry["citation"].append(
@@ -589,7 +589,7 @@ def rdfize(json_entry):
                 entry["citation"].append(item["title"])
 
         for item in entry["field_has_location"]:
-            if "location" not in entry.keys():
+            if "location" not in entry:
                 entry["location"] = []
             if item["uri"]:
                 entry["location"].append(
@@ -599,14 +599,14 @@ def rdfize(json_entry):
                 entry["location"].append(item["title"])
 
         for item in entry["field_has_license"]:
-            if "license" not in entry.keys():
+            if "license" not in entry:
                 entry["license"] = []
             if item["value"]:
                 entry["license"].append(item["value"])
 
         for item in entry["field_license_openness"]:
-            if "target_id" in item.keys():
-                if "openess" not in entry.keys():
+            if "target_id" in item:
+                if "openess" not in entry:
                     entry["openess"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -623,8 +623,8 @@ def rdfize(json_entry):
 
         for item in entry["field_has_implementation"]:
             # print(item)
-            if "target_id" in item.keys():
-                if "hasImplementation" not in entry.keys():
+            if "target_id" in item:
+                if "hasImplementation" not in entry:
                     entry["hasImplementation"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -640,8 +640,8 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_type"]:
-            if "target_id" in item.keys():
-                if "hasType" not in entry.keys():
+            if "target_id" in item:
+                if "hasType" not in entry:
                     entry["hasType"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -657,8 +657,8 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_has_programming_language"]:
-            if "target_id" in item.keys():
-                if "hasProgrammingLanguage" not in entry.keys():
+            if "target_id" in item:
+                if "hasProgrammingLanguage" not in entry:
                     entry["hasProgrammingLanguage"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -674,8 +674,8 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_platform"]:
-            if "target_id" in item.keys():
-                if "hasPlatform" not in entry.keys():
+            if "target_id" in item:
+                if "hasPlatform" not in entry:
                     entry["hasPlatform"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -691,8 +691,8 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_supported_image_dimension"]:
-            if "target_id" in item.keys():
-                if "hasSupportedImageDimension" not in entry.keys():
+            if "target_id" in item:
+                if "hasSupportedImageDimension" not in entry:
                     entry["hasSupportedImageDimension"] = [
                         {
                             "@id": "http://biii.eu/taxonomy/term/"
@@ -708,8 +708,8 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_is_covered_by_training_mat"]:
-            if "target_id" in item.keys():
-                if "hasTrainingMaterial" not in entry.keys():
+            if "target_id" in item:
+                if "hasTrainingMaterial" not in entry:
                     entry["hasTrainingMaterial"] = [
                         {"@id": "http://biii.eu/node/" + str(item["target_id"])}
                     ]
@@ -719,7 +719,7 @@ def rdfize(json_entry):
                     )
 
         for item in entry["field_has_documentation"]:
-            if "uri" not in entry.keys():
+            if "uri" not in entry:
                 entry["hasDocumentation"] = []
             if item["uri"]:
                 entry["hasDocumentation"].append(
@@ -729,7 +729,7 @@ def rdfize(json_entry):
                 entry["hasDocumentation"].append(item["title"])
 
         for item in entry["field_has_comparison"]:
-            if "uri" not in entry.keys():
+            if "uri" not in entry:
                 entry["hasComparison"] = []
             if item["uri"]:
                 entry["hasComparison"].append(
@@ -739,7 +739,7 @@ def rdfize(json_entry):
                 entry["hasComparison"].append(item["title"])
 
         for item in entry["field_has_usage_example"]:
-            if "uri" not in entry.keys():
+            if "uri" not in entry:
                 entry["hasUsageExample"] = []
             if item["uri"]:
                 entry["hasUsageExample"].append(
@@ -749,7 +749,7 @@ def rdfize(json_entry):
                 entry["hasUsageExample"].append(item["title"])
 
         for item in entry["field_has_doi"]:
-            if "uri" not in entry.keys():
+            if "uri" not in entry:
                 entry["hasDOI"] = []
             if item["uri"]:
                 entry["hasDOI"].append(
@@ -760,12 +760,12 @@ def rdfize(json_entry):
 
         for item in entry["created"]:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = datetime.datetime.fromtimestamp(item["value"])  # noqa: DTZ006
                 entry["dateCreated"] = str(date.isoformat())
 
         for item in entry["changed"]:
             if item["value"]:
-                date = datetime.datetime.fromtimestamp(item["value"])
+                date = datetime.datetime.fromtimestamp(item["value"])  # noqa: DTZ006
                 entry["dateModified"] = str(date.isoformat())
 
     except KeyError as e:
@@ -788,7 +788,7 @@ def import_to_graph(graph, raw_jld):
     try:
         g = graph
         g.parse(data=raw_jld, format="json-ld")
-    except Exception:
+    except Exception:  # noqa: BLE001 - deliberate catch-all in batch script
         print("Exception!")
         sys.exit(-1)
     # print(g.serialize(format='turtle').decode('utf-8'))

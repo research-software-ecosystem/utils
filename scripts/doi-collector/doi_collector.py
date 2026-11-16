@@ -1,8 +1,9 @@
-import json
-import ruamel.yaml as yaml
 import argparse
+import json
 import os
 import sys
+
+from ruamel import yaml
 
 
 class readable_dir(argparse.Action):
@@ -10,13 +11,13 @@ class readable_dir(argparse.Action):
         prospective_dir = values
         if not os.path.isdir(prospective_dir):
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a valid path".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a valid path"
             )
         if os.access(prospective_dir, os.R_OK):
             setattr(namespace, self.dest, prospective_dir)
         else:
             raise argparse.ArgumentTypeError(
-                "readable_dir:{0} is not a readable dir".format(prospective_dir)
+                f"readable_dir:{prospective_dir} is not a readable dir"
             )
 
 
@@ -99,12 +100,10 @@ def enrich_dois(path):
 
     def extract_doi_from_bioconda_yaml(parsed_yaml):
         # return it as list, so we can use len()
-        return list(
-            map(
-                lambda identifier_doi: identifier_doi.split(":")[1],
-                get_doi_identifiers_from_yaml(parsed_yaml),
-            )
-        )
+        return [
+            identifier_doi.split(":")[1]
+            for identifier_doi in get_doi_identifiers_from_yaml(parsed_yaml)
+        ]
 
     def extract_doi_from_debian(parsed_yaml):
         dois = list(get_doi_identifiers_from_yaml(parsed_yaml, True))

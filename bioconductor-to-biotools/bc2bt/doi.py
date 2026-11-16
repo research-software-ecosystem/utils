@@ -1,9 +1,10 @@
+import logging
+import re
+
 import dateutil.parser
 import requests
 import requests_cache
-import logging
 from bs4 import BeautifulSoup
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def clean_jats_abstract(jats_text):
 
         return text
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         logger.warning(f"Error parsing JATS abstract: {e}")
         # Fallback to simple regex tag removal
         text = re.sub(r"<[^>]+>", "", jats_text)
@@ -166,6 +167,6 @@ def get_publication_metadata(doi):
             "title": title,
         }
 
-    except Exception as e:
-        logger.error(f"Error fetching metadata for DOI {doi}: {str(e)}")
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
+        logger.error(f"Error fetching metadata for DOI {doi}: {e!s}")
         return None
