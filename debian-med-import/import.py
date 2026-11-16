@@ -1,10 +1,9 @@
-# coding: utf-8
 import argparse
 import logging
-from pathlib import Path
 import os
-import psycopg2
+from pathlib import Path
 
+import psycopg2
 from boltons.iterutils import remap
 from ruamel.yaml import YAML
 
@@ -41,7 +40,7 @@ def process_data(base_path):
     )
     connection.set_client_encoding("UTF8")
     cursor = connection.cursor()
-    query = """
+    query = r"""
     SELECT array_to_json(array_agg(t)) FROM (
         SELECT DISTINCT
             p.package, p.distribution, p.release, p.component,

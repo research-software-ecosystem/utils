@@ -1,10 +1,11 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import sys
+
 import requests
-import logging
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -120,9 +121,9 @@ def retrieve(version, filters=None):
                 )
                 with open(citation_path, "w") as write_file:
                     write_file.write(citation_html)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
                 logger.error(f"Error fetching citation for {package_name}: {e}")
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Error saving package {package_name}: {e}")
 
 

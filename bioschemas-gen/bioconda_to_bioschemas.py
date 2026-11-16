@@ -1,11 +1,11 @@
-import os
 import glob
-from token import NAME
-import requests
-import yaml
+import os
 from pathlib import Path
-from rdflib import Graph
+
+import requests
 import validators
+import yaml
+from rdflib import Graph
 
 try:
     from tabulate import tabulate
@@ -14,17 +14,18 @@ except ImportError:
     def tabulate(rows, headers=()):
         return "\n".join(" | ".join(str(value) for value in row) for row in rows)
 
+
 def getBiotoolsId(bioconda_data) -> str:
     """
     Get the bio.tools ID from the bioconda data.
     """
-    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
-        if "identifiers" in bioconda_data["extra"].keys():
+    if bioconda_data.get("extra"):
+        if "identifiers" in bioconda_data["extra"]:
             for id in bioconda_data["extra"]["identifiers"]:
                 if id.lower().startswith("biotools:"):
                     return id
         else:
-            print(f"WARNING: no biotools identifiers found in bioconda data.")
+            print("WARNING: no biotools identifiers found in bioconda data.")
             return None
     # if id:
     #     biotools_name = id.lower().split("biotools:", 1)[-1]
@@ -32,94 +33,105 @@ def getBiotoolsId(bioconda_data) -> str:
     #     if not urlExists(api_url):
     #         print(f"WARNING: biotools ID {id} does not exist in bio.tools. Biotools identifier will be skipped. \n")
 
+
 def getCitation(bioconda_data) -> list:
     """
     Get DOIs from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
-        if "identifiers" in bioconda_data["extra"].keys():
-            for id in bioconda_data["extra"]["identifiers"]:
-                if id.lower().startswith("doi:"):
-                    # id = id.strip("doi:")
-                    res.append(id)
+    if bioconda_data.get("extra") and "identifiers" in bioconda_data["extra"]:
+        for id in bioconda_data["extra"]["identifiers"]:
+            if id.lower().startswith("doi:"):
+                # id = id.strip("doi:")
+                res.append(id)
     if len(res) > 0:
         return res
     return None
 
+
 def getDownloadUrl(bioconda_data) -> list:
-  """
-  Get URLs from the bioconda data.
-  """
-  res = []
-  if 'source' in bioconda_data.keys():
-    if isinstance(bioconda_data['source'], dict):
-      if 'url' in bioconda_data['source'].keys():
-        if isinstance(bioconda_data['source']['url'], list):
-          for url in bioconda_data['source']['url']:
-            res.append(url)
-        elif isinstance(bioconda_data['source']['url'], str):
-          res.append(bioconda_data['source']['url'])
+    """
+    Get URLs from the bioconda data.
+    """
+    res = []
+    if "source" in bioconda_data:
+        if isinstance(bioconda_data["source"], dict):
+            if "url" in bioconda_data["source"]:
+                if isinstance(bioconda_data["source"]["url"], list):
+                    res.extend(bioconda_data["source"]["url"])
+                elif isinstance(bioconda_data["source"]["url"], str):
+                    res.append(bioconda_data["source"]["url"])
+                else:
+                    print(
+                        f"WARNING: source URL is not a string or list: {bioconda_data['source']['url']}"
+                    )
         else:
-          print(f"WARNING: source URL is not a string or list: {bioconda_data['source']['url']}")
-    else:
-        print(f"WARNING: source is not a dictionary for package {bioconda_data['package']['name'] if 'package' in bioconda_data.keys() and 'name' in bioconda_data['package'].keys() else 'unknown'}, returning None for download URL.")
+            print(
+                f"WARNING: source is not a dictionary for package {bioconda_data['package']['name'] if 'package' in bioconda_data and 'name' in bioconda_data['package'] else 'unknown'}, returning None for download URL."
+            )
+        if len(res) > 0:
+            return res
+        return None
+
+
+def getDependencies(bioconda_data) -> list:
+    """
+    Get host dependencies from the bioconda data.
+    """
+    res = []
+    requirement_types = ["host", "run", "build"]
+    if bioconda_data.get("requirements"):
+        for requirement_type in requirement_types:
+            if (
+                requirement_type in bioconda_data["requirements"]
+                and bioconda_data["requirements"][requirement_type]
+            ):
+                for pkg in bioconda_data["requirements"][requirement_type]:
+                    if pkg:
+                        pkg = pkg.split(" ", 1)[0]
+                        res.append(pkg)
     if len(res) > 0:
         return res
     return None
-    
-def getDependencies(bioconda_data) -> list:
-  """
-  Get host dependencies from the bioconda data.
-  """
-  res = []
-  requirement_types = ['host', 'run', 'build']
-  if 'requirements' in bioconda_data.keys() and bioconda_data['requirements']:
-    for requirement_type in requirement_types:
-        if requirement_type in bioconda_data['requirements'].keys() and bioconda_data['requirements'][requirement_type]:
-            for pkg in bioconda_data['requirements'][requirement_type]:
-                if pkg:
-                    pkg = pkg.split(' ', 1)[0]
-                    res.append(pkg)
-  if len(res) > 0:
-      return res
-  return None
+
 
 def getIdentifiers(bioconda_data) -> list:
     """
     Get other identifiers from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
-        if "identifiers" in bioconda_data["extra"].keys():
-            for id in bioconda_data["extra"]["identifiers"]:
-                if not id.lower().startswith("biotools:") and not id.lower().startswith("doi:"):
-                    res.append(id)
+    if bioconda_data.get("extra") and "identifiers" in bioconda_data["extra"]:
+        for id in bioconda_data["extra"]["identifiers"]:
+            if not id.lower().startswith("biotools:") and not id.lower().startswith(
+                "doi:"
+            ):
+                res.append(id)
     if len(res) > 0:
         return res
     return None
+
 
 def getMaintainers(bioconda_data) -> list:
     """
     Get Maintainers from the bioconda data.
     """
     res = []
-    if "extra" in bioconda_data.keys() and bioconda_data["extra"]:
-        if "recipe-maintainers" in bioconda_data["extra"].keys():
-            for id in bioconda_data["extra"]["recipe-maintainers"]:
-                res.append(id)
+    if bioconda_data.get("extra") and "recipe-maintainers" in bioconda_data["extra"]:
+        res.extend(bioconda_data["extra"]["recipe-maintainers"])
     if len(res) > 0:
         return res
     return None
 
+
 def urlExists(url, timeout=1):
-    """Check if a URL exists """
+    """Check if a URL exists"""
     try:
         r = requests.get(url, timeout=timeout)
         return r.status_code == 200
     except requests.RequestException:
-        print(f"WARNING: URL {url} does not exist. \n") 
+        print(f"WARNING: URL {url} does not exist. \n")
         return False
+
 
 def rdfize(data) -> Graph:
     prefix = """
@@ -148,60 +160,60 @@ def rdfize(data) -> Graph:
     # code_repository = url
     download_urls = getDownloadUrl(data)
     biotools_id = getBiotoolsId(data)
-    other_identifier = getIdentifiers(data) 
+    other_identifier = getIdentifiers(data)
     software_help = None
 
     ## not in Bioschemas profile, but in schema.org profile
     alternate_name = None
     dependencies = getDependencies(data)
-    maintainer = getMaintainers(data) 
+    maintainer = getMaintainers(data)
 
-    if "about" in data.keys():
+    if "about" in data:
         ## Mandatory
-        if "description" in data["about"].keys():
+        if "description" in data["about"]:
             description = data["about"]["description"]
-        elif "summary" in data["about"].keys():
+        elif "summary" in data["about"]:
             description = data["about"]["summary"]
-        if "home" in data["about"].keys():
+        if "home" in data["about"]:
             url = data["about"]["home"]
-        
+
         ## Recommended
-        if "license" in data["about"].keys():
+        if "license" in data["about"]:
             license = data["about"]["license"]
 
         ## Optional
-        if "software_help" in data["about"].keys():
+        if "software_help" in data["about"]:
             software_help = data["about"]["software_help"]
 
         ## Other
-        if "summary" in data["about"].keys():
+        if "summary" in data["about"]:
             alternate_name = data["about"]["summary"]
 
-    if "package" in data.keys():
+    if "package" in data:
         ## Mandatory
-        if "name" in data["package"].keys():
+        if "name" in data["package"]:
             name = data["package"]["name"]
         else:
-            print(f"WARNING: no name found in bioconda data, using biotools id instead.")
+            print("WARNING: no name found in bioconda data, using biotools id instead.")
             name = biotools_id if biotools_id else "unknown"
 
         ## Recommended
-        if "version" in data["package"].keys():
+        if "version" in data["package"]:
             version = data["package"]["version"]
 
     try:
         if name:
-            package_uri = f'bioconda:{name}'
-            triples += f'{package_uri} rdf:type schema:SoftwareApplication .\n'
+            package_uri = f"bioconda:{name}"
+            triples += f"{package_uri} rdf:type schema:SoftwareApplication .\n"
             # triples += f'{package_uri} rdf:type schema:SoftwareSourceCode .\n'
 
             ## Minimum
-            triples += f'{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n'
+            triples += f"{package_uri} schema:conformsTo <https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE> .\n"
             if description:
                 triples += f'{package_uri} schema:description "{description}" .\n'
             triples += f'{package_uri} schema:name "{name}" .\n'
             if url and validators.url(url):
-                triples += f'{package_uri} schema:url <{url}> .\n'
+                triples += f"{package_uri} schema:url <{url}> .\n"
 
             ## Recommended
 
@@ -209,16 +221,16 @@ def rdfize(data) -> Graph:
 
             # applicationSubCategory
 
-            # author ## available: recipe-maintainer in extra 
+            # author ## available: recipe-maintainer in extra
 
             if citation:
                 for doi in citation:
-                    triples += f'{package_uri} schema:citation <{doi}> .\n'    
+                    triples += f"{package_uri} schema:citation <{doi}> .\n"
 
             # featureList
 
             if license:
-                triples += f'{package_uri} schema:license "{license}" .\n' 
+                triples += f'{package_uri} schema:license "{license}" .\n'
 
             if version:
                 triples += f'{package_uri} schema:softwareVersion "{version}" .\n'
@@ -236,20 +248,20 @@ def rdfize(data) -> Graph:
             if download_urls:
                 for url in download_urls:
                     if validators.url(url):
-                        triples += f'{package_uri} schema:downloadUrl <{url}> .\n'
+                        triples += f"{package_uri} schema:downloadUrl <{url}> .\n"
 
             # funder
             # hasPart
 
             if biotools_id:
-                triples += f'{package_uri} schema:identifier {biotools_id} .\n'
-                #triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
+                triples += f"{package_uri} schema:identifier {biotools_id} .\n"
+                # triples += f'{package_uri} schema:isBasedOn biotools:{biotools_id} .\n'
 
-            triples += f'{package_uri} schema:identifier bioconda:{name} .\n'
+            triples += f"{package_uri} schema:identifier bioconda:{name} .\n"
 
             if other_identifier:
                 for id in other_identifier:
-                    triples += f'{package_uri} schema:identifier "{id}" .\n' ## string for now - ex. "usegalaxy-eu:adapter_removal"
+                    triples += f'{package_uri} schema:identifier "{id}" .\n'  ## string for now - ex. "usegalaxy-eu:adapter_removal"
 
             # input
             # isAccessibleForFree
@@ -260,14 +272,15 @@ def rdfize(data) -> Graph:
             # programmingLanguage
 
             # provider
-            triples += f'{package_uri} schema:provider <https://bioconda.github.io/> .\n'
-            triples += f'<https://bioconda.github.io/> schema:type "Organization" .\n'
+            triples += (
+                f"{package_uri} schema:provider <https://bioconda.github.io/> .\n"
+            )
+            triples += '<https://bioconda.github.io/> schema:type "Organization" .\n'
 
             # softwareAddOn
 
-            if software_help:
-                if validators.url(software_help):
-                    triples += f'{package_uri} schema:softwareHelp <{software_help}> .\n'
+            if software_help and validators.url(software_help):
+                triples += f"{package_uri} schema:softwareHelp <{software_help}> .\n"
 
             # thumbnailsUrl
 
@@ -282,8 +295,7 @@ def rdfize(data) -> Graph:
 
             if dependencies:
                 for dependency in dependencies:
-                    triples += f'{package_uri} schema:softwareRequirements bioconda:{dependency} .\n'    
-
+                    triples += f"{package_uri} schema:softwareRequirements bioconda:{dependency} .\n"
 
             g = Graph()
             g.parse(data=prefix + "\n" + triples, format="turtle")
@@ -292,16 +304,16 @@ def rdfize(data) -> Graph:
             # print(g.serialize(format='json-ld'))
         return g
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         print("PARSING ERROR for:")
         print(prefix + "\n" + triples)
         print(e)
 
+
 def get_bioconda_files_in_repo():
     tools = []
     # for data_file in glob.glob("../../content/data/*/bioconda_*.yaml"):
-    for data_file in glob.glob("../../content/imports/bioconda/bioconda_*.yaml"):
-        tools.append(data_file)
+    tools.extend(glob.glob("../../content/imports/bioconda/bioconda_*.yaml"))
     return tools
 
 
@@ -312,24 +324,23 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
     tool_files = get_bioconda_files_in_repo()
 
     for tool_file in tool_files:
-
         tool_name = os.path.basename(tool_file)
         tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
 
         if id == tool_name:
-
             path = Path(tool_file)
             tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
             # print(tool_file)
             # print(json.dumps(tool, indent=2))
             tool_id = None
-            if "package" in tool.keys():
-                if "name" in tool["package"].keys():
-                    tool_id = tool["package"]["name"]
+            if "package" in tool and "name" in tool["package"]:
+                tool_id = tool["package"]["name"]
 
             if tool_id is None:
-                print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+                print(
+                    f"WARNING: no bioconda id found in {tool_file}, using file basename instead."
+                )
                 tool_id = tool_name
 
             ## generate TTL file
@@ -341,6 +352,7 @@ def process_tools_by_id(rdf_graph, id="SPROUT"):
                 tool_warnings.append(tool_id)
 
     return rdf_graph
+
 
 def clean():
     for data_file in glob.glob(r"../../content/data/*/*.bioconda.jsonld"):
@@ -360,17 +372,18 @@ def process_tools(rdf_graph):
         print(f"processing {tool_file}")
         tool_name = os.path.basename(tool_file)
         tool_name = tool_name.removeprefix("bioconda_").removesuffix(".yaml")
-    
+
         path = Path(tool_file)
         tool = yaml.safe_load(path.read_text(encoding="utf-8"))
 
         tool_id = None
-        if "package" in tool.keys():
-            if "name" in tool["package"].keys():
-                tool_id = tool["package"]["name"]
+        if "package" in tool and "name" in tool["package"]:
+            tool_id = tool["package"]["name"]
 
         if tool_id is None:
-            print(f"WARNING: no bioconda id found in {tool_file}, using file basename instead.")
+            print(
+                f"WARNING: no bioconda id found in {tool_file}, using file basename instead."
+            )
             tool_id = tool_name
 
         # biotools_id = getBiotoolsId(tool)
@@ -379,7 +392,7 @@ def process_tools(rdf_graph):
         # else:
         #     print(f"WARNING: no biotools id found for {tool_file}, using bioconda id to create data directory instead.")
         #     tpe_id = tool_id
- 
+
         # directory = os.path.join("..", "..", "content", "data", tpe_id)
 
         # if not os.path.exists(directory):
@@ -397,6 +410,7 @@ def process_tools(rdf_graph):
 
     return rdf_graph
 
+
 def generate_dump(directory):
     """
     Produce an single RDF file for all imported tools.
@@ -405,9 +419,12 @@ def generate_dump(directory):
 
     # process_tools_by_id(rdf_graph, "bioconductor-xcms")
     process_tools(rdf_graph)
-    rdf_graph.serialize(format="turtle", destination=os.path.join(directory, "bioconda-dump.ttl"))
+    rdf_graph.serialize(
+        format="turtle", destination=os.path.join(directory, "bioconda-dump.ttl")
+    )
 
     show_stats(rdf_graph)
+
 
 def show_stats(rdf_graph):
     """
@@ -444,16 +461,17 @@ def show_stats(rdf_graph):
 
 
 if __name__ == "__main__":
-
     tool_warnings = []
     directory = "../../content/datasets"
 
     generate_dump(directory)
 
     # for tool_id in tool_warnings:
-        # print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
+    # print(f"WARNING: No graph generated for tool {tool_id}: formatting error.")
 
-    print(f"{len(tool_warnings)} tools could not be processed due to formatting errors.")
+    print(
+        f"{len(tool_warnings)} tools could not be processed due to formatting errors."
+    )
 
     # clean()
     # tool_warnings = []

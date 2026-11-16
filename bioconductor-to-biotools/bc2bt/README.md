@@ -160,7 +160,7 @@ biotools_entry = convert_package(bioc_data)
 created_files = batch_convert(
     input_dir="bioconductor_json/",
     output_dir="converted/",
-    existing_biotools_dir="biotools_entries/"
+    existing_biotools_dir="biotools_entries/",
 )
 
 # Compare datasets
@@ -169,7 +169,7 @@ results = compare_files(
     pattern2="converted/*.biotools.json",
     identity_methods=["name_homepage", "doi"],
     upset1_path="upset1.png",
-    upset2_path="upset2.png"
+    upset2_path="upset2.png",
 )
 
 # Update entries
@@ -177,7 +177,7 @@ summary = update_entries(
     match_results=results,
     converted_files_dir="converted/",
     bt_files_dir="biotools_entries/",
-    dry_run=True
+    dry_run=True,
 )
 ```
 

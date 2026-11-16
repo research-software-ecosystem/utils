@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .converter import batch_convert
-from .mapper import compare_files, IdentityRegistry
+from .mapper import IdentityRegistry, compare_files
 from .updater import update_entries
 
 
@@ -50,7 +50,7 @@ def convert_command(args=None):
         print(f"Converted {len(result)} packages")
         print(f"Output written to: {args.output_dir}")
         return 0
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
@@ -124,7 +124,7 @@ def compare_command(args=None):
 
         print(f"\nResults saved to: {args.results}")
         return 0
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         print(f"Error: {e}", file=sys.stderr)
         import traceback
 
@@ -202,7 +202,7 @@ def update_command(args=None):
             print("\n[DRY RUN - No changes made]")
 
         return 0
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         print(f"Error: {e}", file=sys.stderr)
         import traceback
 
@@ -380,7 +380,7 @@ def sync_command(args=None):
 
         return 0
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - deliberate catch-all in batch script
         print(f"Error: {e}", file=sys.stderr)
         import traceback
 
