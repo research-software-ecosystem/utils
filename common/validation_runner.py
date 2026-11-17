@@ -121,6 +121,11 @@ def run(source, schema_path, globs, argv=None):
         help="exit non-zero on warnings too",
     )
     parser.add_argument(
+        "--report-file",
+        metavar="PATH",
+        help="also write a plain-text report (findings + summary) to PATH",
+    )
+    parser.add_argument(
         "--max-errors",
         type=int,
         default=0,
@@ -160,6 +165,16 @@ def run(source, schema_path, globs, argv=None):
 
     errors = sum(1 for f in all_findings if f.severity == ERROR)
     warnings = sum(1 for f in all_findings if f.severity == WARNING)
+    summary = (
+        f"{source}: {len(files)} files checked, "
+        f"{errors} errors in {files_with_errors} files, "
+        f"{warnings} warnings"
+    )
+    if args.report_file:
+        with open(args.report_file, "w", encoding="utf-8") as fh:
+            for f in all_findings:
+                fh.write(f"{f.severity.upper()} {f.path}: {f.location}: {f.message}\n")
+            fh.write(summary + "\n")
     if args.output == "json":
         print(
             json.dumps(
@@ -174,11 +189,7 @@ def run(source, schema_path, globs, argv=None):
             )
         )
     else:
-        print(
-            f"{source}: {len(files)} files checked, "
-            f"{errors} errors in {files_with_errors} files, "
-            f"{warnings} warnings"
-        )
+        print(summary)
     if errors or (warnings and args.warnings_as_errors):
         return 1
     return 0

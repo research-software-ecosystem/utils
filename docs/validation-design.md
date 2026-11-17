@@ -175,7 +175,19 @@ import workflow, after an import job writes its files:
   with:
     content-path: ${{ github.workspace }}
     warnings-as-errors: 'false'   # optional
+    report-issue: 'true'          # optional: post findings as a GitHub issue
 ```
+
+With `report-issue: 'true'`, a run that finds errors posts the report as a
+GitHub issue titled `Validation report: <source> imports` — created in the
+repository that runs the workflow (`issue-repo` defaults to
+`github.repository`; override it to target another repository, with a
+`github-token` that has issues:write there). While an issue with that title
+is open, later runs comment on it instead of opening duplicates, and
+everyone watching the repository is notified by email through normal GitHub
+notifications. The issue body holds the summary, a link to the run, and the
+findings (truncated at GitHub's body limit); `common/report_issue.sh`
+implements it.
 
 Findings surface as GitHub annotations (`--output github`); the step fails
 when any error is found, so a malformed import fails its own feature branch
