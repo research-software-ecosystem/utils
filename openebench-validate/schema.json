@@ -1,0 +1,458 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpenEBench metrics import (<id>.oeb.metrics.json) \u2014 minimal checks",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "@id",
+      "@type"
+    ],
+    "properties": {
+      "@id": {
+        "type": "string",
+        "format": "url",
+        "pattern": "^https://openebench\\.bsc\\.es/monitor/metrics/"
+      },
+      "@license": {
+        "type": "string",
+        "format": "url"
+      },
+      "@nmsp": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "@type": {
+        "type": "string",
+        "const": "metrics"
+      },
+      "@timestamp": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "deprecated": {
+        "type": "boolean"
+      },
+      "distribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "binaries": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "freeness": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "registration": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "packages": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "source_packages": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sourcecode": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "free": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "interpreted": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "license": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "public": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "readme": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "copyright": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "repository": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "anonymous": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "online": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "vre": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "vm_image": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "container": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "support": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "issue_tracking": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "public_tracker": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "resolve_time": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "project": {
+        "type": "object",
+        "properties": {
+          "publications": {
+            "type": "array",
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "doi": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "doi"
+                      },
+                      "pmid": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "pmid"
+                      },
+                      "pmcid": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "pmcid"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "build": {
+            "type": "object"
+          },
+          "deployment": {
+            "type": "object"
+          },
+          "readme": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "documentation": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "api": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "api_versioned": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "general": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "help": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "howto": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "manual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tutorial": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "faq": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "training": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "citation": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "terms_of_use": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "training_material": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "license": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "open_source": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "osi": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "spdx": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "concept": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "identity": {
+            "type": "object"
+          },
+          "website": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "bioschemas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "copyright": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "https": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "license": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acknowledgement": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "operational": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "ssl": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ssl_err": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "detected_links": {
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "redirects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "url"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+bib:
+- key: doi
+  value: not-a-doi
+blend: debian-med
+component: main
+description_md5: dd1a44d09b3ab5031fbc6e8599da76e8
+distribution: debian
+homepage: https://bioconductor.org/packages/affyio/
+license: unknown
+package: r-bioc-affyio
+popcon:
+- insts: 1222
+  olde: 953
+  recent: 111
+  vote: 158
+registries:
+- entry: OMICS_29381
+  name: OMICtools
+- entry: affyio
+  name: bio.tools
+- entry: bioconductor-affyio
+  name: conda:bioconda
+release: sid
+source: r-bioc-affyio
+version: 1.82.0
