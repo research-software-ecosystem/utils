@@ -163,15 +163,24 @@ python validation/validate_<source>.py <content-checkout-path>
 - A summary line at the end (`N files checked, E errors in F files, W warnings`)
   mirroring the existing `debian_validator.py` behaviour.
 
-## 5. CI integration (follow-up, not part of the first PR)
+## 5. CI integration
 
-The scripts are plain CLIs so they can run anywhere, but the intended use is
-in the `content` repo's import workflow: after each `import <source>` job,
-run the matching validator on the files that job just wrote, before the
-commit/merge steps — so a malformed import fails its own feature branch
-instead of landing on master. A small composite action
-(`validation/action.yml`, taking `source` + `path` inputs) would mirror how
-the import actions are consumed. First PR ships scripts + tests only.
+Each `<source>-validate/` folder ships a composite action (`action.yml`),
+mirroring how the import actions are consumed. From the `content` repo's
+import workflow, after an import job writes its files:
+
+```yaml
+- name: validate debian med files
+  uses: research-software-ecosystem/utils/debian-med-validate@main
+  with:
+    content-path: ${{ github.workspace }}
+    warnings-as-errors: 'false'   # optional
+```
+
+Findings surface as GitHub annotations (`--output github`); the step fails
+when any error is found, so a malformed import fails its own feature branch
+instead of landing on master. Wiring the steps into the content repo's
+workflow is a separate PR there.
 
 ## 6. Testing
 

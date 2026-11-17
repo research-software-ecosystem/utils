@@ -1,0 +1,26 @@
+name: 'validate biotools imports'
+description: 'Syntactic validation of bio.tools import files (*.biotools.json)'
+inputs:
+  content-path:
+    description: 'Path to a checkout of the content repository'
+    required: false
+    default: ${{ github.workspace }}
+  warnings-as-errors:
+    description: 'Fail on warnings too (true/false)'
+    required: false
+    default: 'false'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: validate biotools files
+      run: |
+        python ${{ github.action_path }}/validate.py --output github           $([ "${{ inputs.warnings-as-errors }}" = "true" ] && echo --warnings-as-errors)           "${{ inputs.content-path }}"
+      shell: bash
