@@ -23,7 +23,8 @@ _EMAIL_RE = re.compile(
     r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$"
 )
 _PMID_RE = re.compile(r"^[1-9]\d{0,7}$")
-_PMCID_RE = re.compile(r"^PMC\d+$")
+# a trailing .N is a PMC version qualifier
+_PMCID_RE = re.compile(r"^PMC\d+(\.\d+)?$")
 _EDAM_URI_RE = re.compile(
     r"^https?://edamontology\.org/(topic|operation|data|format)_\d{4}$"
 )
@@ -36,6 +37,7 @@ _ISO_DATETIME_RE = re.compile(
 _MD5_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 _SCICRUNCH_RE = re.compile(r"^SCR_\d+$")
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 # Debian policy: [epoch:]upstream-version[-debian-revision]
 _DEBIAN_VERSION_RE = re.compile(r"^(\d+:)?[0-9][A-Za-z0-9.+~:-]*?(-[A-Za-z0-9.+~]+)?$")
 _SEMVERISH_RE = re.compile(r"^\d+(\.\d+)*([.+_~-]?[A-Za-z0-9.+_~-]*)$")
@@ -46,17 +48,22 @@ CURIE_PREFIXES = frozenset(
     {
         "biotools",
         "doi",
+        "DOI",
         "PMID",
         "pmid",
         "usegalaxy-eu",
         "RRID",
+        "rrid",
         "arxiv",
+        "arXiv",
         "isbn",
+        "pypi",
+        "debian",
     }
 )
 
 # A deliberately small vendored subset of SPDX identifiers plus the special
-# values bio.tools accepts; only used at warning level.
+# values bio.tools and WorkflowHub accept; only used at warning level.
 SPDX_LICENSES = frozenset(
     {
         "0BSD",
@@ -65,6 +72,7 @@ SPDX_LICENSES = frozenset(
         "AGPL-3.0",
         "AGPL-3.0-only",
         "AGPL-3.0-or-later",
+        "Apache-1.0",
         "Apache-1.1",
         "Apache-2.0",
         "APSL-2.0",
@@ -72,16 +80,27 @@ SPDX_LICENSES = frozenset(
         "Artistic-2.0",
         "BSD-2-Clause",
         "BSD-3-Clause",
+        "BSD-3-Clause-Clear",
         "BSD-4-Clause",
+        "BSD-Source-Code",
         "BSL-1.0",
         "CC0-1.0",
         "CC-BY-3.0",
         "CC-BY-4.0",
+        "CC-BY-NC-3.0",
         "CC-BY-NC-4.0",
+        "CC-BY-NC-ND-3.0",
+        "CC-BY-NC-ND-4.0",
+        "CC-BY-NC-SA-3.0",
         "CC-BY-NC-SA-4.0",
+        "CC-BY-SA-3.0",
         "CC-BY-SA-4.0",
         "CDDL-1.0",
+        "CDL-1.0",
+        "CECILL-2.0",
         "CECILL-2.1",
+        "CECILL-B",
+        "CECILL-C",
         "ECL-2.0",
         "EFL-2.0",
         "EPL-1.0",
@@ -104,9 +123,12 @@ SPDX_LICENSES = frozenset(
         "LGPL-3.0-only",
         "LGPL-3.0-or-later",
         "MIT",
+        "MIT-0",
         "MPL-1.1",
         "MPL-2.0",
         "NCSA",
+        "ODbL-1.0",
+        "ODC-By-1.0",
         "OFL-1.1",
         "OSL-3.0",
         "PostgreSQL",
@@ -114,6 +136,10 @@ SPDX_LICENSES = frozenset(
         "Unlicense",
         "WTFPL",
         "Zlib",
+        # WorkflowHub's own values
+        "other-open",
+        "other-closed",
+        "notspecified",
         # bio.tools special values
         "Freeware",
         "Proprietary",
@@ -211,12 +237,14 @@ def is_curie(value):
     """`prefix:rest` with a known prefix; the DOI payload is checked too."""
     if not isinstance(value, str):
         return True
+    if value.startswith(("http://", "https://", "ftp://")):
+        return is_url(value)
     prefix, sep, rest = value.partition(":")
     if not sep or not rest:
         return False
     if prefix not in CURIE_PREFIXES:
         return False
-    if prefix == "doi":
+    if prefix in ("doi", "DOI"):
         return is_doi(rest)
     if prefix in ("PMID", "pmid"):
         return is_pmid(rest)
@@ -253,6 +281,12 @@ def is_scicrunch_id(value):
     if not isinstance(value, str):
         return True
     return bool(_SCICRUNCH_RE.match(value))
+
+
+def is_uuid(value):
+    if not isinstance(value, str):
+        return True
+    return bool(_UUID_RE.match(value.lower()))
 
 
 def is_debian_version(value):
@@ -295,6 +329,7 @@ FORMAT_CHECKS = {
     "md5": is_md5,
     "sha256": is_sha256,
     "scicrunch-id": is_scicrunch_id,
+    "uuid": is_uuid,
     "debian-version": is_debian_version,
     "semverish": is_semverish,
     "spdx-license": is_spdx_license,

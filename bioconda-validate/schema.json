@@ -48,15 +48,29 @@
       "description": "conda-build knobs are an open set; only the valued fields are typed",
       "properties": {
         "number": {
-          "type": [
-            "integer",
-            "string"
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
           ]
         },
         "noarch": {
-          "type": [
-            "string",
-            "boolean"
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "python",
+                "generic"
+              ]
+            },
+            {
+              "type": "boolean"
+            }
           ]
         },
         "entry_points": {
@@ -80,7 +94,10 @@
       }
     },
     "requirements": {
-      "type": "object",
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
       "properties": {
         "build": {
@@ -102,58 +119,100 @@
       "additionalProperties": false,
       "properties": {
         "commands": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "imports": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "files": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "requires": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "source_files": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "downstreams": {
-          "type": "array",
-          "items": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -264,7 +323,10 @@
       }
     },
     "extra": {
-      "type": "object",
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
         "identifiers": {
           "type": "array",
@@ -283,6 +345,7 @@
               "items": {
                 "type": [
                   "string",
+                  "integer",
                   "null"
                 ]
               }
@@ -354,6 +417,9 @@
     },
     "schema_version": {
       "type": "integer"
+    },
+    "context": {
+      "type": "object"
     }
   },
   "$defs": {
@@ -446,6 +512,35 @@
               "null"
             ]
           }
+        },
+        "git_commit": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "git_tag": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "fn": {
+          "type": "string"
+        },
+        "sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{40}$"
+        },
+        "run_exports": {},
+        "manifest": {
+          "type": "string"
+        },
+        "strip_prefix": {
+          "type": [
+            "string",
+            "boolean"
+          ]
         }
       }
     }

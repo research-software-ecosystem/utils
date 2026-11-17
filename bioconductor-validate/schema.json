@@ -46,8 +46,16 @@
       "type": "string"
     },
     "BugReports": {
-      "type": "string",
-      "format": "url"
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "url"
+        },
+        {
+          "type": "string",
+          "pattern": "^mailto:[^<>]+@[^<>]+$"
+        }
+      ]
     },
     "Video": {
       "type": "string"
@@ -73,7 +81,8 @@
       "format": "url"
     },
     "git_branch": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^(RELEASE_\\d+_\\d+|devel)$"
     },
     "git_last_commit": {
       "type": "string",
@@ -138,9 +147,15 @@
       }
     },
     "dependencyCount": {
-      "type": [
-        "string",
-        "integer"
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d+$"
+        },
+        {
+          "type": "integer",
+          "minimum": 0
+        }
       ]
     },
     "biocViews": {
@@ -166,7 +181,11 @@
       "type": "string"
     },
     "PackageStatus": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "Active",
+        "Deprecated"
+      ]
     },
     "SystemRequirements": {
       "type": "string"
@@ -221,6 +240,12 @@
     },
     "mac.binary.sonoma-arm64.ver": {
       "type": "string"
+    },
+    "organism": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }

@@ -3,35 +3,120 @@
   "title": "Debian Med import (<package>.debian.yaml)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["package", "source", "distribution", "release", "component", "version", "blend"],
+  "required": [
+    "package",
+    "source",
+    "distribution",
+    "release",
+    "component",
+    "version",
+    "blend"
+  ],
   "properties": {
-    "package": {"type": "string", "minLength": 1},
-    "source": {"type": "string", "minLength": 1},
-    "distribution": {"type": "string"},
-    "release": {"type": "string"},
-    "component": {"type": "string"},
-    "version": {"type": "string", "format": "debian-version"},
-    "homepage": {"type": ["string", "null"], "format": "url"},
-    "license": {"type": ["string", "null"]},
-    "blend": {"type": "string"},
-    "description_md5": {"type": ["string", "null"], "format": "md5"},
-    "topics": {"type": "array", "items": {"type": ["string", "null"]}},
+    "package": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "distribution": {
+      "type": "string",
+      "enum": [
+        "debian",
+        "prospective"
+      ]
+    },
+    "release": {
+      "type": "string"
+    },
+    "component": {
+      "type": "string",
+      "enum": [
+        "main",
+        "contrib",
+        "non-free",
+        "non-free-firmware"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "format": "debian-version"
+    },
+    "homepage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "url"
+    },
+    "license": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "blend": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "description_md5": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "md5"
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
     "edam_scopes": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "name": {"type": "string"},
+          "name": {
+            "type": "string"
+          },
           "function": {
             "anyOf": [
-              {"type": "array", "items": {"type": "string"}},
-              {"type": "string"}
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
             ]
           },
-          "topics": {"type": "array", "items": {"type": "string"}},
-          "input": {"type": "array", "items": {"$ref": "#/$defs/edamIo"}},
-          "output": {"type": "array", "items": {"$ref": "#/$defs/edamIo"}}
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "input": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/edamIo"
+            }
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/edamIo"
+            }
+          }
         }
       }
     },
@@ -40,19 +125,52 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["entry", "name"],
+        "required": [
+          "entry",
+          "name"
+        ],
         "properties": {
-          "entry": {"type": "string", "minLength": 1},
-          "name": {"type": "string", "minLength": 1}
+          "entry": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "allOf": [
           {
-            "if": {"properties": {"name": {"const": "SciCrunch"}}},
-            "then": {"properties": {"entry": {"format": "scicrunch-id"}}}
+            "if": {
+              "properties": {
+                "name": {
+                  "const": "SciCrunch"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "entry": {
+                  "format": "scicrunch-id"
+                }
+              }
+            }
           },
           {
-            "if": {"properties": {"name": {"const": "bio.tools"}}},
-            "then": {"properties": {"entry": {"format": "biotools-id"}}}
+            "if": {
+              "properties": {
+                "name": {
+                  "const": "bio.tools"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "entry": {
+                  "format": "biotools-id"
+                }
+              }
+            }
           }
         ]
       }
@@ -62,15 +180,38 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["key", "value"],
+        "required": [
+          "key",
+          "value"
+        ],
         "properties": {
-          "key": {"type": "string"},
-          "value": {"type": "string"},
-          "package": {"type": "string"},
-          "rank": {"type": "integer"}
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "package": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer"
+          }
         },
-        "if": {"properties": {"key": {"const": "doi"}}},
-        "then": {"properties": {"value": {"format": "doi"}}}
+        "if": {
+          "properties": {
+            "key": {
+              "const": "doi"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "value": {
+              "format": "doi"
+            }
+          }
+        }
       }
     },
     "tags": {
@@ -78,8 +219,14 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["tag"],
-        "properties": {"tag": {"type": "string"}}
+        "required": [
+          "tag"
+        ],
+        "properties": {
+          "tag": {
+            "type": "string"
+          }
+        }
       }
     },
     "popcon": {
@@ -88,11 +235,26 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "insts": {"type": "integer", "minimum": 0},
-          "vote": {"type": "integer", "minimum": 0},
-          "olde": {"type": "integer", "minimum": 0},
-          "recent": {"type": "integer", "minimum": 0},
-          "nofiles": {"type": "integer", "minimum": 0}
+          "insts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vote": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "olde": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nofiles": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
@@ -102,14 +264,43 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "package": {"type": "string"},
-          "description": {"type": "string"},
-          "long_description": {"type": ["string", "null"]},
-          "language": {"type": ["string", "null"]},
-          "release": {"type": "string"},
-          "description_md5": {"type": ["string", "null"], "format": "md5"},
-          "license": {"type": ["string", "null"]},
-          "blend": {"type": "string"}
+          "package": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "long_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release": {
+            "type": "string"
+          },
+          "description_md5": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "md5"
+          },
+          "license": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blend": {
+            "type": "string"
+          }
         }
       }
     }
@@ -119,8 +310,28 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "data": {"type": "string"},
-        "formats": {"type": "array", "items": {"type": "string"}}
+        "data": {
+          "type": "string"
+        },
+        "formats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     }
   }

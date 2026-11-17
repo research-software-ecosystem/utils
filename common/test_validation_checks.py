@@ -97,6 +97,12 @@ class Ids(unittest.TestCase):
         self.assertFalse(vc.is_curie("doi:not-a-doi"))
         self.assertFalse(vc.is_curie("no-colon"))
 
+    def test_uuid(self):
+        self.assertTrue(vc.is_uuid("5e6102a9-fa32-4a89-9acd-d1e675ffbdda"))
+        self.assertTrue(vc.is_uuid("5E6102A9-FA32-4A89-9ACD-D1E675FFBDDA"))
+        self.assertFalse(vc.is_uuid("5e6102a9fa324a899acdd1e675ffbdda"))
+        self.assertFalse(vc.is_uuid("not-a-uuid"))
+
     def test_scicrunch(self):
         self.assertTrue(vc.is_scicrunch_id("SCR_010910"))
         self.assertFalse(vc.is_scicrunch_id("SCR010910"))
@@ -144,7 +150,8 @@ class Spdx(unittest.TestCase):
         self.assertTrue(vc.is_spdx_license("LGPL-2.0-or-later"))
 
     def test_invalid(self):
-        self.assertFalse(vc.is_spdx_license("other-open"))
+        self.assertTrue(vc.is_spdx_license("other-open"))
+        self.assertFalse(vc.is_spdx_license("not-a-license"))
         self.assertFalse(vc.is_spdx_license("GPL (>= 2)"))
 
 

@@ -2,37 +2,182 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Galaxy codex import (<suite>.galaxy.json)",
   "type": "object",
-  "required": ["Suite_ID", "Description"],
+  "required": [
+    "Suite_ID",
+    "Description"
+  ],
   "properties": {
-    "Suite_ID": {"type": "string", "minLength": 1},
-    "Description": {"type": ["string", "null"]},
-    "Homepage": {"type": ["string", "null"], "format": "url"},
-    "Suite_source": {"type": ["string", "null"], "format": "url"},
-    "Suite_parsed_folder": {"type": ["string", "null"], "format": "url"},
-    "Suite_owner": {"type": ["string", "null"]},
-    "Suite_version": {"type": ["string", "null"]},
-    "Suite_version_status": {"type": ["string", "null"]},
-    "Suite_conda_package": {"type": ["string", "null"]},
-    "Latest_suite_conda_package_version": {"type": ["string", "null"]},
-    "Suite_first_commit_date": {"type": ["string", "null"], "format": "iso-date"},
-    "Deprecated": {"type": ["boolean", "null"]},
-    "EDAM_operations": {"type": "array", "items": {"type": "string"}},
-    "EDAM_reduced_operations": {"type": "array", "items": {"type": "string"}},
-    "EDAM_topics": {"type": "array", "items": {"type": "string"}},
-    "EDAM_reduced_topics": {"type": "array", "items": {"type": "string"}},
-    "ToolShed_categories": {"type": "array", "items": {"type": "string"}},
-    "ToolShed_id": {"type": ["string", "null"]},
-    "Tool_IDs": {"type": "array", "items": {"type": "string"}},
-    "Galaxy_tool_ids": {"type": "array", "items": {"type": "string"}},
-    "Tool_input_formats": {"type": "array", "items": {"type": "string"}},
-    "Tool_output_formats": {"type": "array", "items": {"type": "string"}},
-    "bio.tool_ID": {"type": ["string", "null"], "format": "biotools-id"},
-    "bio.tool_name": {"type": ["string", "null"]},
-    "bio.tool_description": {"type": ["string", "null"]},
-    "biii_ID": {"type": ["string", "null"]},
+    "Suite_ID": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Homepage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "url"
+    },
+    "Suite_source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "url"
+    },
+    "Suite_parsed_folder": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "url"
+    },
+    "Suite_owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Suite_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Suite_version_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "Up-to-date",
+        "To update",
+        "No conda package",
+        null
+      ]
+    },
+    "Suite_conda_package": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Latest_suite_conda_package_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Suite_first_commit_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "iso-date"
+    },
+    "Deprecated": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "EDAM_operations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "EDAM_reduced_operations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "EDAM_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "EDAM_reduced_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ToolShed_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ToolShed_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Tool_IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Galaxy_tool_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tool_input_formats": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tool_output_formats": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bio.tool_ID": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "biotools-id"
+    },
+    "bio.tool_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "bio.tool_description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "biii_ID": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "Related_Tutorials": {
       "type": "array",
-      "items": {"type": "string", "format": "url"}
+      "items": {
+        "type": "string",
+        "format": "url"
+      }
     },
     "Related_Workflows": {
       "type": "array",
@@ -40,21 +185,75 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "name": {"type": ["string", "null"]},
-          "link": {"type": ["string", "null"], "format": "url"},
-          "create_time": {"type": ["string", "null"], "format": "iso-date"},
-          "update_time": {"type": ["string", "null"], "format": "iso-date"},
-          "latest_version": {"type": ["string", "integer", "null"]}
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "url"
+          },
+          "create_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "iso-date"
+          },
+          "update_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "iso-date"
+          },
+          "latest_version": {
+            "type": [
+              "string",
+              "integer",
+              "null"
+            ]
+          }
         }
       }
     }
   },
   "patternProperties": {
-    "^Number_of_tools_on_.+$": {"type": ["integer", "null"]},
-    "^Suite_runs_.*$": {"type": ["integer", "null"]},
-    "^Suite_users_.*$": {"type": ["integer", "null"]},
-    "^Tool_users_.*$": {"type": ["integer", "null"]},
-    "^Tool_runs_.*$": {"type": ["integer", "null"]}
+    "^Number_of_tools_on_.+$": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "^Suite_runs_.*$": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "^Suite_users_.*$": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "^Tool_users_.*$": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "^Tool_runs_.*$": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
   },
   "additionalProperties": false
 }

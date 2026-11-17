@@ -1,61 +1,198 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "WorkflowHub import (<n>.workflowhub.json / data cross-links)",
-  "type": ["object", "array"],
-  "if": {"type": "array"},
+  "type": [
+    "object",
+    "array"
+  ],
+  "if": {
+    "type": "array"
+  },
   "then": {
-    "items": {"type": "string", "pattern": "^\\d+$"},
+    "items": {
+      "type": "string",
+      "pattern": "^\\d+$"
+    },
     "description": "data/<tool>/<tool>.workflowhub.json: workflow id cross-links"
   },
-  "else": {"$ref": "#/$defs/workflow"},
+  "else": {
+    "$ref": "#/$defs/workflow"
+  },
   "$defs": {
     "workflow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "link", "source"],
+      "required": [
+        "id",
+        "name",
+        "link",
+        "source"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^\\d+$"},
-        "name": {"type": "string", "minLength": 1},
-        "description": {"type": ["string", "null"]},
-        "source": {"type": "string"},
-        "link": {"type": "string", "format": "url"},
-        "doi": {
-          "anyOf": [
-            {"type": "string", "format": "doi"},
-            {"type": "string", "maxLength": 0},
-            {"type": "null"}
+        "id": {
+          "type": "string",
+          "pattern": "^\\d+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
           ]
         },
-        "license": {"type": ["string", "null"], "format": "spdx-license"},
-        "create_time": {"type": "string", "format": "iso-date"},
-        "update_time": {"type": "string", "format": "iso-date"},
-        "latest_version": {"type": "string", "pattern": "^\\d+$"},
-        "versions": {"type": "string", "pattern": "^\\d+$"},
-        "number_of_steps": {"type": ["integer", "null"]},
-        "workflow_class": {"type": ["string", "null"]},
+        "source": {
+          "type": "string",
+          "const": "WorkflowHub"
+        },
+        "link": {
+          "type": "string",
+          "format": "url"
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "doi"
+            },
+            {
+              "type": "string",
+              "maxLength": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "license": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "spdx-license"
+        },
+        "create_time": {
+          "type": "string",
+          "format": "iso-date"
+        },
+        "update_time": {
+          "type": "string",
+          "format": "iso-date"
+        },
+        "latest_version": {
+          "type": "string",
+          "pattern": "^\\d+$"
+        },
+        "versions": {
+          "type": "string",
+          "pattern": "^\\d+$"
+        },
+        "number_of_steps": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "edam_operation": {
           "type": "array",
-          "items": {"type": "string", "format": "edam-uri"}
+          "items": {
+            "type": "string",
+            "format": "edam-uri"
+          }
         },
         "edam_topic": {
           "type": "array",
-          "items": {"type": "string", "format": "edam-uri"}
+          "items": {
+            "type": "string",
+            "format": "edam-uri"
+          }
         },
-        "creators": {"type": "array", "items": {"type": ["string", "null"]}},
-        "projects": {"type": "array", "items": {"type": ["string", "null"]}},
-        "tags": {"type": "array", "items": {"type": ["string", "null"]}},
-        "tools": {"type": "array", "items": {"type": ["string", "null"]}},
-        "mapped_tools": {"type": "array", "items": {"type": ["string", "null"]}},
-        "content_blobs": {"type": "array"},
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "mapped_tools": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "content_blobs": {
+          "type": "array"
+        },
         "discussion_links": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "id": {"type": ["string", "null"]},
-              "label": {"type": ["string", "null"]},
-              "url": {"type": ["string", "null"], "format": "url"}
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "url"
+              }
             }
           }
         }

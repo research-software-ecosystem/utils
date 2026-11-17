@@ -3,98 +3,382 @@
   "title": "bio.tools import (<id>.biotools.json)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["biotoolsID", "biotoolsCURIE", "name", "description", "homepage"],
+  "required": [
+    "biotoolsID",
+    "biotoolsCURIE",
+    "name",
+    "description",
+    "homepage"
+  ],
   "properties": {
-    "accessibility": {"type": "string"},
-    "additionDate": {"type": "string", "format": "iso-datetime"},
-    "biotoolsCURIE": {"type": "string", "format": "biotools-curie"},
-    "biotoolsID": {"type": "string", "format": "biotools-id"},
-    "collectionID": {"type": "array", "items": {"type": "string"}},
-    "community": {"type": ["object", "null"]},
-    "confidence_flag": {"type": ["string", "null"]},
-    "cost": {"type": ["string", "null"]},
-    "credit": {"type": "array", "items": {"$ref": "#/$defs/credit"}},
-    "description": {"type": "string", "minLength": 1},
-    "documentation": {"type": "array", "items": {"$ref": "#/$defs/typedUrl"}},
-    "download": {"type": "array", "items": {"$ref": "#/$defs/download"}},
+    "accessibility": {
+      "type": "string",
+      "enum": [
+        "Open access",
+        "Open access (with restrictions)",
+        "Restricted access"
+      ]
+    },
+    "additionDate": {
+      "type": "string",
+      "format": "iso-datetime"
+    },
+    "biotoolsCURIE": {
+      "type": "string",
+      "format": "biotools-curie"
+    },
+    "biotoolsID": {
+      "type": "string",
+      "format": "biotools-id"
+    },
+    "collectionID": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "community": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "confidence_flag": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tool",
+        "high",
+        "medium",
+        "low",
+        "very low",
+        null
+      ]
+    },
+    "cost": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "Free of charge",
+        "Free of charge (with restrictions)",
+        "Commercial",
+        null
+      ]
+    },
+    "credit": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/credit"
+      }
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "documentation": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/typedUrl"
+      }
+    },
+    "download": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/download"
+      }
+    },
     "editPermission": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "type": {"type": "string", "enum": ["public", "private", "group"]},
-        "authors": {"type": "array", "items": {"type": "string"}}
+        "type": {
+          "type": "string",
+          "enum": [
+            "public",
+            "private",
+            "group"
+          ]
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
-    "elixirCommunity": {"type": "array", "items": {"type": "string"}},
-    "elixirNode": {"type": "array", "items": {"type": "string"}},
-    "elixirPlatform": {"type": "array", "items": {"type": "string"}},
-    "function": {"type": "array", "items": {"$ref": "#/$defs/function"}},
-    "homepage": {"type": "string", "format": "url"},
-    "homepage_status": {"type": "integer"},
-    "language": {"type": "array", "items": {"type": "string"}},
-    "lastUpdate": {"type": "string", "format": "iso-datetime"},
-    "license": {"type": ["string", "null"], "format": "spdx-license"},
-    "link": {"type": "array", "items": {"$ref": "#/$defs/typedUrl"}},
-    "maturity": {"type": ["string", "null"]},
-    "name": {"type": "string", "minLength": 1},
-    "operatingSystem": {"type": "array", "items": {"type": "string"}},
+    "elixirCommunity": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "elixirNode": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "elixirPlatform": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Data",
+          "Tools",
+          "Compute",
+          "Interoperability",
+          "Training"
+        ]
+      }
+    },
+    "function": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/function"
+      }
+    },
+    "homepage": {
+      "type": "string",
+      "format": "url"
+    },
+    "homepage_status": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "language": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lastUpdate": {
+      "type": "string",
+      "format": "iso-datetime"
+    },
+    "license": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "spdx-license"
+    },
+    "link": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/typedUrl"
+      }
+    },
+    "maturity": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "Emerging",
+        "Mature",
+        "Legacy",
+        null
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operatingSystem": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Linux",
+          "Windows",
+          "Mac",
+          "Android",
+          "iOS"
+        ]
+      }
+    },
     "otherID": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "type": {"type": ["string", "null"]},
-          "value": {"type": "string"},
-          "version": {"type": ["string", "null"]}
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     },
-    "owner": {"type": "string"},
-    "publication": {"type": "array", "items": {"$ref": "#/$defs/publication"}},
+    "owner": {
+      "type": "string"
+    },
+    "publication": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/publication"
+      }
+    },
     "relation": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "biotoolsID": {"type": "string", "format": "biotools-id"},
-          "type": {"type": "string"}
+          "biotoolsID": {
+            "type": "string",
+            "format": "biotools-id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "isNewVersionOf",
+              "hasNewVersionOf",
+              "uses",
+              "usedBy",
+              "includes",
+              "includedIn",
+              "hasNewVersion"
+            ]
+          }
         }
       }
     },
-    "toolType": {"type": "array", "items": {"type": "string"}},
-    "topic": {"type": "array", "items": {"$ref": "#/$defs/term"}},
-    "validated": {"type": "integer"},
-    "version": {"type": "array", "items": {"type": "string"}},
-    "versionID": {"type": ["string", "null"]}
+    "toolType": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Bioinformatics portal",
+          "Command-line tool",
+          "Database portal",
+          "Desktop application",
+          "Library",
+          "Ontology",
+          "Plug-in",
+          "Script",
+          "SPARQL endpoint",
+          "Suite",
+          "Web application",
+          "Web API",
+          "Web service",
+          "Workbench",
+          "Workflow",
+          "Mobile application"
+        ]
+      }
+    },
+    "topic": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/term"
+      }
+    },
+    "validated": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "version": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "versionID": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "elixir_badge": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
   },
   "$defs": {
     "function": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "operation": {"type": "array", "items": {"$ref": "#/$defs/term"}},
-        "input": {"type": "array", "items": {"$ref": "#/$defs/ioItem"}},
-        "output": {"type": "array", "items": {"$ref": "#/$defs/ioItem"}},
-        "note": {"type": ["string", "null"]},
-        "cmd": {"type": ["string", "null"]}
+        "operation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/term"
+          }
+        },
+        "input": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ioItem"
+          }
+        },
+        "output": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ioItem"
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cmd": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "ioItem": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "data": {"$ref": "#/$defs/term"},
-        "format": {"type": "array", "items": {"$ref": "#/$defs/term"}}
+        "data": {
+          "$ref": "#/$defs/term"
+        },
+        "format": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/term"
+          }
+        }
       }
     },
     "term": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "term": {"type": "string"},
-        "uri": {"type": "string", "format": "edam-uri"}
+        "term": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string",
+          "format": "edam-uri"
+        }
       }
     },
     "typedUrl": {
@@ -103,74 +387,271 @@
       "properties": {
         "type": {
           "anyOf": [
-            {"type": "string"},
-            {"type": "array", "items": {"type": "string"}},
-            {"type": "null"}
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
           ]
         },
-        "url": {"type": "string", "format": "url"},
-        "note": {"type": ["string", "null"]}
+        "url": {
+          "type": "string",
+          "format": "url"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "download": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "type": {"type": ["string", "null"]},
-        "url": {"type": "string", "format": "url"},
-        "note": {"type": ["string", "null"]},
-        "version": {"type": ["string", "null"]}
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "url"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "credit": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "email": {"type": ["string", "null"], "format": "email"},
-        "fundrefid": {"type": ["string", "null"]},
-        "gridid": {"type": ["string", "null"]},
-        "name": {"type": ["string", "null"]},
-        "note": {"type": ["string", "null"]},
-        "orcidid": {"type": ["string", "null"], "format": "orcid"},
-        "rorid": {"type": ["string", "null"]},
-        "typeEntity": {"type": ["string", "null"]},
-        "typeRole": {"type": "array", "items": {"type": "string"}},
-        "url": {"type": ["string", "null"], "format": "url"}
+        "email": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "email"
+        },
+        "fundrefid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gridid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orcidid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "orcid"
+        },
+        "rorid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "typeEntity": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "Person",
+            "Project",
+            "Division",
+            "Institute",
+            "Consortium",
+            "Funding agency",
+            null
+          ]
+        },
+        "typeRole": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Primary contact",
+              "Contributor",
+              "Developer",
+              "Documentor",
+              "Maintainer",
+              "Provider",
+              "Support"
+            ]
+          }
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "url"
+        }
       }
     },
     "publication": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "doi": {"type": ["string", "null"], "format": "doi"},
-        "pmid": {"type": ["string", "null"], "format": "pmid"},
-        "pmcid": {"type": ["string", "null"], "format": "pmcid"},
-        "note": {"type": ["string", "null"]},
-        "type": {
-          "anyOf": [
-            {"type": "string"},
-            {"type": "array", "items": {"type": "string"}},
-            {"type": "null"}
+        "doi": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "doi"
+        },
+        "pmid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "pmid"
+        },
+        "pmcid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "pmcid"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
           ]
         },
-        "version": {"type": ["string", "null"]},
+        "type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "Primary",
+                "Method",
+                "Usage",
+                "Benchmarking study",
+                "Review",
+                "Other",
+                "Preprint"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Primary",
+                  "Method",
+                  "Usage",
+                  "Benchmarking study",
+                  "Review",
+                  "Other",
+                  "Preprint"
+                ]
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "metadata": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "additionalProperties": false,
           "properties": {
-            "abstract": {"type": ["string", "null"]},
+            "abstract": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "authors": {
               "type": "array",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "properties": {"name": {"type": ["string", "null"]}}
+                "properties": {
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
               }
             },
-            "citationCount": {"type": ["integer", "null"]},
-            "date": {"type": ["string", "null"], "format": "iso-datetime"},
-            "journal": {"type": ["string", "null"]},
-            "title": {"type": ["string", "null"]}
+            "citationCount": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "iso-datetime"
+            },
+            "journal": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         }
       }
