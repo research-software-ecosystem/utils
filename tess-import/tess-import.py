@@ -2,6 +2,7 @@ import argparse
 import glob
 import json
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
@@ -10,6 +11,17 @@ import requests
 
 TESS_BASE = "https://tess.elixir-europe.org"
 PER_PAGE = 100
+
+# One requests.Session per thread: a Session is not guaranteed thread-safe,
+# but each of the 5 detail-fetch workers reusing its own keeps TLS connections
+# alive across the ~3900 requests instead of opening a new one per request.
+_thread_local = threading.local()
+
+
+def get_session():
+    if not hasattr(_thread_local, "session"):
+        _thread_local.session = requests.Session()
+    return _thread_local.session
 
 
 def clean(data_base="."):
@@ -25,7 +37,7 @@ def fetch_page(page):
     url = f"{TESS_BASE}/materials.json?per_page={PER_PAGE}&page={page}"
     for attempt in range(3):
         try:
-            resp = requests.get(url, timeout=30)
+            resp = get_session().get(url, timeout=30)
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
@@ -60,7 +72,9 @@ def fetch_detail(material_id):
     url = f"{TESS_BASE}/materials/{material_id}"
     for attempt in range(3):
         try:
-            resp = requests.get(url, timeout=30, headers={"Accept": "application/json"})
+            resp = get_session().get(
+                url, timeout=30, headers={"Accept": "application/json"}
+            )
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
@@ -106,21 +120,6 @@ def name_from_tool_uri(uri):
     return uri.rstrip("/").rsplit("/", 1)[-1].lower()
 
 
-def material_slug(list_item, detail):
-    """Return the TeSS material slug used as entry id.
-
-    Prefer the slug from the detail record; fall back to the last path
-    segment of the TeSS material URL, then to the numeric id.
-    """
-    slug = (detail or {}).get("slug")
-    if slug:
-        return slug
-    tess_url = list_item.get("url", "")
-    if tess_url:
-        return tess_url.rstrip("/").rsplit("/", 1)[-1]
-    return str(list_item["id"])
-
-
 def build_entry(list_item, detail):
     tools = extract_tools(list_item)
     topics = [
@@ -138,7 +137,10 @@ def build_entry(list_item, detail):
 
     return {
         "source": "TESS",
-        "id": material_slug(list_item, detail),
+        # The numeric TeSS id is the persistent identifier; slugs are derived
+        # from titles and can change when a material is renamed.
+        "id": int(list_item["id"]),
+        "slug": (detail or {}).get("slug", ""),
         "url": detail_fields.get("url") or list_item.get("url", ""),
         "tess_url": list_item.get("url", ""),
         "title": list_item.get("title", ""),
@@ -166,8 +168,11 @@ def build_entry(list_item, detail):
     }
 
 
-def retrieve(max_items=None, data_base="."):
-    tess_directory = os.path.join(data_base, "imports", "tess")
+def retrieve(max_items=None, data_base=".", test_mode=False):
+    # In test mode, leave the existing import untouched: match tools against
+    # the real data/ directories but write everything under test-output/.
+    out_base = os.path.join(data_base, "test-output") if test_mode else data_base
+    tess_directory = os.path.join(out_base, "imports", "tess")
 
     print("Fetching training materials from TESS API...")
     all_items = fetch_all_materials(max_items)
@@ -209,7 +214,10 @@ def retrieve(max_items=None, data_base="."):
                 stat_nodes[node_name] = stat_nodes.get(node_name, 0) + 1
 
     # All fetches succeeded: only now replace the previous import.
-    clean(data_base=data_base)
+    if test_mode:
+        print(f"Test mode: writing under {out_base}/, existing files untouched")
+    else:
+        clean(data_base=data_base)
     os.makedirs(tess_directory, exist_ok=True)
 
     matched_count = 0
@@ -224,7 +232,9 @@ def retrieve(max_items=None, data_base="."):
         for material_id in material_ids:
             material_id_to_tools.setdefault(material_id, []).append(tool_name)
 
-        data_save_path = os.path.join(directory, f"{tool_name}.tess.json")
+        out_directory = os.path.join(out_base, "data", tool_name)
+        os.makedirs(out_directory, exist_ok=True)
+        data_save_path = os.path.join(out_directory, f"{tool_name}.tess.json")
         with open(data_save_path, "w") as f:
             json.dump(material_ids, f, sort_keys=True, indent=4, separators=(",", ": "))
         print(
@@ -233,9 +243,7 @@ def retrieve(max_items=None, data_base="."):
         matched_count += 1
 
     for entry in all_entries:
-        entry["mapped_tools"] = sorted(
-            material_id_to_tools.get(entry.get("id", ""), [])
-        )
+        entry["mapped_tools"] = sorted(material_id_to_tools.get(entry["id"], []))
         save_path = os.path.join(tess_directory, f"{entry['id']}.tess.json")
         with open(save_path, "w") as f:
             json.dump(entry, f, sort_keys=True, indent=4, separators=(",", ": "))
@@ -277,7 +285,10 @@ if __name__ == "__main__":
         nargs="?",
         const=100,
         default=None,
-        help="Run with a limited number of materials (default: 100)",
+        help=(
+            "Run with a limited number of materials (default: 100); "
+            "writes under test-output/ instead of replacing the import"
+        ),
     )
     parser.add_argument(
         "--content-dir",
@@ -287,4 +298,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    retrieve(max_items=args.test, data_base=args.content_dir)
+    retrieve(
+        max_items=args.test,
+        data_base=args.content_dir,
+        test_mode=args.test is not None,
+    )
