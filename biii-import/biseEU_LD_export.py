@@ -91,9 +91,9 @@ ns = "http://biii.eu"
 
 
 def clean():
-    for data_file in glob.glob("data/*/*/*.neubias.raw.json"):
+    for data_file in glob.glob("imports/biii/*.neubias.raw.json"):
         os.remove(data_file)
-    for data_file in glob.glob("data/*/*/*.neubias.bioschemas.jsonld"):
+    for data_file in glob.glob("imports/biii/*.neubias.bioschemas.jsonld"):
         os.remove(data_file)
 
 
@@ -161,14 +161,14 @@ def main():
             sys.stdout.flush()
 
             tpe_id = s["title"].lower().replace("/", "").replace(" ", "-")
-            directory = os.path.join("./data", tpe_id)
+            # biii entries live under imports/biii, not data/<id>: a biii title
+            # may collide with an unrelated bio.tools id (homonyms), so they
+            # must not share per-tool directories until the two can be linked.
+            directory = os.path.join("imports", "biii")
             # create directory if it does not exist
             if not os.path.isdir("datasets"):
                 os.mkdir("datasets")
-            if not os.path.isdir("data"):
-                os.mkdir("data")
-            if not os.path.isdir(directory):
-                os.mkdir(directory)
+            os.makedirs(directory, exist_ok=True)
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
             if not args.e:
@@ -223,15 +223,14 @@ def main():
             sys.stdout.flush()
 
             tpe_id = s["title"].lower().replace("/", "").replace(" ", "-")
-            directory = os.path.join("data", tpe_id)
+            # See the -test branch above: imports/biii, not data/<id>, to avoid
+            # homonym collisions with bio.tools entries.
+            directory = os.path.join("imports", "biii")
 
             # create directory if it does not exist
             if not os.path.isdir("datasets"):
                 os.mkdir("datasets")
-            if not os.path.isdir("data"):
-                os.mkdir("data")
-            if not os.path.isdir(directory):
-                os.mkdir(directory)
+            os.makedirs(directory, exist_ok=True)
 
             ### if not extracting only raw metadata == if we transform metadata into bioschemas
             if not args.e:
