@@ -392,7 +392,13 @@ def process_tools_by_id(id="SPROUT"):
 
 
 def clean():
+    # Only remove the files this script generates (data/<id>/<id>.bioschemas.jsonld);
+    # other importers write their own variants (e.g. <id>.neubias.bioschemas.jsonld)
+    # into the same directories, and those must survive this rebuild.
     for data_file in glob.glob(r"../../content/data/*/*.bioschemas.jsonld"):
+        directory_name = os.path.basename(os.path.dirname(data_file))
+        if os.path.basename(data_file) != directory_name + ".bioschemas.jsonld":
+            continue
         print(f"removing file {data_file}")
         os.remove(data_file)
 
