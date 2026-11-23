@@ -1,0 +1,40 @@
+about:
+  dev_url: https://github.com/10XGenomics/bamtofastq
+  doc_url: https://github.com/10XGenomics/bamtofastq/blob/v1.4.1/README.md
+  home: https://github.com/10XGenomics/bamtofastq
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Tool for converting 10x BAMs produced by Cell Ranger, Space Ranger, Cell
+    Ranger ATAC, Cell Ranger DNA, and Long Ranger back to FASTQ files that can be
+    used as inputs to re-run analysis.
+build:
+  number: 4
+  run_exports:
+  - null
+extra:
+  additional-platforms:
+  - linux-aarch64
+  - osx-arm64
+  identifiers:
+  - usegalaxy-eu:10x_bamtofastq
+package:
+  name: 10x_bamtofastq
+  version: 1.4.1
+requirements:
+  build:
+  - null
+  - null
+  - null
+  - cargo-bundle-licenses
+  - pkg-config
+  - make
+  - cmake
+  - clangdev
+  - llvmlite
+source:
+  md5: short
+  url: https://example.org/x.tar.gz
+test:
+  commands:
+  - bamtofastq --help

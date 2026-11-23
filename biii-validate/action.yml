@@ -1,0 +1,60 @@
+name: 'validate biii imports'
+description: 'Syntactic validation of BIII/NEUBIAS import files (*.neubias.raw.json)'
+inputs:
+  content-path:
+    description: 'Path to a checkout of the content repository'
+    required: false
+    default: ${{ github.workspace }}
+  warnings-as-errors:
+    description: 'Fail on warnings too (true/false)'
+    required: false
+    default: 'false'
+  report-issue:
+    description: 'On errors, post the report as a GitHub issue (true/false)'
+    required: false
+    default: 'false'
+  issue-repo:
+    description: >-
+      Repository (owner/name) where the report issue is created. Defaults to
+      the repository running the workflow. For another repository, github-token
+      must have issues:write there.
+    required: false
+    default: ${{ github.repository }}
+  github-token:
+    description: 'Token used to create or comment on the report issue'
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run:
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+    - name: validate biii files
+      id: validate
+      run: |
+        set +e
+        python ${{ github.action_path }}/validate.py --output github \
+          --report-file "$RUNNER_TEMP/biii-validation-report.txt" \
+          $([ "${{ inputs.warnings-as-errors }}" = "true" ] && echo --warnings-as-errors) \
+          "${{ inputs.content-path }}"
+        echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+      shell: bash
+    - name: report biii validation issues
+      if: inputs.report-issue == 'true' && steps.validate.outputs.exit_code == '1'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        bash ${{ github.action_path }}/../common/report_issue.sh \
+          "biii" "${{ inputs.issue-repo }}" \
+          "$RUNNER_TEMP/biii-validation-report.txt"
+      shell: bash
+    - name: fail on validation errors
+      if: steps.validate.outputs.exit_code != '0'
+      run: exit ${{ steps.validate.outputs.exit_code }}
+      shell: bash
