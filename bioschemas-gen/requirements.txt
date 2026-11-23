@@ -3,3 +3,4 @@ rdflib
 tabulate
 pyyaml
 pandas
+validators
