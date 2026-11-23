@@ -2,6 +2,7 @@ import glob
 import json
 import os
 from pathlib import Path
+from urllib.parse import quote
 
 import pandas as pd
 import validators
@@ -145,8 +146,12 @@ def rdfize(data) -> Graph:
         and data["Suite_conda_package"]
         and data["Suite_conda_package"] != "@EXECUTABLE@"
     ):
+        # Written as a full IRI because package names may contain characters
+        # (e.g. "+" in blast+) that are invalid in a Turtle prefixed name.
         bioconda_id = (
-            "bioconda:" + data["Suite_conda_package"].strip()
+            "<https://github.com/bioconda/bioconda-recipes/tree/master/recipes/"
+            + quote(data["Suite_conda_package"].strip(), safe="")
+            + ">"
         )  # exceptions: pharokka, rnashapes
 
     if "Related_Workflows" in data:
